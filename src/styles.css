@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* basic page styles */
+html,body,#root { height: 100%; }
+body { background: #f7f4ee; color: #1c1a15; }
