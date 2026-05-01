@@ -10,7 +10,6 @@ import UnidadLitoForm from './UnidadLitoForm'
 import BiozonaForm from './BiozonaForm'
 import EdadForm from './EdadForm'
 import EmpresaForm from './EmpresaForm'
-import PersonaForm from './PersonaForm'
 
 export default function CatalogosPage() {
   const qc = useQueryClient()
@@ -19,31 +18,42 @@ export default function CatalogosPage() {
   const [showForm, setShowForm] = useState(false)
 
   // Fetch data
-  const { data: unidades } = useQuery(['dic_unidad_lito'], async () => {
-    const { data } = await supabase.from('dic_unidad_lito').select('*')
-    return data || []
+  const { data: unidades } = useQuery({
+    queryKey: ['dic_unidad_lito'],
+    queryFn: async () => {
+      const { data } = await supabase.from('dic_unidad_lito').select('*')
+      return data || []
+    }
   })
-  const { data: biozonas } = useQuery(['dic_biozona'], async () => {
-    const { data } = await supabase.from('dic_biozona').select('*')
-    return data || []
+  const { data: biozonas } = useQuery({
+    queryKey: ['dic_biozona'],
+    queryFn: async () => {
+      const { data } = await supabase.from('dic_biozona').select('*')
+      return data || []
+    }
   })
-  const { data: edades } = useQuery(['dic_edad'], async () => {
-    const { data } = await supabase.from('dic_edad').select('*')
-    return data || []
+  const { data: edades } = useQuery({
+    queryKey: ['dic_edad'],
+    queryFn: async () => {
+      const { data } = await supabase.from('dic_edad').select('*')
+      return data || []
+    }
   })
-  const { data: empresas } = useQuery(['empresa'], async () => {
-    const { data } = await supabase.from('empresa').select('*')
-    return data || []
+  const { data: empresas } = useQuery({
+    queryKey: ['empresa'],
+    queryFn: async () => {
+      const { data } = await supabase.from('empresa').select('*')
+      return data || []
+    }
   })
-  const { data: personas } = useQuery(['persona'], async () => {
-    const { data } = await supabase.from('persona').select('*')
-    return data || []
-  })
-
   // Generic delete mutation
-  const deleteMutation = useMutation(async ({ table, idField, idValue }: { table: string, idField: string, idValue: string }) => {
-    await supabase.from(table).delete().eq(idField, idValue)
-    qc.invalidateQueries([table])
+  const deleteMutation = useMutation({
+    mutationFn: async ({ table, idField, idValue }: { table: string, idField: string, idValue: string }) => {
+      await supabase.from(table).delete().eq(idField, idValue)
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: [variables.table] })
+    }
   })
 
   // Generic create/update helpers (simplified)
@@ -54,7 +64,7 @@ export default function CatalogosPage() {
       } else {
         await supabase.from(table).insert(values)
       }
-      qc.invalidateQueries([table])
+      qc.invalidateQueries({ queryKey: [table] })
       setShowForm(false)
       setEditing(null)
     } catch (e: any) {
@@ -95,7 +105,6 @@ export default function CatalogosPage() {
           <TabsTrigger value="biozonas">Biozonas</TabsTrigger>
           <TabsTrigger value="edades">Edades Geológicas</TabsTrigger>
           <TabsTrigger value="empresas">Empresas</TabsTrigger>
-          <TabsTrigger value="personas">Personas</TabsTrigger>
         </TabsList>
 
         {['unidades', 'biozonas', 'edades', 'empresas', 'personas'].map(tab => (
@@ -107,7 +116,6 @@ export default function CatalogosPage() {
             {tab === 'biozonas' && renderTable(['biozona_id', 'nombre_biozona', 'grupo_fosil', 'edad_base', 'edad_tope'], biozonas || [], 'biozona_id', 'dic_biozona')}
             {tab === 'edades' && renderTable(['edad_id', 'nombre_edad', 'jerarquia', 'base_ma', 'tope_ma'], edades || [], 'edad_id', 'dic_edad')}
             {tab === 'empresas' && renderTable(['empresa_id', 'nombre_empresa', 'tipo_empresa', 'pais'], empresas || [], 'empresa_id', 'empresa')}
-            {tab === 'personas' && renderTable(['persona_id', 'nombre', 'rol', 'email', 'activo'], personas || [], 'persona_id', 'persona')}
           </TabsContent>
         ))}
 
@@ -143,13 +151,6 @@ export default function CatalogosPage() {
               <EmpresaForm
                 defaultValues={editing}
                 onSubmit={(v) => handleSave('empresa', v, 'empresa_id')}
-                onCancel={() => { setShowForm(false); setEditing(null) }}
-              />
-            )}
-            {activeTab === 'personas' && (
-              <PersonaForm
-                defaultValues={editing}
-                onSubmit={(v) => handleSave('persona', v, 'persona_id')}
                 onCancel={() => { setShowForm(false); setEditing(null) }}
               />
             )}

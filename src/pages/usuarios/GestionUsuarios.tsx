@@ -5,13 +5,14 @@ import { supabase } from '../../lib/supabase'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { Button } from '../../components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
+import PersonaForm from '../../pages/catalogos/PersonaForm'
 
 export default function GestionUsuarios() {
   const qc = useQueryClient()
   const [editing, setEditing] = useState<any>(null)
   const [showForm, setShowForm] = useState(false)
 
-  const { data: personas, isLoading } = useQuery({
+  const { data: personas, isLoading, error, refetch } = useQuery({
     queryKey: ['personas-all'],
     queryFn: async () => {
       const { data, error } = await supabase.from('persona').select('*').order('rol', { ascending: true })
@@ -21,13 +22,10 @@ export default function GestionUsuarios() {
   })
 
   const updateUser = useMutation({
-    mutationFn: async (payload: { persona_id: string; rol?: string; activo?: boolean }) => {
-      const { error } = await supabase.from('persona').update({
-        rol: payload.rol,
-        activo: payload.activo,
-      }).eq('persona_id', payload.persona_id)
+    mutationFn: async (payload: any) => {
+      const { persona_id, ...updateData } = payload
+      const { error } = await supabase.from('persona').update(updateData).eq('persona_id', persona_id)
       if (error) throw error
-      // If activating, maybe send magic link? (optional)
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['personas-all'] }),
   })
@@ -75,7 +73,18 @@ export default function GestionUsuarios() {
         </Button>
       </div>
 
-      {isLoading ? <p>Cargando usuarios...</p> : (
+      {isLoading ? (
+        <p>Cargando usuarios...</p>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-200 rounded p-4">
+          <p className="text-red-700">Error cargando usuarios: {(error as Error).message}</p>
+          <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>
+            Reintentar
+          </Button>
+        </div>
+      ) : !personas?.length ? (
+        <p className="text-gray-500">No hay usuarios registrados.</p>
+      ) : (
         <div className="bg-white border rounded p-4">
           <Table>
             <TableHeader>
@@ -89,7 +98,7 @@ export default function GestionUsuarios() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {personas?.map(p => (
+              {personas.map(p => (
                 <TableRow key={p.persona_id}>
                   <TableCell>{p.persona_id}</TableCell>
                   <TableCell>{p.nombre}</TableCell>
@@ -116,6 +125,9 @@ export default function GestionUsuarios() {
                     </span>
                   </TableCell>
                   <TableCell className="space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => { setEditing(p); setShowForm(true) }}>
+                      Editar
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => handleToggleActive(p)}>
                       {p.activo ? 'Desactivar' : 'Activar'}
                     </Button>
@@ -130,6 +142,29 @@ export default function GestionUsuarios() {
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {/* Edit Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+  <div className="bg-gray-100 p-6 rounded w-1/3 max-h-[80vh] overflow-y-auto">
+    <h3 className="text-lg font-semibold mb-4">Editar Usuario</h3>
+      <PersonaForm
+        defaultValues={editing}
+        onSubmit={async (v) => {
+          try {
+            console.log('GestionUsuarios: enviando update', { persona_id: editing.persona_id, ...v })
+            await updateUser.mutateAsync({ persona_id: editing.persona_id, ...v })
+            setShowForm(false)
+            setEditing(null)
+          } catch (e: any) {
+            alert('Error: ' + e.message)
+          }
+        }}
+        onCancel={() => { setShowForm(false); setEditing(null) }}
+      />
+  </div>
+</div>
       )}
     </AppLayout>
   )

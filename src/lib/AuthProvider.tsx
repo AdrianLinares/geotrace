@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import supabase from './supabase'
 import { useAppStore } from '../stores/appStore'
 
@@ -7,83 +7,84 @@ type Props = { children: React.ReactNode }
 export default function AuthProvider({ children }: Props) {
   const setUser = useAppStore((s) => s.setUser)
   const setAuthLoading = useAppStore((s) => s.setAuthLoading)
+  const mounted = useRef(true)
+  const sessionHandled = useRef(false)
 
   useEffect(() => {
-    console.log('AuthProvider: Montando, verificando sesión inicial')
+    mounted.current = true
+    console.log('AuthProvider: Montando')
 
-    // fetch current session on mount
-    supabase.auth.getSession().then(async (res) => {
-      console.log('AuthProvider: getSession inicial', { 
-        hasSession: !!res?.data?.session,
-        userEmail: res?.data?.session?.user?.email,
-        error: res.error
-      })
-      
-      if (res?.data?.session?.user) {
-        const u = res.data.session.user
-        console.log('AuthProvider: Hay sesión, buscando persona para', u.email)
-        // fetch persona by email
-        await fetchPersonaAndSet(u.email)
-      } else {
-        console.log('AuthProvider: No hay sesión inicial')
+    // Single source of truth: getSession on mount
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!mounted.current) return
+      if (error) {
+        console.error('AuthProvider: Error en getSession', error)
         setUser(null)
+        setAuthLoading(false)
+        return
       }
-      setAuthLoading(false)
-    }).catch((err) => {
-      console.error('AuthProvider: Error en getSession inicial', err)
-      setUser(null)
-      setAuthLoading(false)
+      if (data.session?.user) {
+        console.log('AuthProvider: Sesión inicial encontrada', data.session.user.email)
+        fetchPersonaAndSet(data.session.user.email).finally(() => {
+          sessionHandled.current = true
+          if (mounted.current) setAuthLoading(false)
+        })
+      } else {
+        console.log('AuthProvider: Sin sesión inicial')
+        setUser(null)
+        sessionHandled.current = true
+        setAuthLoading(false)
+      }
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('AuthProvider: onAuthStateChange', { event, hasSession: !!session, userEmail: session?.user?.email })
-      
-      setAuthLoading(true)
-      if (session?.user) {
-        await fetchPersonaAndSet(session.user.email)
-      } else {
+    // Only react to future sign-in / sign-out events
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted.current) return
+      if (event === 'INITIAL_SESSION') return
+      if (event === 'TOKEN_REFRESHED') return
+
+      console.log('AuthProvider: onAuthStateChange', { event, hasSession: !!session })
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        setAuthLoading(true)
+        fetchPersonaAndSet(session.user.email).finally(() => {
+          if (mounted.current) setAuthLoading(false)
+        })
+      } else if (event === 'SIGNED_OUT') {
         setUser(null)
       }
-      setAuthLoading(false)
     })
 
     return () => {
-      console.log('AuthProvider: Desmontando, limpiando listener')
+      mounted.current = false
       listener?.subscription.unsubscribe()
     }
   }, [])
 
   async function fetchPersonaAndSet(email?: string | null) {
-    console.log('AuthProvider: fetchPersonaAndSet para email:', email)
-    
-    if (!email) {
-      console.log('AuthProvider: No hay email, setUser(null)')
-      setUser(null)
-      return
-    }
+    if (!email) { setUser(null); return }
     try {
-      // Use case-insensitive match and tolerate duplicates by taking the first result.
-      const { data, error } = await supabase.from('persona').select('*').ilike('email', email).limit(1)
-      console.log('AuthProvider: Resultado consulta persona', { data, error })
-      
+      const { data, error } = await supabase
+        .from('persona')
+        .select('*')
+        .ilike('email', email)
+        .limit(1)
+
       if (error) {
-        console.error('AuthProvider: Error fetching persona:', error)
+        console.error('AuthProvider: Error consultando persona', error)
         setUser(null)
         return
       }
-
-      if (!data || (Array.isArray(data) && data.length === 0)) {
-        console.log('AuthProvider: No se encontró persona para', email)
+      if (!data?.length) {
+        console.warn('AuthProvider: No existe persona para', email)
         setUser(null)
         return
       }
-
-      // data may be an array due to select; pick first row
-      const persona = Array.isArray(data) ? data[0] : data
-      console.log('AuthProvider: Persona encontrada, seteando user', { persona_id: persona.persona_id, nombre: persona.nombre, rol: persona.rol })
-      setUser({ persona_id: persona.persona_id, nombre: persona.nombre, rol: persona.rol })
+      const p = data[0]
+      console.log('AuthProvider: Persona cargada', p.nombre, p.rol)
+      setUser({ persona_id: p.persona_id, nombre: p.nombre, rol: p.rol })
     } catch (e) {
-      console.error('AuthProvider: Unexpected error fetching persona:', e)
+      console.error('AuthProvider: Error inesperado', e)
       setUser(null)
     }
   }

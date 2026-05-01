@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input } from '../../components/ui/input'
@@ -9,7 +9,7 @@ const personaSchema = z.object({
   persona_id: z.string().min(1, 'Requerido'),
   nombre: z.string().min(1, 'Requerido'),
   rol: z.enum(['Catalogador', 'Revisor', 'Curador', 'Administrador']),
-  email: z.string().email('Email inválido').optional(),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
   activo: z.boolean().optional(),
 })
 
@@ -20,16 +20,23 @@ interface Props {
 }
 
 export default function PersonaForm({ defaultValues, onSubmit, onCancel }: Props) {
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm({
     resolver: zodResolver(personaSchema),
     defaultValues,
   })
 
+  // Reset form when defaultValues change (edit different user)
+  React.useEffect(() => {
+    if (defaultValues) {
+      reset(defaultValues)
+    }
+  }, [defaultValues, reset])
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit((v) => { console.log('PersonaForm submit:', v); onSubmit(v) })} className="space-y-4">
       <div>
         <label className="block text-sm">ID Persona</label>
-        <Input {...register('persona_id')} />
+        <Input {...register('persona_id')} disabled={!!defaultValues?.persona_id} className="disabled:bg-gray-100" />
         {errors.persona_id && <p className="text-sm text-red-500">{errors.persona_id.message}</p>}
       </div>
       <div>
@@ -49,6 +56,7 @@ export default function PersonaForm({ defaultValues, onSubmit, onCancel }: Props
       <div>
         <label className="block text-sm">Email</label>
         <Input type="email" {...register('email')} />
+        {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
       </div>
       <div className="flex items-center gap-2">
         <input type="checkbox" {...register('activo')} />
