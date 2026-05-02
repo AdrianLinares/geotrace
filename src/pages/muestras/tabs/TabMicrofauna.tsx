@@ -1,5 +1,5 @@
 import { Control, useFieldArray } from 'react-hook-form'
-import { MuestraForm } from '../../lib/validations/muestra'
+import { MuestraForm } from '../../lib/validations/muestra.js'
 import { Button } from '../../../components/ui/button'
 
 interface Props {

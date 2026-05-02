@@ -167,8 +167,8 @@ export default function MuestraModal({ isOpen, onClose, muestraToEdit, placaId }
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-              <Button type="submit" disabled={create.isLoading || update.isLoading}>
-                {create.isLoading || update.isLoading ? 'Guardando...' : 'Guardar'}
+              <Button type="submit" disabled={create.status === 'pending' || update.status === 'pending'}>
+                {create.status === 'pending' || update.status === 'pending' ? 'Guardando...' : 'Guardar'}
               </Button>
             </div>
           </form>

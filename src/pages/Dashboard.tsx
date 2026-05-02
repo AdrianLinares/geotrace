@@ -106,7 +106,7 @@ export default function Dashboard() {
                     <TableCell>{a.tabla}</TableCell>
                     <TableCell><Badge>{a.operacion}</Badge></TableCell>
                     <TableCell>{a.registro_id}</TableCell>
-                    <TableCell>{new Date(a.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell>{a.created_at ? new Date(a.created_at as any).toLocaleDateString() : 'N/A'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

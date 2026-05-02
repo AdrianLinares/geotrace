@@ -81,8 +81,8 @@ export default function CambiarEstadoModal({ isOpen, onClose, placa }: Props) {
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button onClick={handleConfirm} disabled={!nuevoEstado || cambiar.isLoading}>
-              {cambiar.isLoading ? 'Guardando...' : 'Confirmar'}
+            <Button onClick={handleConfirm} disabled={!nuevoEstado || cambiar.status === 'pending'}>
+              {cambiar.status === 'pending' ? 'Guardando...' : 'Confirmar'}
             </Button>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { Control, useWatch } from 'react-hook-form'
-import { MuestraForm } from '../../lib/validations/muestra'
+import { MuestraForm } from '../../lib/validations/muestra.js'
 import { Input } from '../../../components/ui/input'
 
 interface Props {

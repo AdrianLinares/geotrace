@@ -21,12 +21,12 @@ export default function EdadForm({ defaultValues, onSubmit, onCancel }: Props) {
       <div>
         <label className="block text-sm">ID Edad</label>
         <Input {...register('edad_id')} />
-        {errors.edad_id && <p className="text-sm text-red-500">{errors.edad_id.message}</p>}
+        {errors.edad_id && <p className="text-sm text-red-500">{String(errors.edad_id.message)}</p>}
       </div>
       <div>
         <label className="block text-sm">Nombre Edad</label>
         <Input {...register('nombre_edad')} />
-        {errors.nombre_edad && <p className="text-sm text-red-500">{errors.nombre_edad.message}</p>}
+        {errors.nombre_edad && <p className="text-sm text-red-500">{String(errors.nombre_edad.message)}</p>}
       </div>
       <div>
         <label className="block text-sm">Jerarquía</label>

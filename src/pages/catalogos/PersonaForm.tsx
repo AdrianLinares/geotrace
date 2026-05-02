@@ -21,16 +21,13 @@ interface Props {
 }
 
 export default function PersonaForm({ defaultValues, onSubmit, onCancel }: Props) {
-  const initialValues = React.useMemo(() => ({
-    persona_id: '',
-    nombre: '',
-    rol: 'Catalogador',
-    email: '',
-    activo: false,
-    ...(defaultValues || {}),
-    // normalize null email to empty string so Zod and inputs behave
-    email: defaultValues?.email ?? ''
-  }), [defaultValues])
+  const initialValues = React.useMemo(() => {
+    const base = defaultValues || {};
+    return {
+      ...base,
+      email: base.email ?? ''
+    };
+  }, [defaultValues])
 
   const { register, handleSubmit, formState: { errors }, reset, watch } = useForm({
     resolver: zodResolver(personaSchema),
@@ -48,12 +45,12 @@ export default function PersonaForm({ defaultValues, onSubmit, onCancel }: Props
         <label className="block text-sm">ID Persona</label>
         {/* Use readOnly so the value stays in form state (disabled inputs are omitted from submission) */}
         <Input {...register('persona_id')} readOnly={!!defaultValues?.persona_id} className="bg-gray-50" />
-        {errors.persona_id && <p className="text-sm text-red-500">{errors.persona_id.message}</p>}
+        {errors.persona_id && <p className="text-sm text-red-500">{String(errors.persona_id.message)}</p>}
       </div>
       <div>
         <label className="block text-sm">Nombre</label>
         <Input {...register('nombre')} />
-        {errors.nombre && <p className="text-sm text-red-500">{errors.nombre.message}</p>}
+        {errors.nombre && <p className="text-sm text-red-500">{String(errors.nombre.message)}</p>}
       </div>
       <div>
         <label className="block text-sm">Rol</label>
@@ -67,7 +64,7 @@ export default function PersonaForm({ defaultValues, onSubmit, onCancel }: Props
       <div>
         <label className="block text-sm">Email</label>
         <Input type="email" {...register('email')} />
-        {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+        {errors.email && <p className="text-sm text-red-500">{String(errors.email.message)}</p>}
       </div>
       <div className="flex items-center gap-2">
         <input type="checkbox" {...register('activo')} />

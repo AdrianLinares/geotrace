@@ -29,12 +29,12 @@ export default function EmpresaForm({ defaultValues, onSubmit, onCancel }: Props
       <div>
         <label className="block text-sm">ID Empresa</label>
         <Input {...register('empresa_id')} />
-        {errors.empresa_id && <p className="text-sm text-red-500">{errors.empresa_id.message}</p>}
+        {errors.empresa_id && <p className="text-sm text-red-500">{String(errors.empresa_id.message)}</p>}
       </div>
       <div>
         <label className="block text-sm">Nombre Empresa</label>
         <Input {...register('nombre_empresa')} />
-        {errors.nombre_empresa && <p className="text-sm text-red-500">{errors.nombre_empresa.message}</p>}
+        {errors.nombre_empresa && <p className="text-sm text-red-500">{String(errors.nombre_empresa.message)}</p>}
       </div>
       <div>
         <label className="block text-sm">Tipo Empresa</label>

@@ -21,7 +21,7 @@ export default function AuthDebug() {
         const checkAuth = async () => {
             try {
                 // 1. Obtener sesión actual
-                const { data: session } = await supabase.auth.getSession()
+                const { data: { session } } = await supabase.auth.getSession()
                 setSessionUser(session?.user || null)
 
                 // 2. Si hay email, buscar en persona

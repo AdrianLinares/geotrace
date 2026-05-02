@@ -25,12 +25,12 @@ export default function BiozonaForm({ defaultValues, onSubmit, onCancel }: Props
       <div>
         <label className="block text-sm">ID Biozona</label>
         <Input {...register('biozona_id')} />
-        {errors.biozona_id && <p className="text-sm text-red-500">{errors.biozona_id.message}</p>}
+        {errors.biozona_id && <p className="text-sm text-red-500">{String(errors.biozona_id.message)}</p>}
       </div>
       <div>
         <label className="block text-sm">Nombre Biozona</label>
         <Input {...register('nombre_biozona')} />
-        {errors.nombre_biozona && <p className="text-sm text-red-500">{errors.nombre_biozona.message}</p>}
+        {errors.nombre_biozona && <p className="text-sm text-red-500">{String(errors.nombre_biozona.message)}</p>}
       </div>
       <div>
         <label className="block text-sm">Grupo Fósil</label>
