@@ -24,10 +24,28 @@ export default function GestionUsuarios() {
   const updateUser = useMutation({
     mutationFn: async (payload: any) => {
       const { persona_id, ...updateData } = payload
-      const { error } = await supabase.from('persona').update(updateData).eq('persona_id', persona_id)
+      console.log('updateUser.mutationFn payload', { persona_id, updateData })
+      // Only allow these fields to be updated
+      const allowed = ['nombre', 'rol', 'email', 'activo']
+      const sanitized: Record<string, any> = {}
+      Object.entries(updateData).forEach(([k, v]) => {
+        if (allowed.includes(k)) sanitized[k] = v
+      })
+      // If nothing to update, throw
+      if (!Object.keys(sanitized).length) throw new Error('No valid fields to update')
+
+      // Perform update and return updated rows
+      const { data, error } = await supabase.from('persona').update(sanitized).eq('persona_id', persona_id).select()
+      console.log('updateUser.mutationFn response', { data, error })
       if (error) throw error
+      if (!data || data.length === 0) throw new Error('No rows were updated')
+      return data
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['personas-all'] }),
+    onError: (err: any) => {
+      console.error('updateUser error', err)
+      alert('Error actualizando usuario: ' + err.message)
+    }
   })
 
   const handleToggleActive = async (persona: any) => {
@@ -153,8 +171,37 @@ export default function GestionUsuarios() {
         defaultValues={editing}
         onSubmit={async (v) => {
           try {
-            console.log('GestionUsuarios: enviando update', { persona_id: editing.persona_id, ...v })
-            await updateUser.mutateAsync({ persona_id: editing.persona_id, ...v })
+            // prefer persona_id from form (in case editing state is stale)
+            const personaId = (v?.persona_id || editing?.persona_id || '').toString().trim()
+            console.log('GestionUsuarios: enviando update', { persona_id_from_form: v?.persona_id, persona_id_from_editing: editing?.persona_id, personaId, payload: v })
+
+            if (!personaId) {
+              alert('ID de persona vacío. No se puede actualizar.')
+              return
+            }
+
+            // Pre-check: verify the persona exists (helps diagnose mismatched IDs or RLS)
+            try {
+              // Log current auth user/session to help diagnose RLS issues
+              try {
+                const authUser = await supabase.auth.getUser()
+                const authSession = await supabase.auth.getSession()
+                console.log('supabase auth.getUser()', authUser)
+                console.log('supabase auth.getSession()', authSession)
+              } catch (authErr) {
+                console.warn('Could not read supabase auth state', authErr)
+              }
+              const pre = await supabase.from('persona').select('persona_id, email').eq('persona_id', personaId).maybeSingle()
+              console.log('pre-check persona', pre)
+              if (!pre.data) {
+                alert('No se encontró la persona con persona_id=' + personaId)
+                return
+              }
+            } catch (preErr: any) {
+              console.warn('pre-check failed', preErr)
+            }
+
+            await updateUser.mutateAsync({ persona_id: personaId, ...v })
             setShowForm(false)
             setEditing(null)
           } catch (e: any) {

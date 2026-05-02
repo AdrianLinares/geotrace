@@ -1,4 +1,5 @@
-import { useForm, useWatch } from 'react-hook-form'
+import React from 'react'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input } from '../../components/ui/input'
@@ -20,23 +21,33 @@ interface Props {
 }
 
 export default function PersonaForm({ defaultValues, onSubmit, onCancel }: Props) {
+  const initialValues = React.useMemo(() => ({
+    persona_id: '',
+    nombre: '',
+    rol: 'Catalogador',
+    email: '',
+    activo: false,
+    ...(defaultValues || {}),
+    // normalize null email to empty string so Zod and inputs behave
+    email: defaultValues?.email ?? ''
+  }), [defaultValues])
+
   const { register, handleSubmit, formState: { errors }, reset, watch } = useForm({
     resolver: zodResolver(personaSchema),
-    defaultValues,
+    defaultValues: initialValues,
   })
 
   // Reset form when defaultValues change (edit different user)
   React.useEffect(() => {
-    if (defaultValues) {
-      reset(defaultValues)
-    }
-  }, [defaultValues, reset])
+    reset(initialValues)
+  }, [initialValues, reset])
 
   return (
     <form onSubmit={handleSubmit((v) => { console.log('PersonaForm submit:', v); onSubmit(v) })} className="space-y-4">
       <div>
         <label className="block text-sm">ID Persona</label>
-        <Input {...register('persona_id')} disabled={!!defaultValues?.persona_id} className="disabled:bg-gray-100" />
+        {/* Use readOnly so the value stays in form state (disabled inputs are omitted from submission) */}
+        <Input {...register('persona_id')} readOnly={!!defaultValues?.persona_id} className="bg-gray-50" />
         {errors.persona_id && <p className="text-sm text-red-500">{errors.persona_id.message}</p>}
       </div>
       <div>
@@ -46,7 +57,7 @@ export default function PersonaForm({ defaultValues, onSubmit, onCancel }: Props
       </div>
       <div>
         <label className="block text-sm">Rol</label>
-        <select {...register('rol')} className="w-full border p-2 rounded">
+        <select {...register('rol')} className="w-full border p-2 rounded" defaultValue={defaultValues?.rol || 'Catalogador'}>
           <option value="Catalogador">Catalogador</option>
           <option value="Revisor">Revisor</option>
           <option value="Curador">Curador</option>
