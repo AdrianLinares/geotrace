@@ -125,7 +125,7 @@ export default function MuestraModal({ isOpen, onClose, muestraToEdit, placaId }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="w-full max-w-4xl">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Editar Muestra' : 'Nueva Muestra'}</DialogTitle>
           <DialogDescription>

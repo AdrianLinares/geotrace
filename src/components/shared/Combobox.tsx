@@ -32,7 +32,7 @@ export default function Combobox({ items, value, onSelect, placeholder = 'Selecc
           <span className="ml-2 opacity-50">▼</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
+      <PopoverContent className="w-full p-0 bg-gray-100 rounded shadow-lg z-50">
         <Command>
           <CommandInput
             placeholder={searchPlaceholder}

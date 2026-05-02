@@ -92,7 +92,7 @@ export default function PlacaModal({ isOpen, onClose, placaToEdit }: Props) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="w-full max-w-4xl">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Editar Placa' : 'Nueva Placa'}</DialogTitle>
           <DialogDescription>
