@@ -6,8 +6,8 @@ command = "npm run build"
 output_dir = "dist"
 
 [variables]
-VITE_SUPABASE_URL = "https://jdztpfcuhaqvsnsfbkeq.supabase.co"
-VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiOiJzdXBhYmFzZSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzE0NDAzMjAwLCJleHAiOjE4NzIxNzk2MDB9.8K1r5X7Q6v0Q5X2ZQ3Z1Q2Z5X7Q6v0Q5X2ZQ3Z1Q" # Reemplaza con tu clave real
+VITE_SUPABASE_URL = "REDACTED_FOR_SECURITY"
+VITE_SUPABASE_ANON_KEY = "REDACTED_FOR_SECURITY"
 
 # Si usas Cloudflare Pages con monorepo, añade:
 # [build.environment]
