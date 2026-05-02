@@ -14,7 +14,7 @@ type Props = {
 
 export default function ColeccionForm({ defaultValues, onSubmit, onCancel }: Props) {
   const { register, handleSubmit, formState: { errors } } = useForm<ColeccionForm>({
-    resolver: zodResolver(coleccionSchema),
+    resolver: zodResolver(coleccionSchema) as any,
     defaultValues: defaultValues as any
   })
 

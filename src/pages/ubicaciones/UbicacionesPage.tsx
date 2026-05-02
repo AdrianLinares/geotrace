@@ -24,6 +24,11 @@ export default function UbicacionesPage() {
   })
   const { data: ocupacion } = useOcupacionMuebles()
 
+  const handleVerPlaca = (ubicacionId: string) => {
+    // TODO: Implement logic to fetch placa by ubicacion_id and open modal
+    throw new Error('handleVerPlaca not implemented')
+  }
+
   // Get unique muebles
   const muebles = [...new Set(ubicaciones?.data?.map(u => u.mueble_cod).filter(Boolean))] as string[]
 

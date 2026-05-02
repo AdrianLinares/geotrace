@@ -12,7 +12,7 @@ interface Props {
 
 export default function UnidadLitoForm({ defaultValues, onSubmit, onCancel }: Props) {
   const { register, handleSubmit, formState: { errors }, control } = useForm<UnidadLitoFormValues>({
-    resolver: zodResolver(unidadLitoSchema),
+    resolver: zodResolver(unidadLitoSchema) as any,
     defaultValues: defaultValues || { sinonimos: [] },
   })
 

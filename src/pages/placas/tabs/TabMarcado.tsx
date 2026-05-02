@@ -1,5 +1,5 @@
 import { Control, FieldErrors } from 'react-hook-form'
-import { PlacaForm } from '../../lib/validations/placa.js'
+import { PlacaForm } from '@/lib/validations/placa'
 import { Input } from '../../../components/ui/input'
 
 interface Props {

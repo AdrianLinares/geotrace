@@ -1,5 +1,5 @@
 import { Control, FieldErrors, useWatch } from 'react-hook-form'
-import { MuestraForm } from '../../lib/validations/muestra.js'
+import { MuestraForm } from '@/lib/validations/muestra'
 import { Input } from '../../../components/ui/input'
 
 interface Props {
