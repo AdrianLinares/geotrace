@@ -11,7 +11,7 @@ El proyecto está configurado para desplegarse automáticamente en Cloudflare Pa
 1. **Configurar el proyecto en Cloudflare Pages**:
    - Vaya a Cloudflare Dashboard > Pages.
    - Conecte su repositorio de GitHub.
-   - Configure el proyecto con el nombre `catalogo-placas`.
+   - Configure el proyecto con el nombre `geotrace`.
 
 2. **Variables de Entorno en Cloudflare**:
    Establezca las siguientes variables de entorno en la configuración de Pages:

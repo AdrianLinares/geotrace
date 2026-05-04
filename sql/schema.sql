@@ -373,8 +373,8 @@ INSERT INTO persona (persona_id, nombre, rol, email, activo) VALUES
 ('CAT-03','Marlon Alejandro Suárez Díaz','Catalogador','masuarez@sgc.gov.co', true),
 ('CAT-04','Alejandro Díaz Vásquez','Catalogador','badiaz@sgc.gov.co', true),
 ('CAT-05','Jefferson S. Díaz Villamizar','Catalogador','jsdiaz@sgc.gov.co', true),
-('REV-01','Diana Esperanza Vanegas','Revisor','despitia@sgc.gov.co', true),
-('REV-02','Jairo Alexander Duarte Fuero','Revisor','jduarte@sgc.gov.co', true),
+('REV-01','Diana Espitia Vanegas','Revisor','despitiav@sgc.gov.co', true),
+('REV-02','Jairo Alexander Duarte','Revisor','jduarte@sgc.gov.co', true),
 ('ADM-01','Adrian Linares Murcia','Administrador','jlinares@sgc.gov.co', true)
 ON CONFLICT (persona_id) DO NOTHING;
 
