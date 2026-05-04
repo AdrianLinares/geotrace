@@ -1,5 +1,5 @@
-import { Control, FieldErrors, useWatch } from 'react-hook-form'
 import { MuestraForm } from '@/lib/validations/muestra'
+import { Control, FieldErrors, useWatch } from 'react-hook-form'
 import { Input } from '../../../components/ui/input'
 
 interface Props {
@@ -8,6 +8,8 @@ interface Props {
 }
 
 export default function TabProcedencia({ control, errors }: Props) {
+  // Procedencia y profundidad — contiene condiciones (p. ej. Pozo vs Superficie)
+  // - Validaciones de consistencia (tope < base, etc.) están en `muestraSchema`.
   const procedencia = useWatch({ control, name: 'procedencia_muestra' })
   const tipoProf = useWatch({ control, name: 'tipo_profundidad' })
 

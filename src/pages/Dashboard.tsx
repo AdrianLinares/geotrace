@@ -1,10 +1,9 @@
-import React from 'react'
+import { Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import AppLayout from '../components/layout/AppLayout'
-import { useDashboardKPIs, useEstadoCatalogacionDist, useOcupacionMuebles, useActividadReciente, usePlacasProblemas } from '../hooks/useDashboard'
+import { Badge } from '../components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
-import { Badge } from '../components/ui/badge'
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { useActividadReciente, useDashboardKPIs, useEstadoCatalogacionDist, useOcupacionMuebles, usePlacasProblemas } from '../hooks/useDashboard'
 
 const COLORES_ESTADO: Record<string, string> = {
   'Validado': '#28a745',
@@ -15,6 +14,15 @@ const COLORES_ESTADO: Record<string, string> = {
 }
 
 export default function Dashboard() {
+  // Dashboard compone varios widgets que consumen hooks específicos.
+  // Fuentes de datos:
+  // - KPIs: useDashboardKPIs()
+  // - Distribución por estado: useEstadoCatalogacionDist()
+  // - Ocupación por mueble: useOcupacionMuebles()
+  // - Actividad reciente: useActividadReciente()
+  // - Problemas/alertas: usePlacasProblemas()
+  //
+  // Cada hook devuelve { data, isLoading } siguiendo el patrón de React Query.
   const { data: kpis, isLoading: kpiLoading } = useDashboardKPIs()
   const { data: estadoDist, isLoading: estadoLoading } = useEstadoCatalogacionDist()
   const { data: ocupacion, isLoading: ocupLoading } = useOcupacionMuebles()
@@ -28,7 +36,7 @@ export default function Dashboard() {
         <p className="text-sm text-muted-foreground">Resumen del estado de catalogación</p>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards: representan métricas agregadas. Si `isLoading` mostramos `...` */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader><CardTitle>Total Placas</CardTitle></CardHeader>
@@ -48,7 +56,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Charts */}
+      {/* Charts: usan Recharts. Los datos deben venir en formato [{ name, value }] o similar según hook. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <Card>
           <CardHeader><CardTitle>Distribución por Estado</CardTitle></CardHeader>

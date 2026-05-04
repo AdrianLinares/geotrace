@@ -1,15 +1,18 @@
 import { Control, useWatch } from 'react-hook-form'
-import { PlacaForm } from '../../../lib/validations/placa'
-import { useMuestras } from '../../../hooks/useMuestras'
+import { Badge } from '../../../components/ui/badge'
 import { Button } from '../../../components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../components/ui/table'
-import { Badge } from '../../../components/ui/badge'
+import { useMuestras } from '../../../hooks/useMuestras'
+import { PlacaForm } from '../../../lib/validations/placa'
 
 interface Props {
   control: Control<PlacaForm>
 }
 
 export default function TabMuestras({ control }: Props) {
+  // Muestra una lista de muestras vinculadas a la placa.
+  // - Botones de 'Nueva' / 'Editar' deben abrir `MuestraModal`.
+  // - Current implementation usa `alert()` como placeholder.
   const placaId = useWatch({ control, name: 'placa_id' })
   const { data: muestras, isLoading } = useMuestras(0, placaId)
 

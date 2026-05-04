@@ -1,12 +1,22 @@
 import React, { useState } from 'react'
 import supabase from '../lib/supabase'
 
+/**
+ * Página de Login
+ * - Implementa inicio por "magic link" usando Supabase Auth (OTP por email)
+ * - Incluye lógica de cooldown para evitar rate-limits del proveedor
+ *
+ * Notas:
+ * - `cooldownUntil` guarda un timestamp en ms hasta el que no se permiten nuevos envíos
+ * - Se detecta `rate limit` en el mensaje de error y se aplica un cooldown mayor (15 min)
+ */
 export default function Login() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [cooldownUntil, setCooldownUntil] = useState<number>(0)
 
+  // Calcula segundos restantes del cooldown (>= 0)
   const cooldownRemaining = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000))
   const isOnCooldown = cooldownRemaining > 0
 
@@ -29,8 +39,10 @@ export default function Login() {
     setLoading(false)
 
     if (error) {
+      // Detectamos patrones comunes de rate limit en el mensaje del error
       const rateLimited = /rate limit|too many|exceeded|429/i.test(error.message)
       if (rateLimited) {
+        // Aplicamos cooldown largo cuando Supabase bloquea solicitudes
         setCooldownUntil(Date.now() + 15 * 60_000) // 15 minutos
         setMessage('Supabase bloqueó el envío por límite de velocidad. ESPERA 15 MINUTOS antes de reintentar.')
         return
@@ -40,6 +52,7 @@ export default function Login() {
       return
     }
 
+    // Envío exitoso: cooldown corto para evitar doble envío inmediato
     setCooldownUntil(Date.now() + 60_000)
     setMessage('Se envió un enlace mágico a tu correo. Revisa tu bandeja y espera antes de pedir otro.')
   }

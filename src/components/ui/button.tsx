@@ -1,6 +1,21 @@
-import * as React from "react"
+/**
+ * Button primitive
+ * - Exporta `Button` (componente) y `buttonVariants` (tokens de variantes).
+ * - Usa `class-variance-authority` (cva) para definir variantes y `cn` para
+ *   concatenar clases condicionales.
+ * - Accesibilidad:
+ *   - El componente respeta `disabled` y `aria-*` props heredados.
+ *   - Usa `focus-visible` para estilos de enfoque visibles.
+ * - Extender:
+ *   - Para añadir una nueva variante, actualice `buttonVariants` con la clase
+ *     deseada y use el nuevo `variant` en los consumos.
+ *   - Para casos especiales de marcado (p. ej. `Link`), use `asChild` para
+ *     renderizar con `Slot` y preservar props (útil para `next/link` u `a`).
+ */
+
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -35,7 +50,7 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  VariantProps<typeof buttonVariants> {
   asChild?: boolean
 }
 

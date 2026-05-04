@@ -1,23 +1,37 @@
-import React, { useEffect } from 'react'
-import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { placaSchema, PlacaForm } from '../../lib/validations/placa'
-import { useCreatePlaca, useUpdatePlaca } from '../../hooks/usePlacas'
-import { useAppStore } from '../../stores/appStore'
-import { supabase } from '../../lib/supabase'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs'
+import { useEffect } from 'react'
+import { FormProvider, useForm } from 'react-hook-form'
 import { Button } from '../../components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
+import { useCreatePlaca, useUpdatePlaca } from '../../hooks/usePlacas'
+import { supabase } from '../../lib/supabase'
+import { PlacaForm, placaSchema } from '../../lib/validations/placa'
+import { useAppStore } from '../../stores/appStore'
 import TabInformacionGeneral from './tabs/TabInformacionGeneral'
 import TabMarcado from './tabs/TabMarcado'
-import TabNotasManuscritas from './tabs/TabNotasManuscritas'
 import TabMuestras from './tabs/TabMuestras'
+import TabNotasManuscritas from './tabs/TabNotasManuscritas'
 
 interface Props {
   isOpen: boolean
   onClose: () => void
   placaToEdit?: PlacaForm & { placa_id?: string }
 }
+
+/**
+ * PlacaModal
+ * - Modal para crear/editar una `placa` con pestañas para secciones relacionadas:
+ *   información general, marcado, notas manuscritas y muestras.
+ * - Usa `react-hook-form` con `zod` (resolver) para validación.
+ * - Persiste datos en varias tablas (`placa`, `marcado_placa`, `nota_manuscrita`).
+ *
+ * Consejos para desarrolladores junior:
+ * - Las upserts múltiples aquí no son atómicas: en producción prefiera
+ *   una RPC/transaction en el servidor que haga todas las operaciones en una
+ *   sola transacción y valide permisos.
+ * - Evite lógica de negocio compleja en el cliente; úselo sólo para UX.
+ */
 
 export default function PlacaModal({ isOpen, onClose, placaToEdit }: Props) {
   const user = useAppStore(s => s.user)
@@ -71,7 +85,7 @@ export default function PlacaModal({ isOpen, onClose, placaToEdit }: Props) {
       // Save notas manuscritas if present
       if (values.notas && placaId) {
         for (const nota of values.notas) {
-          const notaId = `${placaId}_${nota.zona}_${Math.random().toString(36).slice(2,6)}`
+          const notaId = `${placaId}_${nota.zona}_${Math.random().toString(36).slice(2, 6)}`
           await supabase.from('nota_manuscrita').upsert({
             nota_id: notaId,
             placa_id: placaId,

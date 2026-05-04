@@ -1,12 +1,14 @@
-import { Control, useWatch } from 'react-hook-form'
 import { MuestraForm } from '@/lib/validations/muestra'
-import { Input } from '../../../components/ui/input'
+import { Control, useWatch } from 'react-hook-form'
 
 interface Props {
   control: Control<MuestraForm>
 }
 
 export default function TabConservacion({ control }: Props) {
+  // Esta pestaña recoge el estado de conservación.
+  // - Señala alertas críticas en la UI para que el conservador revise.
+  // - Los datos se guardarán en `estado_conservacion` desde MuestraModal.
   const vidrio = useWatch({ control, name: 'conservacion.vidrio_estado' })
   const hongos = useWatch({ control, name: 'conservacion.presencia_hongos' })
   const riesgo = useWatch({ control, name: 'conservacion.riesgo_contaminacion' })

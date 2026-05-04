@@ -1,5 +1,13 @@
 import { z } from 'zod'
 
+/**
+ * Esquema Zod para `placa`
+ * - Usado por `react-hook-form` como `resolver` para validación declarativa.
+ * - Mantener sincronía con la definición de la tabla en la base de datos
+ *   (`sql/schema.sql`) y con `src/types/database.ts`.
+ * - Para agregar reglas de validación complejas (p. ej. condicionales entre
+ *   campos), preferir `refine()` en el esquema y centralizar los mensajes.
+ */
 export const placaSchema = z.object({
   placa_id: z.string().optional(),
   coleccion_id: z.string().min(1, 'Seleccione una colección'),
@@ -12,7 +20,7 @@ export const placaSchema = z.object({
   tipo_rejilla: z.string().optional(),
   cubierta: z.enum(['Vidrio', 'Acetato']).optional(),
   tipo_abrazadera: z.enum(['Aluminio', 'Cartón']).optional(),
-  estado_catalogacion: z.enum(['En proceso','Incompleto','En revisión','Validado','Cerrado']).optional(),
+  estado_catalogacion: z.enum(['En proceso', 'Incompleto', 'En revisión', 'Validado', 'Cerrado']).optional(),
   marcado: z.object({
     tinta_negra: z.string().optional(),
     tinta_azul: z.string().optional(),
@@ -24,7 +32,7 @@ export const placaSchema = z.object({
     observaciones: z.string().optional(),
   }).optional(),
   notas: z.array(z.object({
-    zona: z.enum(['Izquierda','Derecha','Arriba','Abajo']),
+    zona: z.enum(['Izquierda', 'Derecha', 'Arriba', 'Abajo']),
     clave_nota: z.string().optional(),
     texto_nota: z.string().optional(),
   })).optional(),

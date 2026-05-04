@@ -1,21 +1,22 @@
-import React from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Dashboard from './pages/Dashboard'
-import Login from './pages/Login'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { WithAdmin, WithCurador } from './components/shared/roleGuards'
 import AuthCallback from './pages/AuthCallback'
-import ColeccionesPage from './pages/colecciones/ColeccionesPage'
-import PlacasPage from './pages/placas/PlacasPage'
-import UbicacionesPage from './pages/ubicaciones/UbicacionesPage'
 import CatalogosPage from './pages/catalogos/CatalogosPage'
-import ReportesPage from './pages/reportes/ReportesPage'
-import InventarioColeccion from './pages/reportes/InventarioColeccion'
-import PlacasProblemas from './pages/reportes/PlacasProblemas'
-import OcupacionMuebles from './pages/reportes/OcupacionMuebles'
-import GestionUsuarios from './pages/usuarios/GestionUsuarios'
+import ColeccionesPage from './pages/colecciones/ColeccionesPage'
+import Dashboard from './pages/Dashboard'
 import ImportarDatos from './pages/importar/ImportarDatos'
-import { WithAdmin, WithCurador, WithRevisor } from './components/shared/roleGuards'
+import Login from './pages/Login'
+import PlacasPage from './pages/placas/PlacasPage'
+import InventarioColeccion from './pages/reportes/InventarioColeccion'
+import OcupacionMuebles from './pages/reportes/OcupacionMuebles'
+import PlacasProblemas from './pages/reportes/PlacasProblemas'
+import ReportesPage from './pages/reportes/ReportesPage'
+import UbicacionesPage from './pages/ubicaciones/UbicacionesPage'
+import GestionUsuarios from './pages/usuarios/GestionUsuarios'
 
 export default function App() {
+  // `App` define las rutas de la aplicación. Se separan rutas públicas,
+  // rutas que requieren autenticación y rutas por rol mediante los guards en `roleGuards.tsx`.
   return (
     <BrowserRouter>
       <Routes>
@@ -34,13 +35,14 @@ export default function App() {
         <Route path="/reportes/ocupacion-muebles" element={<OcupacionMuebles />} />
 
         {/* Curador+ (acceso a catálogos) */}
+        {/* Wrap con WithCurador para permitir sólo a curadores y admins */}
         <Route path="/catalogos" element={<WithCurador><CatalogosPage /></WithCurador>} />
 
-        {/* Admin-only routes */}
+        {/* Admin-only routes (gestión de usuarios, importación) */}
         <Route path="/usuarios" element={<WithAdmin><GestionUsuarios /></WithAdmin>} />
         <Route path="/importar" element={<WithAdmin><ImportarDatos /></WithAdmin>} />
 
-        {/* Fallback */}
+        {/* Fallback: redirige a dashboard si ruta no existe */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

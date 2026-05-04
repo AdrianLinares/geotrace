@@ -1,15 +1,23 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import supabase from '../lib/supabase'
 import { Muestra } from '../types/database'
 
+// Paginación por defecto para muestras
 const PAGE_SIZE = 20
 
+/**
+ * useMuestras
+ * - Lista muestras con paginación.
+ * - Si `placaId` está presente, filtra por `placa_id`.
+ * - `enabled` se usa para controlar ejecución; aquí está activada por defecto
+ *   (se permite `page >= 0`) pero puedes deshabilitar si necesario.
+ */
 export function useMuestras(page = 0, placaId?: string) {
   return useQuery({
     queryKey: ['muestras', page, placaId],
     queryFn: async () => {
       const from = page * PAGE_SIZE;
-      const to = from + PAGE_SIZE -1;
+      const to = from + PAGE_SIZE - 1;
       let query = supabase.from('muestra').select('*', { count: 'exact' }).range(from, to);
       if (placaId) query = query.eq('placa_id', placaId);
       const { data, error, count } = await query;

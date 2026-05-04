@@ -1,5 +1,12 @@
 import { z } from 'zod'
 
+/**
+ * Esquema Zod para `muestra`
+ * - Utilizado por los formularios del frontend para validar entradas.
+ * - Validaciones complejas (p. ej. `profundidad_tope < profundidad_base`) deben
+ *   implementarse con `refine` y documentarse aquí para que los tests los cubran.
+ * - Asegúrate de mantener los mensajes de error claros y traducidos.
+ */
 export const muestraSchema = z.object({
   muestra_id: z.string().optional(),
   placa_id: z.string().min(1, 'Seleccione una placa'),
@@ -15,7 +22,7 @@ export const muestraSchema = z.object({
   igm: z.string().optional(),
   no_preparacion: z.string().optional(),
   info_inferida: z.boolean().optional(),
-  estado_catalogacion: z.enum(['En proceso','Incompleto','En revisión','Validado','Cerrado']).optional(),
+  estado_catalogacion: z.enum(['En proceso', 'Incompleto', 'En revisión', 'Validado', 'Cerrado']).optional(),
   // Nested objects
   geologia: z.object({
     unidad_lito: z.string().optional(),
@@ -27,13 +34,13 @@ export const muestraSchema = z.object({
   }).optional(),
   microfauna: z.array(z.object({
     genero_especie: z.string().min(1, 'Requerido'),
-    abundancia: z.enum(['Nulo','Escaso','Moderado','Abundante','Muy abundante']).optional(),
-    estado_preservacion: z.enum(['Excelente','Bueno','Regular','Malo']).optional(),
+    abundancia: z.enum(['Nulo', 'Escaso', 'Moderado', 'Abundante', 'Muy abundante']).optional(),
+    estado_preservacion: z.enum(['Excelente', 'Bueno', 'Regular', 'Malo']).optional(),
     observaciones: z.string().optional(),
   })).optional(),
   empresas: z.array(z.object({
     empresa_id: z.string().min(1, 'Seleccione empresa'),
-    rol: z.enum(['Operador','Consultor','Laboratorio']),
+    rol: z.enum(['Operador', 'Consultor', 'Laboratorio']),
   })).optional(),
   disposicion: z.array(z.object({
     tipo_cavidad: z.string().optional(),
@@ -41,7 +48,7 @@ export const muestraSchema = z.object({
     cavidad_nro: z.number().optional(),
     material_presente: z.boolean().optional(),
     material_estado: z.string().optional(),
-    cantidad_cualitativa: z.enum(['Escaso','Moderado','Abundante']).optional(),
+    cantidad_cualitativa: z.enum(['Escaso', 'Moderado', 'Abundante']).optional(),
   })).optional(),
   conservacion: z.object({
     vidrio_estado: z.string().optional(),

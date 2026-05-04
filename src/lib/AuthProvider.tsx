@@ -1,9 +1,21 @@
 import React, { useEffect, useRef } from 'react'
-import supabase from './supabase'
 import { useAppStore } from '../stores/appStore'
+import supabase from './supabase'
 
 type Props = { children: React.ReactNode }
 
+/**
+ * AuthProvider
+ * - Inicializa el estado de autenticación desde Supabase al montar la app
+ * - Escucha eventos de autenticación (signin/signout) y actualiza `useAppStore`
+ * - Encapsula la lógica de cargar la `persona` desde la tabla `persona`
+ *
+ * Notas importantes para un junior:
+ * - `mounted` evita actualizaciones después del desmontaje (race conditions)
+ * - `sessionHandled` se usa para marcar que la carga inicial se completó
+ * - Se ignoran eventos `INITIAL_SESSION` y `TOKEN_REFRESHED` porque
+ *   `getSession()` ya entrega el estado inicial.
+ */
 export default function AuthProvider({ children }: Props) {
   const setUser = useAppStore((s) => s.setUser)
   const setAuthLoading = useAppStore((s) => s.setAuthLoading)
@@ -14,7 +26,7 @@ export default function AuthProvider({ children }: Props) {
     mounted.current = true
     console.log('AuthProvider: Montando')
 
-    // Single source of truth: getSession on mount
+    // Obtener la sesión inicial una sola vez al montar
     supabase.auth.getSession().then(({ data, error }) => {
       if (!mounted.current) return
       if (error) {
@@ -23,13 +35,16 @@ export default function AuthProvider({ children }: Props) {
         setAuthLoading(false)
         return
       }
+
       if (data.session?.user) {
+        // Si hay sesión, cargamos la persona asociada por email
         console.log('AuthProvider: Sesión inicial encontrada', data.session.user.email)
         fetchPersonaAndSet(data.session.user.email).finally(() => {
           sessionHandled.current = true
           if (mounted.current) setAuthLoading(false)
         })
       } else {
+        // No hay sesión: usuario nulo
         console.log('AuthProvider: Sin sesión inicial')
         setUser(null)
         sessionHandled.current = true
@@ -37,30 +52,39 @@ export default function AuthProvider({ children }: Props) {
       }
     })
 
-    // Only react to future sign-in / sign-out events
+    // Listener para cambios posteriores en el estado de auth (signin/signout)
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted.current) return
+      // Filtramos eventos que no requieren acción manual
       if (event === 'INITIAL_SESSION') return
       if (event === 'TOKEN_REFRESHED') return
 
       console.log('AuthProvider: onAuthStateChange', { event, hasSession: !!session })
 
       if (event === 'SIGNED_IN' && session?.user) {
+        // Cuando un usuario firma, recargamos su `persona` desde la tabla
         setAuthLoading(true)
         fetchPersonaAndSet(session.user.email).finally(() => {
           if (mounted.current) setAuthLoading(false)
         })
       } else if (event === 'SIGNED_OUT') {
+        // Al cerrar sesión, limpiamos el usuario en el store
         setUser(null)
       }
     })
 
     return () => {
+      // Evitar actualizaciones asíncronas después del desmontaje
       mounted.current = false
       listener?.subscription.unsubscribe()
     }
   }, [])
 
+  /**
+   * Busca la fila `persona` que corresponde al email y la carga en el store.
+   * - Si no encuentra persona, setUser(null)
+   * - Se usa `ilike` para coincidencia case-insensitive
+   */
   async function fetchPersonaAndSet(email?: string | null) {
     if (!email) { setUser(null); return }
     try {
@@ -82,6 +106,7 @@ export default function AuthProvider({ children }: Props) {
       }
       const p = data[0]
       console.log('AuthProvider: Persona cargada', p.nombre, p.rol)
+      // Mapeo mínimo: persona_id, nombre y rol (usado por roleGuards)
       setUser({ persona_id: p.persona_id, nombre: p.nombre, rol: p.rol })
     } catch (e) {
       console.error('AuthProvider: Error inesperado', e)

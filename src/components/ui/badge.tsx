@@ -1,5 +1,14 @@
-import * as React from "react"
+/**
+ * Badge primitive
+ * - Pequeñas etiquetas de estado/contadores que usan variantes de color.
+ * - Mantén las variantes en `badgeVariants` para consistencia visual.
+ * - Accesibilidad: evita usar `role="status"` a menos que tenga significado
+ *   semántico; para conteos dinámicos, considera `aria-live="polite"` en
+ *   el contenedor que cambie.
+ */
+
 import { cn } from "@/lib/utils"
+import * as React from "react"
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'secondary' | 'destructive' | 'outline'

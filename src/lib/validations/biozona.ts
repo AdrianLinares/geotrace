@@ -1,5 +1,11 @@
 import { z } from 'zod'
 
+/**
+ * Esquemas para Biozonas
+ * - `biozonaSchema` valida el catálogo maestro de biozonas.
+ * - `sinonimoBiozonaSchema` valida entradas de sinónimos.
+ * - Mantener mensajes de error claros y consistentes para uso en UI.
+ */
 export const biozonaSchema = z.object({
   biozona_id: z.string().min(1, 'Requerido'),
   nombre_biozona: z.string().min(1, 'Requerido'),

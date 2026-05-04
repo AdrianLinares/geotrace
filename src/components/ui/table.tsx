@@ -1,6 +1,9 @@
-import * as React from "react"
 import { cn } from "@/lib/utils"
+import * as React from "react"
 
+// Primitive table components used por la app. Encapsulan estilos comunes
+// y proporcionan un API consistente para las tablas (Table, TableHeader, etc.).
+// - `cn` es la utility para combinar clases condicionalmente.
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
     <div className="relative w-full overflow-auto">
@@ -68,10 +71,6 @@ const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<
 TableCell.displayName = "TableCell"
 
 export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 }
+

@@ -1,19 +1,19 @@
-import React, { useEffect } from 'react'
-import { useForm, FormProvider } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { muestraSchema, MuestraForm } from '../../lib/validations/muestra'
-import { useCreateMuestra, useUpdateMuestra } from '../../hooks/useMuestras'
-import { useAppStore } from '../../stores/appStore'
-import { supabase } from '../../lib/supabase'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs'
+import { useEffect } from 'react'
+import { FormProvider, useForm } from 'react-hook-form'
 import { Button } from '../../components/ui/button'
-import TabProcedencia from './tabs/TabProcedencia'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
+import { useCreateMuestra, useUpdateMuestra } from '../../hooks/useMuestras'
+import { supabase } from '../../lib/supabase'
+import { MuestraForm, muestraSchema } from '../../lib/validations/muestra'
+import { useAppStore } from '../../stores/appStore'
+import TabConservacion from './tabs/TabConservacion'
+import TabDisposicion from './tabs/TabDisposicion'
+import TabEmpresas from './tabs/TabEmpresas'
 import TabGeologia from './tabs/TabGeologia'
 import TabMicrofauna from './tabs/TabMicrofauna'
-import TabEmpresas from './tabs/TabEmpresas'
-import TabDisposicion from './tabs/TabDisposicion'
-import TabConservacion from './tabs/TabConservacion'
+import TabProcedencia from './tabs/TabProcedencia'
 
 interface Props {
   isOpen: boolean
@@ -21,6 +21,19 @@ interface Props {
   muestraToEdit?: MuestraForm & { muestra_id?: string }
   placaId?: string // if creating from a placa
 }
+
+/**
+ * MuestraModal
+ * - Modal para crear/editar una `muestra`, dividido en pestañas por áreas
+ *   (procedencia, geología, microfauna, etc.).
+ * - Almacena datos en múltiples tablas relacionadas; las operaciones actuales
+ *   realizan deletes/inserts/upserts desde el cliente.
+ *
+ * Consejos para juniors:
+ * - Estas operaciones no son atómicas: usar una función del servidor (RPC)
+ *   para agrupar validación y persistencia en una transacción.
+ * - Mantener la validación primaria en `zod` y validar permisos en el backend.
+ */
 
 export default function MuestraModal({ isOpen, onClose, muestraToEdit, placaId }: Props) {
   const user = useAppStore(s => s.user)

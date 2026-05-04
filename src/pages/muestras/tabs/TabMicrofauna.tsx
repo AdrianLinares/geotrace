@@ -1,5 +1,5 @@
-import { Control, useFieldArray } from 'react-hook-form'
 import { MuestraForm } from '@/lib/validations/muestra'
+import { Control, useFieldArray } from 'react-hook-form'
 import { Button } from '../../../components/ui/button'
 
 interface Props {
@@ -7,6 +7,8 @@ interface Props {
 }
 
 export default function TabMicrofauna({ control }: Props) {
+  // Tabla dinámica para microfauna; se persiste borrando e insertando
+  // registros desde el cliente. Para grandes volúmenes, migrar a RPC.
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'microfauna',

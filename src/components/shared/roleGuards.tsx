@@ -2,6 +2,14 @@ import React from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAppStore } from '../../stores/appStore'
 
+/**
+ * roleGuards.tsx
+ * - Provee wrappers (Higher Order Components) para proteger rutas por rol.
+ * - Uso: envolver una ruta con `<WithAdmin>...</WithAdmin>` para restringir.
+ * - Importante: los roles deben venir del `AuthProvider` y ser comparados
+ *   normalizados (lowercase) para evitar problemas con mayúsculas.
+ */
+
 interface GuardProps {
     children: React.ReactNode
 }

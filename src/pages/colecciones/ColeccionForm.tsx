@@ -1,10 +1,9 @@
-import React from 'react'
-import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { coleccionSchema } from '../../lib/validations/coleccion'
-import type { ColeccionForm } from '../../lib/validations/coleccion'
-import { Input } from '../../components/ui/input'
+import { useForm } from 'react-hook-form'
 import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
+import type { ColeccionForm } from '../../lib/validations/coleccion'
+import { coleccionSchema } from '../../lib/validations/coleccion'
 
 type Props = {
   defaultValues?: Partial<ColeccionForm>
@@ -12,6 +11,12 @@ type Props = {
   onCancel?: () => void
 }
 
+/**
+ * Formulario de colección
+ * - Usa `react-hook-form` + `zod` (resolver) para validación declarativa.
+ * - `defaultValues` permite usar el mismo formulario para crear y editar.
+ * - Para añadir campos: actualizar `coleccionSchema` en `lib/validations/coleccion`.
+ */
 export default function ColeccionForm({ defaultValues, onSubmit, onCancel }: Props) {
   const { register, handleSubmit, formState: { errors } } = useForm<ColeccionForm>({
     resolver: zodResolver(coleccionSchema) as any,

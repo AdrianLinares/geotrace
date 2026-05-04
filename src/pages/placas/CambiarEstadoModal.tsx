@@ -1,16 +1,26 @@
-import React, { useState } from 'react'
-import { useAppStore } from '../../stores/appStore'
-import { useCambiarEstado } from '../../hooks/usePlacas'
-import { Placa } from '../../types/database'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog'
+import { useState } from 'react'
 import { Button } from '../../components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog'
 import { Textarea } from '../../components/ui/textarea'
+import { useCambiarEstado } from '../../hooks/usePlacas'
+import { useAppStore } from '../../stores/appStore'
+import { Placa } from '../../types/database'
 
 interface Props {
   isOpen: boolean
   onClose: () => void
   placa: Placa | null
 }
+
+/**
+ * CambiarEstadoModal
+ * - Modal para cambiar el `estado_catalogacion` de una placa.
+ * - Muestra transiciones permitidas (cliente-UX). La validación final
+ *   y permisos deben estar en el servidor (RLS / funciones) — esto evita
+ *   que un usuario manipule peticiones directamente.
+ * - Mantener `TRANSITIONS` sincronizado con cualquier regla de negocio
+ *   definida en el backend.
+ */
 
 const TRANSITIONS: Record<string, string[]> = {
   'En proceso': ['Incompleto', 'En revisión'],
@@ -27,8 +37,8 @@ export default function CambiarEstadoModal({ isOpen, onClose, placa }: Props) {
 
   const allowed = placa?.estado_catalogacion
     ? (placa.estado_catalogacion === 'Validado'
-        ? (['Curador', 'Administrador'].includes(user?.rol || '') ? ['En proceso'] : [])
-        : TRANSITIONS[placa.estado_catalogacion] || [])
+      ? (['Curador', 'Administrador'].includes(user?.rol || '') ? ['En proceso'] : [])
+      : TRANSITIONS[placa.estado_catalogacion] || [])
     : []
 
   async function handleConfirm() {

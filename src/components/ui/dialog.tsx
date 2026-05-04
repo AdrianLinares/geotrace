@@ -1,7 +1,17 @@
-import * as React from "react"
-import * as DialogPrimitive from "@radix-ui/react-dialog"
+/**
+ * Dialog primitive (Radix)
+ * - Componente modal accesible basado en `@radix-ui/react-dialog`.
+ * - Incluye overlay, contenido, título y descripción con estilos del proyecto.
+ * - Accesibilidad: Radix gestiona foco y `aria` internamente; use `DialogTitle`
+ *   y `DialogDescription` para conectarlos correctamente.
+ * - Extender: Si el modal contiene formularios largos, habilitar `max-h` y
+ *   `overflow-y-auto` (ya aplicado) para evitar problemas en pantallas pequeñas.
+ */
+
 import { cn } from "@/lib/utils"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
+import * as React from "react"
 
 const Dialog = DialogPrimitive.Root
 const DialogTrigger = DialogPrimitive.Trigger
@@ -83,12 +93,6 @@ const DialogDescription = React.forwardRef<
 DialogDescription.displayName = DialogPrimitive.Description.displayName
 
 export {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogClose,
-  DialogPortal,
+  Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogPortal, DialogTitle, DialogTrigger
 }
+

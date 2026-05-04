@@ -1,15 +1,26 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import supabase from '../lib/supabase'
-import { Coleccion, PaginatedResult } from '../types/database'
+import { Coleccion } from '../types/database'
 
+// Paginación simple: número de registros por página (ajustable)
 const PAGE_SIZE = 20
 
+/**
+ * useColecciones
+ * - Devuelve páginas de colecciones con contador `total`.
+ * - `queryKey` incluye `page` y `search` para caching/invalidación por combinación.
+ * - Usa `ilike` para búsqueda case-insensitive en `nombre_coleccion`.
+ *
+ * Nota para juniors: React Query maneja la caché por `queryKey`. Si invalidas
+ * `['colecciones']` en una mutación, todas las variaciones (distintas páginas)
+ * se invalidarán y volverán a refetch — esto es aceptable aquí pero puede optimizarse.
+ */
 export function useColecciones(page = 0, search?: string) {
   return useQuery({
     queryKey: ['colecciones', page, search],
     queryFn: async () => {
       const from = page * PAGE_SIZE
-      const to = from + PAGE_SIZE -1
+      const to = from + PAGE_SIZE - 1
 
       let query = supabase.from('coleccion').select('*', { count: 'exact' }).range(from, to)
       if (search) query = query.ilike('nombre_coleccion', `%${search}%`)
@@ -21,6 +32,11 @@ export function useColecciones(page = 0, search?: string) {
   })
 }
 
+/**
+ * useColeccion
+ * - Obtiene una sola colección por `coleccion_id`.
+ * - `enabled: !!id` evita ejecutar la query si `id` es falsy.
+ */
 export function useColeccion(id?: string) {
   return useQuery({
     queryKey: ['coleccion', id],
@@ -34,6 +50,11 @@ export function useColeccion(id?: string) {
   })
 }
 
+/**
+ * Mutations: crear / actualizar colecciones
+ * - Invalidan `['colecciones']` para forzar re-fetch.
+ * - Consideración: si la app escala, usar invalidación más específica o actualizar la cache manualmente.
+ */
 export function useCreateColeccion() {
   const qc = useQueryClient()
   return useMutation({

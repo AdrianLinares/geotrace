@@ -1,6 +1,10 @@
-import * as React from "react"
 import { cn } from "@/lib/utils"
+import * as React from "react"
 
+// Componente Card: primitives para construir tarjetas reutilizables.
+// - Usa `cn` para combinar clases Tailwind condicionalmente.
+// - Cada subcomponente (`CardHeader`, `CardTitle`, `CardContent`) es un wrapper
+//   con estilos por defecto: puedes pasar `className` para ajustar.
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -53,4 +57,5 @@ const CardDescription = React.forwardRef<
 ))
 CardDescription.displayName = "CardDescription"
 
-export { Card, CardHeader, CardTitle, CardContent, CardDescription }
+export { Card, CardContent, CardDescription, CardHeader, CardTitle }
+

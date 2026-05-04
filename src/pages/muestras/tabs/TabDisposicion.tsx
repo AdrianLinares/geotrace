@@ -1,5 +1,5 @@
-import { Control, useFieldArray } from 'react-hook-form'
 import { MuestraForm } from '@/lib/validations/muestra'
+import { Control, useFieldArray } from 'react-hook-form'
 import { Button } from '../../../components/ui/button'
 
 interface Props {
@@ -7,6 +7,9 @@ interface Props {
 }
 
 export default function TabDisposicion({ control }: Props) {
+  // Maneja una lista dinámica de disposiciones (useFieldArray).
+  // - useFieldArray facilita agregar/eliminar filas en formularios complejos.
+  // - Al persistir, MuestraModal borra las previas y vuelve a insertar.
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'disposicion',

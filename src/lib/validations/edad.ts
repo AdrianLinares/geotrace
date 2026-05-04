@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+/**
+ * Esquemas para Edades
+ * - `edadSchema` valida rangos y nombres de edades geológicas.
+ * - Para validaciones de consistencia (base <= tope) añadir `refine()`.
+ */
 export const edadSchema = z.object({
   edad_id: z.string().min(1, 'Requerido'),
   nombre_edad: z.string().min(1, 'Requerido'),

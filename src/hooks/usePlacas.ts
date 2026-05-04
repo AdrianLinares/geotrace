@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import supabase from '../lib/supabase'
-import { Placa, PaginatedResult } from '../types/database'
+import { Placa } from '../types/database'
 
 const PAGE_SIZE = 20
 
@@ -11,12 +11,20 @@ type PlacaFilters = {
   search?: string
 }
 
+/**
+ * usePlacas
+ * - Soporta filtros y paginación.
+ * - `filters` puede contener `estado_catalogacion` (array) para filtrar con `in`.
+ * - Para búsquedas simples usamos `or` con `ilike` en `placa_id` y `ubicacion_id`.
+ *
+ * Nota: la consulta usa `count: 'exact'` para devolver `total` en la respuesta.
+ */
 export function usePlacas(page = 0, filters?: PlacaFilters) {
   return useQuery({
     queryKey: ['placas', page, filters],
     queryFn: async () => {
       const from = page * PAGE_SIZE
-      const to = from + PAGE_SIZE -1
+      const to = from + PAGE_SIZE - 1
 
       let query = supabase.from('placa').select('*', { count: 'exact' }).range(from, to)
 
@@ -71,7 +79,9 @@ export function useUpdatePlaca() {
   })
 }
 
-// Allowed transitions
+// Allowed transitions (client-side mapping)
+// - Estas reglas son sólo una ayuda UX; la autorización y validación
+//   final debe aplicarse en el backend (RLS / triggers) para seguridad.
 const TRANSITIONS: Record<string, string[]> = {
   'En proceso': ['Incompleto', 'En revisión'],
   'En revisión': ['Validado', 'Incompleto'],
@@ -79,6 +89,13 @@ const TRANSITIONS: Record<string, string[]> = {
   'Validado': [], // only Curador/Admin can reopen
 }
 
+/**
+ * useCambiarEstado
+ * - Cambia el estado de una placa y escribe una entrada en `auditoria_cambios`.
+ * - Importante: la función lee el estado actual, hace update y luego crea auditoría.
+ * - Riesgos: hay operaciones asíncronas encadenadas; en alta concurrencia conviene
+ *   usar transacciones en el servidor (Postgres) para evitar inconsistencias.
+ */
 export function useCambiarEstado() {
   const qc = useQueryClient()
   return useMutation({
@@ -92,6 +109,7 @@ export function useCambiarEstado() {
       const { data, error: updError } = await supabase.from('placa').update({ estado_catalogacion: nuevoEstado }).eq('placa_id', placa_id).select().single()
       if (updError) throw updError
       // Insert audit
+      const currentUser = await supabase.auth.getUser()
       await supabase.from('auditoria_cambios').insert({
         tabla: 'placa',
         registro_id: placa_id,
@@ -99,7 +117,7 @@ export function useCambiarEstado() {
         campo_modificado: 'estado_catalogacion',
         valor_anterior: actual,
         valor_nuevo: nuevoEstado,
-        usuario_id: (await supabase.auth.getUser()).data.user?.id,
+        usuario_id: currentUser.data.user?.id,
       })
       return data
     },

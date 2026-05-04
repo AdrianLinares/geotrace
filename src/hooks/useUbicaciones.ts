@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import supabase from '../lib/supabase'
-import { UbicacionFisica, PaginatedResult } from '../types/database'
+import { UbicacionFisica } from '../types/database'
 
 const PAGE_SIZE = 50
 
@@ -9,12 +9,17 @@ type UbicacionFilters = {
   ocupada?: boolean
 }
 
+/**
+ * useUbicaciones
+ * - Paginación de ubicaciones físicas (muebles/estantes)
+ * - `ocupada` es un booleano opcional que filtra por ocupación
+ */
 export function useUbicaciones(page = 0, filters?: UbicacionFilters) {
   return useQuery({
     queryKey: ['ubicaciones', page, filters],
     queryFn: async () => {
       const from = page * PAGE_SIZE
-      const to = from + PAGE_SIZE -1
+      const to = from + PAGE_SIZE - 1
       let query = supabase.from('ubicacion_fisica').select('*', { count: 'exact' }).range(from, to)
       if (filters?.mueble_cod) query = query.eq('mueble_cod', filters.mueble_cod)
       if (typeof filters?.ocupada === 'boolean') query = query.eq('ocupada', filters.ocupada)

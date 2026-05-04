@@ -1,5 +1,5 @@
-import { Control, FieldErrors } from 'react-hook-form'
 import { PlacaForm } from '@/lib/validations/placa'
+import { Control, FieldErrors } from 'react-hook-form'
 import { Input } from '../../../components/ui/input'
 
 interface Props {
@@ -8,6 +8,8 @@ interface Props {
 }
 
 export default function TabMarcado({ control, errors }: Props) {
+  // Campos relacionados al marcado físico de la placa (tintas, lápiz, impresión)
+  // - Estos valores se guardan en `marcado_placa` desde el modal.
   return (
     <div className="space-y-4">
       <div>

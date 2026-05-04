@@ -1,8 +1,16 @@
-import * as React from "react"
+/**
+ * Textarea primitive
+ * - Textarea estilizada con tokens de proyecto y estilos de foco.
+ * - Forwardea todos los props nativos; mantiene `aria-*` y manejo de `disabled`.
+ * - Para inputs largos que requieren ayuda al usuario, considere añadir
+ *   un contador de caracteres o `aria-describedby` para mensajes de error.
+ */
+
 import { cn } from "@/lib/utils"
+import * as React from "react"
 
 export interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> { }
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, ...props }, ref) => (

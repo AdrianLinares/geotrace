@@ -1,6 +1,14 @@
-import * as React from "react"
-import * as TabsPrimitive from "@radix-ui/react-tabs"
+/**
+ * Tabs primitive (Radix)
+ * - Componentes de pestañas accesibles construidos sobre Radix Tabs.
+ * - Use `Tabs`, `TabsList`, `TabsTrigger` y `TabsContent` para montar
+ *   interfaces por secciones (ej. formularios con pestañas).
+ * - Accesibilidad: Radix gestiona roles y navegación por teclado.
+ */
+
 import { cn } from "@/lib/utils"
+import * as TabsPrimitive from "@radix-ui/react-tabs"
+import * as React from "react"
 
 const Tabs = TabsPrimitive.Root
 
@@ -46,4 +54,5 @@ const TabsContent = React.forwardRef<
 ))
 TabsContent.displayName = TabsPrimitive.Content.displayName
 
-export { Tabs, TabsList, TabsTrigger, TabsContent }
+export { Tabs, TabsContent, TabsList, TabsTrigger }
+

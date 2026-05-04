@@ -1,5 +1,5 @@
-import { Control, FieldErrors } from 'react-hook-form'
 import { MuestraForm } from '@/lib/validations/muestra'
+import { Control, FieldErrors } from 'react-hook-form'
 import { Input } from '../../../components/ui/input'
 
 interface Props {
@@ -8,6 +8,9 @@ interface Props {
 }
 
 export default function TabGeologia({ control, errors }: Props) {
+  // Campos de geología — usualmente enlazan a catálogos maestros
+  // (unidad lito, biozona, edad). Para mejorar UX, sustituir inputs por
+  // autocompletes que consulten esos catálogos.
   return (
     <div className="space-y-4">
       <div>

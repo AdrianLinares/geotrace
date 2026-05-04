@@ -1,6 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import supabase from '../lib/supabase'
-import { Coleccion, Placa, UbicacionFisica, AuditoriaCambio } from '../types/database'
+import { AuditoriaCambio } from '../types/database'
+
+/**
+ * Hooks de dashboard
+ * - Pequeños helpers que agregan lógica de agregación para las vistas
+ * - Usan llamadas directas a Supabase; si los queries crecen, considerar mover
+ *   lógica agregada al backend (views o RPC) para rendimiento.
+ */
 
 // KPIs
 export function useDashboardKPIs() {
@@ -44,10 +51,10 @@ export function useEstadoCatalogacionDist() {
       if (error) throw error
 
       const counts: Record<string, number> = {}
-      ;(data as any[]).forEach(r => {
-        const e = r.estado_catalogacion || 'Sin estado'
-        counts[e] = (counts[e] || 0) + 1
-      })
+        ; (data as any[]).forEach(r => {
+          const e = r.estado_catalogacion || 'Sin estado'
+          counts[e] = (counts[e] || 0) + 1
+        })
 
       return Object.entries(counts).map(([name, value]) => ({ name, value }))
     }
@@ -66,12 +73,12 @@ export function useOcupacionMuebles() {
       if (error) throw error
 
       const stats: Record<string, { total: number, ocupadas: number }> = {}
-      ;(data as any[]).forEach(r => {
-        const m = r.mueble_cod || 'Sin mueble'
-        if (!stats[m]) stats[m] = { total: 0, ocupadas: 0 }
-        stats[m].total++
-        if (r.ocupada) stats[m].ocupadas++
-      })
+        ; (data as any[]).forEach(r => {
+          const m = r.mueble_cod || 'Sin mueble'
+          if (!stats[m]) stats[m] = { total: 0, ocupadas: 0 }
+          stats[m].total++
+          if (r.ocupada) stats[m].ocupadas++
+        })
 
       return Object.entries(stats).map(([name, s]) => ({
         name,

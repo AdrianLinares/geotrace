@@ -1,8 +1,18 @@
-import * as React from "react"
+/**
+ * Input primitive
+ * - Wraps a native `<input>` with consistent design tokens and focus styles.
+ * - All native props (`aria-*`, `type`, `disabled`, etc.) are forwarded.
+ * - Accessibility: keep `aria-*` attributes on the input when used inside
+ *   custom components (labels must use `htmlFor` when outside).
+ * - Extender: to add custom behaviors (e.g., clear button for `type=search`),
+ *   prefer composing this primitive rather than mutating it directly.
+ */
+
 import { cn } from "@/lib/utils"
+import * as React from "react"
 
 export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {}
+  extends React.InputHTMLAttributes<HTMLInputElement> { }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => {

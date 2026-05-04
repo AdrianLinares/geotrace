@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+/**
+ * Esquemas para Unidad Litoestratigráfica y sinónimos
+ * - `unidadLitoSchema` incluye un array de sinónimos; al persistir,
+ *   tener cuidado con la normalización (evitar duplicados).
+ */
 // Sinónimo schema
 export const sinonimoLitoSchema = z.object({
   sinonimo_lito_id: z.string().min(1, 'Requerido'),

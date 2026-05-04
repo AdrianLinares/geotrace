@@ -1,13 +1,23 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import AppLayout from '../../components/layout/AppLayout'
-import { useColecciones, useCreateColeccion, useUpdateColeccion } from '../../hooks/useColecciones'
-import ColeccionForm from './ColeccionForm'
-import { Coleccion } from '../../types/database'
 import { Button } from '../../components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog'
 import { Input } from '../../components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
+import { useColecciones, useCreateColeccion, useUpdateColeccion } from '../../hooks/useColecciones'
+import { Coleccion } from '../../types/database'
+import ColeccionForm from './ColeccionForm'
 
+/**
+ * ColeccionesPage
+ * - Página CRUD básica para colecciones.
+ * - Usa `useColecciones` para obtener la lista (paginada) y mutaciones para crear/editar.
+ * - El formulario usa `react-hook-form` + `zod` para validación (ver `ColeccionForm`).
+ *
+ * Puntos a revisar para un junior:
+ * - La búsqueda (`q`) se pasa al hook para filtrar; la paginación básica está preparada.
+ * - Manejo de errores: aquí sólo se hace `console.error`; en PRs futuros considera mostrar mensajes UI.
+ */
 export default function ColeccionesPage() {
   const [page, setPage] = useState(0)
   const [q, setQ] = useState('')

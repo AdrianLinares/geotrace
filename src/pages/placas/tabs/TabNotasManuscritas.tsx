@@ -1,12 +1,14 @@
 import { Control, useFieldArray } from 'react-hook-form'
-import { PlacaForm } from '../../../lib/validations/placa'
 import { Button } from '../../../components/ui/button'
+import { PlacaForm } from '../../../lib/validations/placa'
 
 interface Props {
   control: Control<PlacaForm>
 }
 
 export default function TabNotasManuscritas({ control }: Props) {
+  // Notas manuscritas vinculadas a la placa.
+  // - El id de nota se genera en `PlacaModal` al persistir.
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'notas',

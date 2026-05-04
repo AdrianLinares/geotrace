@@ -1,8 +1,8 @@
 import { Control, FieldErrors, useWatch } from 'react-hook-form'
-import { PlacaForm } from '../../../lib/validations/placa'
 import { Input } from '../../../components/ui/input'
 import { useColecciones } from '../../../hooks/useColecciones'
 import { useUbicaciones } from '../../../hooks/useUbicaciones'
+import { PlacaForm } from '../../../lib/validations/placa'
 
 interface Props {
   control: Control<PlacaForm>
@@ -10,6 +10,9 @@ interface Props {
 }
 
 export default function TabInformacionGeneral({ control, errors }: Props) {
+  // Información general de la placa.
+  // - Carga colecciones y ubicaciones (hooks paginados). Si la lista crece,
+  //   convertir en autocompletes con búsqueda remota.
   const { data: colecciones } = useColecciones(0)
   const { data: ubicaciones } = useUbicaciones(0)
 

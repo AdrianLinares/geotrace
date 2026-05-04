@@ -1,5 +1,5 @@
-import { Control, useFieldArray } from 'react-hook-form'
 import { MuestraForm } from '@/lib/validations/muestra'
+import { Control, useFieldArray } from 'react-hook-form'
 import { Button } from '../../../components/ui/button'
 
 interface Props {
@@ -7,6 +7,8 @@ interface Props {
 }
 
 export default function TabEmpresas({ control }: Props) {
+  // Lista de empresas relacionadas a la muestra.
+  // - Persistencia: MuestraModal elimina y re-inserta las relaciones.
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'empresas',
