@@ -7,6 +7,15 @@ export default defineConfig({
   build: {
     target: 'es2020',
   },
+  // Ensure ESM-only deps are bundled at dev/server time so vitest/vite-node
+  // don't attempt to require them as CJS. This is preferred over test.deps.inline
+  // which vitest marks deprecated.
+  server: {
+    deps: { inline: ['vite', '@vitejs/plugin-react'] },
+  },
+  optimizeDeps: {
+    include: ['vite', '@vitejs/plugin-react'],
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
@@ -19,7 +28,5 @@ export default defineConfig({
     include: ['tests/**/*.test.{ts,tsx}'],
     restoreMocks: true,
     clearMocks: true,
-    // Inline ESM-only deps so vitest/esbuild bundles them instead of requiring at runtime
-    deps: { inline: ['vite', '@vitejs/plugin-react'] },
   },
 })
