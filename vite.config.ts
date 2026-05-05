@@ -19,5 +19,6 @@ export default defineConfig({
     include: ['tests/**/*.test.{ts,tsx}'],
     restoreMocks: true,
     clearMocks: true,
+    deps: { inline: ['vite'] },
   },
 })
