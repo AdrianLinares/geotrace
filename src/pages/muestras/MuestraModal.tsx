@@ -8,6 +8,7 @@ import { useCreateMuestra, useUpdateMuestra } from '../../hooks/useMuestras'
 import { supabase } from '../../lib/supabase'
 import { MuestraForm, muestraSchema } from '../../lib/validations/muestra'
 import { useAppStore } from '../../stores/appStore'
+import { toast } from '../../components/shared/toast'
 import TabConservacion from './tabs/TabConservacion'
 import TabDisposicion from './tabs/TabDisposicion'
 import TabEmpresas from './tabs/TabEmpresas'
@@ -129,10 +130,12 @@ export default function MuestraModal({ isOpen, onClose, muestraToEdit, placaId }
         }, { onConflict: 'muestra_id' })
       }
 
+      // Show success toast and close
+      toast({ title: isEditing ? 'Muestra actualizada' : 'Muestra creada', description: muestraId })
       onClose()
     } catch (error) {
       console.error(error)
-      alert('Error al guardar: ' + error)
+      toast({ title: 'Error al guardar muestra', description: String(error) })
     }
   }
 

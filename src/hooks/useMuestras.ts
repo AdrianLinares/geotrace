@@ -64,3 +64,15 @@ export function useUpdateMuestra() {
     onSuccess() { qc.invalidateQueries({ queryKey: ['muestras'] }) },
   })
 }
+
+export function useDeleteMuestra() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: { muestra_id: string }) => {
+      const { error } = await supabase.from('muestra').delete().eq('muestra_id', payload.muestra_id)
+      if (error) throw error
+      return true
+    },
+    onSuccess() { qc.invalidateQueries({ queryKey: ['muestras'] }) },
+  })
+}

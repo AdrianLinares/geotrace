@@ -12,6 +12,7 @@ import TabInformacionGeneral from './tabs/TabInformacionGeneral'
 import TabMarcado from './tabs/TabMarcado'
 import TabMuestras from './tabs/TabMuestras'
 import TabNotasManuscritas from './tabs/TabNotasManuscritas'
+import { toast } from '../../components/shared/toast'
 
 interface Props {
   isOpen: boolean
@@ -100,7 +101,7 @@ export default function PlacaModal({ isOpen, onClose, placaToEdit }: Props) {
       onClose()
     } catch (error) {
       console.error(error)
-      alert('Error al guardar: ' + error)
+      toast({ title: 'Error al guardar placa', description: String(error) })
     }
   }
 
