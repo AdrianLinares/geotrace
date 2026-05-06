@@ -38,6 +38,52 @@ and guidance for writing new unit and integration tests.
 - Integration tests: mock supabase but interact with useAppStore to verify
   real state updates.
 
+7) Sample test template
+Below is a minimal template you can copy when adding a new integration or unit test.
+
+// Example: tests/lib/<Feature>.test.tsx
+import React from 'react'
+import { describe, it, beforeEach, expect } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import vi from 'vitest'
+
+// Mock supabase client used by the code under test
+vi.mock('@/lib/supabase', async () => {
+  const mod = await import('../mocks/supabase')
+  return { default: mod.supabaseMock, supabase: mod.supabaseMock }
+})
+
+import ComponentUnderTest from '@/components/ComponentUnderTest'
+import { resetSupabaseMocks, mockPersonaResponse, emitAuthStateChange } from '../mocks/supabase'
+import { resetAppStore } from '../mocks/useAppStore'
+
+describe('ComponentUnderTest', () => {
+  beforeEach(() => {
+    resetSupabaseMocks()
+    resetAppStore()
+  })
+
+  it('reacts to auth events and updates store', async () => {
+    // Arrange: prepare mocked DB response expected by the component
+    mockPersonaResponse([{ persona_id: 'p-1', nombre: 'Ana', rol: 'Curador' }])
+
+    // Act: render component that registers auth listener
+    render(<ComponentUnderTest />)
+
+    // Ensure listener registered before emitting
+    await waitFor(() => expect(require('../mocks/supabase').supabaseMock.auth.onAuthStateChange).toHaveBeenCalled())
+
+    // Emit an auth event
+    emitAuthStateChange('SIGNED_IN', { user: { email: 'ana@example.com' } })
+
+    // Assert: component reacts and the store contains expected user
+    await waitFor(() => {
+      expect(screen.getByText(/Ana/)).toBeInTheDocument()
+    })
+  })
+})
+
+
 7) CI
 - The GitHub Actions workflow runs `npm ci` and `npm run test` before build.
 
