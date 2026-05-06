@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import AuthProvider from '@/lib/AuthProvider'
 import { resetSupabaseMocks, mockSession, mockPersonaResponse, emitAuthStateChange } from '../mocks/supabase'
 import { snapshotAppStore, restoreAppStore, resetAppStore } from '../mocks/useAppStore'
+import { useAppStore } from '@/stores/appStore'
 
 describe('AuthProvider integration', () => {
   beforeEach(() => {
@@ -31,7 +32,7 @@ describe('AuthProvider integration', () => {
 
     // The store should be populated with persona
     await waitFor(() => {
-      const state = require('@/stores/appStore').useAppStore.getState()
+      const state = useAppStore.getState()
       expect(state.user).toEqual({ persona_id: 'p-1', nombre: 'Ana', rol: 'Curador' })
     })
   })
