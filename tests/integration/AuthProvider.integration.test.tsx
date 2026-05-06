@@ -2,7 +2,7 @@ import React from 'react'
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import AuthProvider from '@/lib/AuthProvider'
-import { resetSupabaseMocks, mockSession, mockPersonaResponse, triggerAuthStateChange } from '../mocks/supabase'
+import { resetSupabaseMocks, mockSession, mockPersonaResponse, emitAuthStateChange } from '../mocks/supabase'
 import { snapshotAppStore, restoreAppStore, resetAppStore } from '../mocks/useAppStore'
 
 describe('AuthProvider integration', () => {
@@ -22,7 +22,7 @@ describe('AuthProvider integration', () => {
     )
 
     // Simulate sign in event with user email
-    triggerAuthStateChange('SIGNED_IN', { user: { email: 'ana@example.com' } })
+    emitAuthStateChange('SIGNED_IN', { user: { email: 'ana@example.com' } })
     mockPersonaResponse([{ persona_id: 'p-1', nombre: 'Ana', rol: 'Curador' }])
 
     await waitFor(() => {
