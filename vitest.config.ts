@@ -9,6 +9,7 @@ export default defineConfig({
     include: ['tests/**/*.test.{ts,tsx}'],
     restoreMocks: true,
     clearMocks: true,
+    deps: { inline: ['vite', '@vitejs/plugin-react'] },
   },
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
