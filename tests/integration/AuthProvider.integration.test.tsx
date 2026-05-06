@@ -22,9 +22,11 @@ describe('AuthProvider integration', () => {
       </AuthProvider>
     )
 
+    // Prepare persona response before emitting the sign-in event so the
+    // provider's fetchPersonaAndSet finds the mocked data immediately.
+    mockPersonaResponse([{ persona_id: 'p-1', nombre: 'Ana', rol: 'Curador' }])
     // Simulate sign in event with user email
     emitAuthStateChange('SIGNED_IN', { user: { email: 'ana@example.com' } })
-    mockPersonaResponse([{ persona_id: 'p-1', nombre: 'Ana', rol: 'Curador' }])
 
     await waitFor(() => {
       expect(screen.getByText('integracion')).toBeInTheDocument()
