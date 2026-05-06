@@ -1,15 +1,20 @@
 import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+// Mock the Supabase client before importing the module under test.
+// Use an async factory to avoid hoisting issues with top-level variables.
+vi.mock('@/lib/supabase', async () => {
+  const mod = await import('../mocks/supabase')
+  return {
+    default: mod.supabaseMock,
+    supabase: mod.supabaseMock,
+  }
+})
+
 import AuthProvider from '@/lib/AuthProvider'
 import { useAppStore } from '@/stores/appStore'
-import { mockGetSessionError, mockPersonaResponse, mockSession, resetSupabaseMocks, supabaseMock } from '../mocks/supabase'
+import { mockGetSessionError, mockPersonaResponse, mockSession, resetSupabaseMocks } from '../mocks/supabase'
 import { resetAppStore } from '../mocks/useAppStore'
-
-vi.mock('@/lib/supabase', () => ({
-  default: supabaseMock,
-  supabase: supabaseMock,
-}))
 
 describe('AuthProvider', () => {
   beforeEach(() => {
