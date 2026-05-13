@@ -36,9 +36,8 @@ export default function PlacasPage() {
   const { data: colecciones } = useColecciones(0)
   const { data: ubicaciones } = useUbicaciones(0)
 
-  // Get unique muebles from ubicaciones
-  const muebleSet = new Set(ubicaciones?.data?.map(u => u.mueble_cod).filter(Boolean))
-  const muebles = Array.from(muebleSet) as string[]
+  // Get unique muebles from ubicaciones (flatMap: single pass)
+  const muebles = [...new Set(ubicaciones?.data?.flatMap(u => u.mueble_cod ? [u.mueble_cod] : []) ?? [])] as string[]
 
   const estados = ['En proceso', 'Incompleto', 'En revisión', 'Validado', 'Cerrado']
 
@@ -75,7 +74,7 @@ export default function PlacasPage() {
                 checked={selectedEstados.includes(est)}
                 onChange={e => {
                   if (e.target.checked) {
-                    setSelectedEstados([...selectedEstados, est])
+                    setSelectedEstados(prev => [...prev, est])
                   } else {
                     setSelectedEstados(selectedEstados.filter(e => e !== est))
                   }
