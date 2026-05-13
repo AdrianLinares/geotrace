@@ -27,7 +27,7 @@ export default function Combobox({ items, value, onSelect, placeholder = 'Selecc
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" className={cn('w-full justify-between', className)}>
+        <Button variant="outline" role="combobox" aria-expanded={open} aria-controls="combobox-list" className={cn('w-full justify-between', className)}>
           {selected?.label || placeholder}
           <span className="ml-2 opacity-50">▼</span>
         </Button>
@@ -39,7 +39,7 @@ export default function Combobox({ items, value, onSelect, placeholder = 'Selecc
             value={search}
             onValueChange={setSearch}
           />
-          <CommandList>
+          <CommandList id="combobox-list">
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
               {filtered.map(item => (

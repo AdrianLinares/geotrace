@@ -41,6 +41,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.0.0",
+    "agentation": "^3.0.2",
     "autoprefixer": "^10.0.0",
     "jsdom": "^21",
     "postcss": "^8.0.0",

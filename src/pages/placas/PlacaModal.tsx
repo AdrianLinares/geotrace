@@ -83,19 +83,21 @@ export default function PlacaModal({ isOpen, onClose, placaToEdit }: Props) {
         await supabase.from('marcado_placa').upsert(marcado, { onConflict: 'marcado_placa_id' })
       }
 
-      // Save notas manuscritas if present
+      // Save notas manuscritas if present (concurrente)
       if (values.notas && placaId) {
-        for (const nota of values.notas) {
-          const notaId = `${placaId}_${nota.zona}_${Math.random().toString(36).slice(2, 6)}`
-          await supabase.from('nota_manuscrita').upsert({
-            nota_id: notaId,
-            placa_id: placaId,
-            zona: nota.zona,
-            clave_nota: nota.clave_nota,
-            texto_nota: nota.texto_nota,
-            catalogador_id: user?.persona_id,
-          }, { onConflict: 'nota_id' })
-        }
+        await Promise.all(
+          values.notas.map(async (nota) => {
+            const notaId = `${placaId}_${nota.zona}_${Math.random().toString(36).slice(2, 6)}`
+            return supabase.from('nota_manuscrita').upsert({
+              nota_id: notaId,
+              placa_id: placaId,
+              zona: nota.zona,
+              clave_nota: nota.clave_nota,
+              texto_nota: nota.texto_nota,
+              catalogador_id: user?.persona_id,
+            }, { onConflict: 'nota_id' })
+          })
+        )
       }
 
       onClose()

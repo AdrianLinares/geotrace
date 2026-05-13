@@ -4,6 +4,7 @@ import AuthCallback from './pages/AuthCallback'
 import CatalogosPage from './pages/catalogos/CatalogosPage'
 import ColeccionesPage from './pages/colecciones/ColeccionesPage'
 import Dashboard from './pages/Dashboard'
+import { Agentation } from 'agentation'
 import ImportarDatos from './pages/importar/ImportarDatos'
 import Login from './pages/Login'
 import PlacasPage from './pages/placas/PlacasPage'
@@ -45,6 +46,9 @@ export default function App() {
         {/* Fallback: redirige a dashboard si ruta no existe */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+
+      {/* Agentation: visual feedback tool for AI coding agents */}
+      <Agentation />
     </BrowserRouter>
   )
 }
