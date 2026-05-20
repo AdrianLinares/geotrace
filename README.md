@@ -13,8 +13,8 @@ Resumen rápido:
 Requisitos mínimos:
 
 1. Copiar `.env.example` → `.env` y configurar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
-2. Instalar dependencias: `npm install`
-3. Levantar entorno de desarrollo: `npm run dev`
+2. Instalar dependencias: `pnpm install`
+3. Levantar entorno de desarrollo: `pnpm run dev`
 4. (Opcional) Aplicar esquema a Supabase: `psql < sql/schema.sql` o usar la consola SQL de Supabase
 
 Archivos y guías importantes (en español):

@@ -4,7 +4,7 @@ Errores y soluciones habituales para nuevos desarrolladores.
 
 1. "Supabase environment variables are not set"
     - Causa: `.env` no se configuró o Vite no carga variables.
-    - Solución: copiar `.env.example` → `.env` y reiniciar el servidor (`npm run dev`).
+    - Solución: copiar `.env.example` → `.env` y reiniciar el servidor (`pnpm run dev`).
 
 2. Magic link no llega / rate limit
     - Causa: Supabase limita envíos por seguridad.

@@ -4,7 +4,7 @@ Objetivo: poner la aplicación en marcha localmente en 5–10 minutos.
 
 Requisitos:
 
-- Node.js 18+ y npm
+- Node.js 20+ y pnpm
 - Acceso a una instancia de Supabase (puede ser la gratuita)
 
 Pasos:
@@ -26,13 +26,13 @@ cp .env.example .env
 3. Instalar dependencias
 
 ```bash
-npm install
+pnpm install
 ```
 
 4. Levantar el servidor de desarrollo
 
 ```bash
-npm run dev
+pnpm run dev
 # Abre http://localhost:5173 (o el puerto que indique Vite)
 ```
 

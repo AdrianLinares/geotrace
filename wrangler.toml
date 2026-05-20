@@ -2,7 +2,7 @@ name = "catalogo-placas"
 compatibility_date = "2024-01-01"
 
 [build]
-command = "npm run build"
+command = "pnpm run build"
 output_dir = "dist"
 
 [variables]

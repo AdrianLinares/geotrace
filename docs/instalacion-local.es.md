@@ -4,8 +4,8 @@ Esta guía explica cómo configurar y ejecutar el proyecto Catálogo de Placas l
 
 ## Prerrequisitos
 
-- Node.js 18 o superior
-- npm o yarn
+- Node.js 20 o superior
+- pnpm
 - Cuenta de Supabase
 
 ## Pasos de Instalación
@@ -18,7 +18,7 @@ Esta guía explica cómo configurar y ejecutar el proyecto Catálogo de Placas l
 
 2. **Instalar dependencias**:
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. **Configurar variables de entorno**:
@@ -37,7 +37,7 @@ Esta guía explica cómo configurar y ejecutar el proyecto Catálogo de Placas l
 
 5. **Levantar el servidor de desarrollo**:
    ```bash
-   npm run dev
+   pnpm run dev
    ```
    El proyecto estará disponible en `http://localhost:5173`.
 

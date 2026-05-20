@@ -28,8 +28,8 @@ El proyecto está configurado para desplegarse automáticamente en Cloudflare Pa
 ### Proceso de Despliegue
 
 Cuando haga push a `main`, GitHub Actions ejecutará:
-1. `npm ci` para instalar dependencias.
-2. `npm run build` para construir la aplicación.
+1. `pnpm install --frozen-lockfile` para instalar dependencias.
+2. `pnpm run build` para construir la aplicación.
 3. Despliegue de `dist/` a Cloudflare Pages.
 
 ### Verificación
