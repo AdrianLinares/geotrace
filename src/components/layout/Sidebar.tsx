@@ -23,6 +23,7 @@ export default function Sidebar() {
           {/* Acceso total */}
           <li><Link to="/" className="block p-2 rounded hover:bg-surface">Dashboard</Link></li>
           <li><Link to="/colecciones" className="block p-2 rounded hover:bg-surface">Colecciones</Link></li>
+          <li><Link to="/pozos" className="block p-2 rounded hover:bg-surface">Pozos</Link></li>
           <li><Link to="/placas" className="block p-2 rounded hover:bg-surface">Placas</Link></li>
           <li><Link to="/ubicaciones" className="block p-2 rounded hover:bg-surface">Ubicaciones</Link></li>
           <li><Link to="/reportes" className="block p-2 rounded hover:bg-surface">Reportes</Link></li>

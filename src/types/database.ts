@@ -75,6 +75,7 @@ export type Muestra = {
   placa_id?: string | null
   procedencia_muestra?: 'Superficie' | 'Pozo' | null
   nombre_pozo?: string | null
+  pozo_id?: string | null
   tipo_muestra?: string | null
   tipo_profundidad?: 'Intervalo' | 'Puntual' | null
   profundidad_puntual?: string | number | null
@@ -104,6 +105,87 @@ export type AuditoriaCambio = {
   created_at?: string | null
 }
 
+export type Pozo = {
+  pozo_id: string
+  well_name: string
+  uwi?: string | null
+  well_alias?: string | null
+  cuenca_id?: string | null
+  pais?: string | null
+  departamento?: string | null
+  municipio?: string | null
+  campo_id?: string | null
+  contrato_id?: string | null
+  longitud?: number | null
+  latitud?: number | null
+  coord_x?: number | null
+  coord_y?: number | null
+  coord_x_origen?: number | null
+  coord_y_origen?: number | null
+  coord_x_fondo?: number | null
+  coord_y_fondo?: number | null
+  datum?: string | null
+  calidad_coordenada?: string | null
+  tvd?: number | null
+  kb_elevacion?: number | null
+  rotary_elevacion?: number | null
+  profundidad_perforacion?: number | null
+  elevacion_terreno?: number | null
+  clasificacion?: string | null
+  estado_pozo?: string | null
+  tipo_pozo?: string | null
+  clas_final?: string | null
+  fecha_spud?: string | null
+  fecha_completamiento?: string | null
+  tipo_documento?: string | null
+  documento_referencia?: string | null
+  carga_sgc?: boolean | null
+  visible?: boolean | null
+  entitlement?: string | null
+  nota_sgc?: string | null
+  comentario?: string | null
+  formacion?: string | null
+  formacion_alt?: string | null
+  estructura?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export type PozoEmpresa = {
+  pozo_empresa_id: string
+  pozo_id: string
+  empresa_id: string
+  rol?: string | null
+  created_at?: string | null
+}
+
+export type DicCuenca = {
+  cuenca_id: string
+  nombre_cuenca: string
+  created_at?: string | null
+}
+
+export type DicCampo = {
+  campo_id: string
+  nombre_campo: string
+  created_at?: string | null
+}
+
+export type DicContrato = {
+  contrato_id: string
+  nombre_contrato: string
+  created_at?: string | null
+}
+
+export type Empresa = {
+  empresa_id: string
+  nombre_empresa: string
+  tipo_empresa?: string | null
+  pais?: string | null
+  observaciones?: string | null
+  created_at?: string | null
+}
+
 // Generic response for paginated queries
 export type PaginatedResult<T> = {
   data: T[]
@@ -118,6 +200,12 @@ export type Database = {
   placa: Placa
   muestra: Muestra
   auditoria_cambios: AuditoriaCambio
+  pozo: Pozo
+  pozo_empresa: PozoEmpresa
+  dic_cuenca: DicCuenca
+  dic_campo: DicCampo
+  dic_contrato: DicContrato
+  empresa: Empresa
 }
 
 export default Database

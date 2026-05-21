@@ -10,6 +10,7 @@ import UnidadLitoForm from './UnidadLitoForm'
 import BiozonaForm from './BiozonaForm'
 import EdadForm from './EdadForm'
 import EmpresaForm from './EmpresaForm'
+import { useCuencas, useCampos, useContratos } from '../../hooks/useCatalogos'
 
 export default function CatalogosPage() {
   const qc = useQueryClient()
@@ -46,6 +47,9 @@ export default function CatalogosPage() {
       return data || []
     }
   })
+  const { data: cuencas } = useCuencas()
+  const { data: campos } = useCampos()
+  const { data: contratos } = useContratos()
   // Generic delete mutation
   const deleteMutation = useMutation({
     mutationFn: async ({ table, idField, idValue }: { table: string, idField: string, idValue: string }) => {
@@ -105,9 +109,12 @@ export default function CatalogosPage() {
           <TabsTrigger value="biozonas">Biozonas</TabsTrigger>
           <TabsTrigger value="edades">Edades Geológicas</TabsTrigger>
           <TabsTrigger value="empresas">Empresas</TabsTrigger>
+          <TabsTrigger value="cuencas">Cuencas</TabsTrigger>
+          <TabsTrigger value="campos">Campos</TabsTrigger>
+          <TabsTrigger value="contratos">Contratos</TabsTrigger>
         </TabsList>
 
-        {['unidades', 'biozonas', 'edades', 'empresas', 'personas'].map(tab => (
+        {['unidades', 'biozonas', 'edades', 'empresas', 'cuencas', 'campos', 'contratos', 'personas'].map(tab => (
           <TabsContent key={tab} value={tab}>
             <div className="flex justify-end mb-4">
               <Button onClick={() => { setEditing(null); setShowForm(true) }}>Nuevo</Button>
@@ -116,6 +123,9 @@ export default function CatalogosPage() {
             {tab === 'biozonas' && renderTable(['biozona_id', 'nombre_biozona', 'grupo_fosil', 'edad_base', 'edad_tope'], biozonas || [], 'biozona_id', 'dic_biozona')}
             {tab === 'edades' && renderTable(['edad_id', 'nombre_edad', 'jerarquia', 'base_ma', 'tope_ma'], edades || [], 'edad_id', 'dic_edad')}
             {tab === 'empresas' && renderTable(['empresa_id', 'nombre_empresa', 'tipo_empresa', 'pais'], empresas || [], 'empresa_id', 'empresa')}
+            {tab === 'cuencas' && renderTable(['cuenca_id', 'nombre_cuenca'], cuencas || [], 'cuenca_id', 'dic_cuenca')}
+            {tab === 'campos' && renderTable(['campo_id', 'nombre_campo'], campos || [], 'campo_id', 'dic_campo')}
+            {tab === 'contratos' && renderTable(['contrato_id', 'nombre_contrato'], contratos || [], 'contrato_id', 'dic_contrato')}
           </TabsContent>
         ))}
 

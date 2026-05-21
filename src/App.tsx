@@ -3,6 +3,7 @@ import { WithAdmin, WithCurador } from './components/shared/roleGuards'
 import AuthCallback from './pages/AuthCallback'
 import CatalogosPage from './pages/catalogos/CatalogosPage'
 import ColeccionesPage from './pages/colecciones/ColeccionesPage'
+import PozosPage from './pages/pozos/PozosPage'
 import Dashboard from './pages/Dashboard'
 import { Agentation } from 'agentation'
 import ImportarDatos from './pages/importar/ImportarDatos'
@@ -28,6 +29,7 @@ export default function App() {
 
         {/* Acceso total (todos autenticados) */}
         <Route path="/colecciones" element={<ColeccionesPage />} />
+        <Route path="/pozos" element={<PozosPage />} />
         <Route path="/placas" element={<PlacasPage />} />
         <Route path="/ubicaciones" element={<UbicacionesPage />} />
         <Route path="/reportes" element={<ReportesPage />} />
