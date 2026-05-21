@@ -630,9 +630,30 @@ ON CONFLICT (cuenca_id) DO NOTHING;
 --       is in sql/seed_pozos.sql due to size.
 --       Colección COL-005 seed is also there.
 
--- Colección CHDC Pozos
-INSERT INTO coleccion (coleccion_id, nombre_coleccion, institucion, responsable, descripcion, estado_coleccion)
-VALUES ('COL-005', 'Colección Hermman Duque Caro - Pozos', 'SGC', 'Hermann Duque Caro',
-  'Pozos de exploración del listado CHDC/EPIS del 19/05/2026. Contiene datos maestros de pozos con información de ubicación, clasificación, contrato y operador.',
-  'Activa')
 ON CONFLICT (coleccion_id) DO NOTHING;
+
+-- ========================
+-- Políticas RLS: coleccion (agregadas - faltaban)
+-- ========================
+CREATE POLICY "coleccion_select_authenticated" ON public.coleccion
+  FOR SELECT TO public USING (auth.role() = 'authenticated');
+CREATE POLICY "coleccion_admin_insert" ON public.coleccion
+  FOR INSERT TO PUBLIC WITH CHECK ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+CREATE POLICY "coleccion_admin_update" ON public.coleccion
+  FOR UPDATE TO PUBLIC USING ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'))
+  WITH CHECK ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+CREATE POLICY "coleccion_admin_delete" ON public.coleccion
+  FOR DELETE TO PUBLIC USING ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+
+-- ========================
+-- Políticas RLS: empresa (agregadas - faltaban)
+-- ========================
+CREATE POLICY "empresa_select_authenticated" ON public.empresa
+  FOR SELECT TO public USING (auth.role() = 'authenticated');
+CREATE POLICY "empresa_admin_insert" ON public.empresa
+  FOR INSERT TO PUBLIC WITH CHECK ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+CREATE POLICY "empresa_admin_update" ON public.empresa
+  FOR UPDATE TO PUBLIC USING ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'))
+  WITH CHECK ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+CREATE POLICY "empresa_admin_delete" ON public.empresa
+  FOR DELETE TO PUBLIC USING ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
