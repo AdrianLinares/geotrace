@@ -395,3 +395,244 @@ INSERT INTO empresa (empresa_id, nombre_empresa) VALUES
 ('EMP-02','Ecopetrol'),
 ('EMP-03','Drummond')
 ON CONFLICT (empresa_id) DO NOTHING;
+
+-- ====================================================
+-- POZOS: Catálogos, tabla principal y relación con empresa
+-- Creado: 2026-05-21
+-- ====================================================
+
+-- Secuencia para IDs de pozo
+CREATE SEQUENCE IF NOT EXISTS seq_pozo START 1;
+
+-- Tabla catálogo de cuencas
+CREATE TABLE IF NOT EXISTS dic_cuenca (
+  cuenca_id text PRIMARY KEY,
+  nombre_cuenca text NOT NULL UNIQUE,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Tabla catálogo de campos
+CREATE TABLE IF NOT EXISTS dic_campo (
+  campo_id text PRIMARY KEY,
+  nombre_campo text NOT NULL UNIQUE,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Tabla catálogo de contratos
+CREATE TABLE IF NOT EXISTS dic_contrato (
+  contrato_id text PRIMARY KEY,
+  nombre_contrato text NOT NULL UNIQUE,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Tabla principal de pozos
+CREATE TABLE IF NOT EXISTS pozo (
+  pozo_id text PRIMARY KEY DEFAULT ('POZ-'::text || lpad((nextval('seq_pozo'::regclass))::text, 6, '0'::text)),
+  well_name text NOT NULL UNIQUE,
+  uwi text UNIQUE,
+  well_alias text,
+  cuenca_id text REFERENCES public.dic_cuenca(cuenca_id),
+  pais text DEFAULT 'COLOMBIA',
+  departamento text,
+  municipio text,
+  campo_id text REFERENCES public.dic_campo(campo_id),
+  contrato_id text REFERENCES public.dic_contrato(contrato_id),
+  longitud numeric,
+  latitud numeric,
+  coord_x numeric,
+  coord_y numeric,
+  coord_x_origen numeric,
+  coord_y_origen numeric,
+  coord_x_fondo numeric,
+  coord_y_fondo numeric,
+  datum text CHECK (datum IN (
+    'COLOMBIA BOGOTA ZONE',
+    'MAGNA COLOMBIA BOGOTA',
+    'COLOMBIA WEST ZONE',
+    'COLOMBIA E CENTRAL ZONE'
+  )),
+  calidad_coordenada text CHECK (calidad_coordenada IN ('PRELIMINARES', 'DEFINITIVAS')),
+  tvd numeric,
+  kb_elevacion numeric,
+  rotary_elevacion numeric,
+  profundidad_perforacion numeric,
+  elevacion_terreno numeric,
+  clasificacion text CHECK (clasificacion IN ('A0', 'A1', 'A2a', 'A2c', 'A3')),
+  estado_pozo text CHECK (estado_pozo IN (
+    'TAPONADO Y ABANDONADO',
+    'SIN ESTADO',
+    'PRODUCTOR',
+    'SECO',
+    'SUSPENDIDO'
+  )),
+  tipo_pozo text CHECK (tipo_pozo IN (
+    'VERTICAL',
+    'DIRECCIONAL',
+    'ESTRATIGRAFICO',
+    'INYECTOR',
+    'HORIZONTAL',
+    'TIPO J'
+  )),
+  clas_final text,
+  fecha_spud date,
+  fecha_completamiento date,
+  tipo_documento text,
+  documento_referencia text,
+  carga_sgc boolean DEFAULT false,
+  visible boolean DEFAULT true,
+  entitlement text DEFAULT 'ENTITLED',
+  nota_sgc text,
+  comentario text,
+  formacion text,
+  formacion_alt text,
+  estructura text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- Índices para búsquedas frecuentes en pozo
+CREATE INDEX IF NOT EXISTS idx_pozo_cuenca ON public.pozo(cuenca_id);
+CREATE INDEX IF NOT EXISTS idx_pozo_campo ON public.pozo(campo_id);
+CREATE INDEX IF NOT EXISTS idx_pozo_contrato ON public.pozo(contrato_id);
+CREATE INDEX IF NOT EXISTS idx_pozo_departamento ON public.pozo(departamento);
+CREATE INDEX IF NOT EXISTS idx_pozo_estado ON public.pozo(estado_pozo);
+CREATE INDEX IF NOT EXISTS idx_pozo_tipo ON public.pozo(tipo_pozo);
+CREATE INDEX IF NOT EXISTS idx_pozo_uwi ON public.pozo(uwi);
+
+-- Trigger para pozo.updated_at
+CREATE OR REPLACE FUNCTION public.update_pozo_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+DROP TRIGGER IF EXISTS trg_pozo_updated_at ON public.pozo;
+CREATE TRIGGER trg_pozo_updated_at
+  BEFORE UPDATE ON public.pozo
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_pozo_updated_at();
+
+-- Tabla de relación pozo-empresa (operador / compañía actual)
+CREATE TABLE IF NOT EXISTS pozo_empresa (
+  pozo_empresa_id text PRIMARY KEY,
+  pozo_id text NOT NULL REFERENCES public.pozo(pozo_id),
+  empresa_id text NOT NULL REFERENCES public.empresa(empresa_id),
+  rol text,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pozo_empresa_unique ON public.pozo_empresa(pozo_id, empresa_id, rol);
+CREATE INDEX IF NOT EXISTS idx_pozo_empresa_pozo ON public.pozo_empresa(pozo_id);
+CREATE INDEX IF NOT EXISTS idx_pozo_empresa_empresa ON public.pozo_empresa(empresa_id);
+
+-- FK de muestra a pozo (nullable para migración gradual)
+ALTER TABLE public.muestra ADD COLUMN IF NOT EXISTS pozo_id text REFERENCES public.pozo(pozo_id);
+CREATE INDEX IF NOT EXISTS idx_muestra_pozo ON public.muestra(pozo_id);
+
+-- Habilitar RLS en nuevas tablas
+ALTER TABLE public.dic_cuenca ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.dic_campo ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.dic_contrato ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pozo ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pozo_empresa ENABLE ROW LEVEL SECURITY;
+
+-- ========================
+-- Políticas RLS: dic_cuenca
+-- ========================
+CREATE POLICY "cuenca_select_authenticated" ON public.dic_cuenca
+  FOR SELECT TO public USING (auth.role() = 'authenticated');
+CREATE POLICY "cuenca_admin_insert" ON public.dic_cuenca
+  FOR INSERT TO PUBLIC WITH CHECK ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+CREATE POLICY "cuenca_admin_update" ON public.dic_cuenca
+  FOR UPDATE TO PUBLIC USING ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'))
+  WITH CHECK ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+CREATE POLICY "cuenca_admin_delete" ON public.dic_cuenca
+  FOR DELETE TO PUBLIC USING ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+
+-- ========================
+-- Políticas RLS: dic_campo
+-- ========================
+CREATE POLICY "campo_select_authenticated" ON public.dic_campo
+  FOR SELECT TO public USING (auth.role() = 'authenticated');
+CREATE POLICY "campo_admin_insert" ON public.dic_campo
+  FOR INSERT TO PUBLIC WITH CHECK ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+CREATE POLICY "campo_admin_update" ON public.dic_campo
+  FOR UPDATE TO PUBLIC USING ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'))
+  WITH CHECK ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+CREATE POLICY "campo_admin_delete" ON public.dic_campo
+  FOR DELETE TO PUBLIC USING ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+
+-- ========================
+-- Políticas RLS: dic_contrato
+-- ========================
+CREATE POLICY "contrato_select_authenticated" ON public.dic_contrato
+  FOR SELECT TO public USING (auth.role() = 'authenticated');
+CREATE POLICY "contrato_admin_insert" ON public.dic_contrato
+  FOR INSERT TO PUBLIC WITH CHECK ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+CREATE POLICY "contrato_admin_update" ON public.dic_contrato
+  FOR UPDATE TO PUBLIC USING ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'))
+  WITH CHECK ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+CREATE POLICY "contrato_admin_delete" ON public.dic_contrato
+  FOR DELETE TO PUBLIC USING ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+
+-- ========================
+-- Políticas RLS: pozo
+-- ========================
+CREATE POLICY "pozo_select_authenticated" ON public.pozo
+  FOR SELECT TO public USING (auth.role() = 'authenticated');
+CREATE POLICY "pozo_insert_authenticated" ON public.pozo
+  FOR INSERT TO public WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "pozo_admin_update" ON public.pozo
+  FOR UPDATE TO public USING ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'))
+  WITH CHECK ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+CREATE POLICY "pozo_admin_delete" ON public.pozo
+  FOR DELETE TO public USING ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+
+-- ========================
+-- Políticas RLS: pozo_empresa
+-- ========================
+CREATE POLICY "pozo_empresa_select_authenticated" ON public.pozo_empresa
+  FOR SELECT TO public USING (auth.role() = 'authenticated');
+CREATE POLICY "pozo_empresa_insert_authenticated" ON public.pozo_empresa
+  FOR INSERT TO public WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "pozo_empresa_admin_update" ON public.pozo_empresa
+  FOR UPDATE TO public USING ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'))
+  WITH CHECK ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+CREATE POLICY "pozo_empresa_admin_delete" ON public.pozo_empresa
+  FOR DELETE TO public USING ((auth.role() = 'supabase_admin') OR ((auth.jwt() ->> 'role') = 'Administrador'));
+
+-- ====================================================
+-- Seed: Catálogos de pozos
+-- ====================================================
+
+INSERT INTO dic_cuenca (cuenca_id, nombre_cuenca) VALUES
+('CUE-AREA-NO-PROSPECTIVA', 'AREA NO PROSPECTIVA'),
+('CUE-CAGUAN-PUTUMAYO', 'CAGUAN-PUTUMAYO'),
+('CUE-CESAR-RANCHERIA', 'CESAR-RANCHERIA'),
+('CUE-CHOCO', 'CHOCO'),
+('CUE-COLOMBIA', 'COLOMBIA'),
+('CUE-CORDILLERA-ORIENTAL', 'CORDILLERA-ORIENTAL'),
+('CUE-EXTRANJERO', 'EXTRANJERO'),
+('CUE-GUAJIRA', 'GUAJIRA'),
+('CUE-GUAJIRA-OFFSHORE', 'GUAJIRA-OFFSHORE'),
+('CUE-LLANOS-ORIENTALES', 'LLANOS ORIENTALES'),
+('CUE-SINU-OFFSHORE', 'SINU-OFFSHORE'),
+('CUE-SINU-SAN-JACINTO', 'SINU-SAN JACINTO'),
+('CUE-VALLE-INFERIOR-DEL-MAGDALENA', 'VALLE INFERIOR DEL MAGDALENA'),
+('CUE-VALLE-MEDIO-DEL-MAGDALENA', 'VALLE MEDIO DEL MAGDALENA'),
+('CUE-VALLE-SUPERIOR-DEL-MAGDALENA', 'VALLE SUPERIOR DEL MAGDALENA')
+ON CONFLICT (cuenca_id) DO NOTHING;
+
+-- NOTE: Full seed data for dic_campo (89), dic_contrato (96),
+--       empresas (68), pozos (173) and pozo_empresa (285)
+--       is in sql/seed_pozos.sql due to size.
+--       Colección COL-005 seed is also there.
+
+-- Colección CHDC Pozos
+INSERT INTO coleccion (coleccion_id, nombre_coleccion, institucion, responsable, descripcion, estado_coleccion)
+VALUES ('COL-005', 'Colección Hermman Duque Caro - Pozos', 'SGC', 'Hermann Duque Caro',
+  'Pozos de exploración del listado CHDC/EPIS del 19/05/2026. Contiene datos maestros de pozos con información de ubicación, clasificación, contrato y operador.',
+  'Activa')
+ON CONFLICT (coleccion_id) DO NOTHING;
