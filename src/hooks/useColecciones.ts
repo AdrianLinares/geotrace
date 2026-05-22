@@ -71,9 +71,21 @@ export function useUpdateColeccion() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (payload: Partial<Coleccion> & { coleccion_id: string }) => {
-      const { data, error } = await supabase.from('coleccion').update(payload).eq('coleccion_id', payload.coleccion_id).select().single()
+      const { coleccion_id, ...rest } = payload
+      const { data, error } = await supabase.from('coleccion').update(rest).eq('coleccion_id', coleccion_id).select().single()
       if (error) throw error
       return data as Coleccion
+    },
+    onSuccess() { qc.invalidateQueries({ queryKey: ['colecciones'] }) }
+  })
+}
+
+export function useDeleteColeccion() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (coleccion_id: string) => {
+      const { error } = await supabase.from('coleccion').delete().eq('coleccion_id', coleccion_id)
+      if (error) throw error
     },
     onSuccess() { qc.invalidateQueries({ queryKey: ['colecciones'] }) }
   })

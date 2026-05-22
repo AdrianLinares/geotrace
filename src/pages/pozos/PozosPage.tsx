@@ -33,15 +33,15 @@ export default function PozosPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Well Name</TableHead>
+                  <TableHead>Pozo</TableHead>
                   <TableHead>UWI</TableHead>
                   <TableHead>Cuenca</TableHead>
                   <TableHead>Departamento</TableHead>
+                  <TableHead>Municipio</TableHead>
                   <TableHead>Campo</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Clasificación</TableHead>
-                  <TableHead>TVD (ft)</TableHead>
+                  <TableHead>Longitud</TableHead>
+                  <TableHead>Latitud</TableHead>
+                  <TableHead>Datum</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -51,11 +51,11 @@ export default function PozosPage() {
                     <TableCell>{p.uwi ?? '-'}</TableCell>
                     <TableCell>{cuencaMap.get(p.cuenca_id ?? '') ?? '-'}</TableCell>
                     <TableCell>{p.departamento ?? '-'}</TableCell>
+                    <TableCell>{p.municipio ?? '-'}</TableCell>
                     <TableCell>{campoMap.get(p.campo_id ?? '') ?? '-'}</TableCell>
-                    <TableCell>{p.estado_pozo ?? '-'}</TableCell>
-                    <TableCell>{p.tipo_pozo ?? '-'}</TableCell>
-                    <TableCell>{p.clasificacion ?? '-'}</TableCell>
-                    <TableCell>{p.tvd?.toLocaleString() ?? '-'}</TableCell>
+                    <TableCell>{p.longitud?.toLocaleString() ?? '-'}</TableCell>
+                    <TableCell>{p.latitud?.toLocaleString() ?? '-'}</TableCell>
+                    <TableCell>{p.datum ?? '-'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

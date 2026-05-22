@@ -9,8 +9,14 @@ export const edadSchema = z.object({
   edad_id: z.string().min(1, 'Requerido'),
   nombre_edad: z.string().min(1, 'Requerido'),
   jerarquia: z.string().optional(),
-  base_ma: z.number().min(0).optional(),
-  tope_ma: z.number().min(0).optional(),
+  base_ma: z.preprocess(
+    (val) => (Number.isNaN(val as number) ? undefined : val),
+    z.number().min(0).optional()
+  ),
+  tope_ma: z.preprocess(
+    (val) => (Number.isNaN(val as number) ? undefined : val),
+    z.number().min(0).optional()
+  ),
 })
 
 export type EdadForm = z.infer<typeof edadSchema>

@@ -11,12 +11,13 @@ interface Props {
 }
 
 export default function BiozonaForm({ defaultValues, onSubmit, onCancel }: Props) {
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, formState: { errors }, control } = useForm({
     resolver: zodResolver(biozonaSchema),
     defaultValues: defaultValues || { sinonimos: [] },
   })
 
   const { fields, append, remove } = useFieldArray({
+    control,
     name: 'sinonimos',
   })
 

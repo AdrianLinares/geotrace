@@ -62,6 +62,17 @@ export default function GestionUsuarios() {
   const handleChangeRole = async (personaId: string, newRole: string) => {
     try {
       await updateUser.mutateAsync({ persona_id: personaId, rol: newRole })
+      
+      // Check if we changed our own role
+      const { data: { user } } = await supabase.auth.getUser()
+      const targetPersona = personas?.find(p => p.persona_id === personaId)
+      if (targetPersona && user?.email === targetPersona.email) {
+        // Sync our own JWT metadata immediately
+        await supabase.auth.updateUser({ data: { role: newRole } })
+        alert('Tu rol fue actualizado. Refresca la página para aplicar los cambios.')
+      } else {
+        alert(`Rol actualizado. El usuario ${targetPersona?.nombre || personaId} deberá cerrar sesión y volver a iniciar para que los cambios surtan efecto.`)
+      }
     } catch (e: any) {
       alert('Error: ' + e.message)
     }
@@ -202,6 +213,16 @@ export default function GestionUsuarios() {
             }
 
             await updateUser.mutateAsync({ persona_id: personaId, ...v })
+            
+            // If we changed our own role, sync JWT metadata
+            if (v.rol && editing?.email) {
+              const { data: { user } } = await supabase.auth.getUser()
+              if (user?.email === editing.email) {
+                await supabase.auth.updateUser({ data: { role: v.rol } })
+                alert('Tu rol fue actualizado en el sistema. Refresca la página para aplicar los cambios.')
+              }
+            }
+            
             setShowForm(false)
             setEditing(null)
           } catch (e: any) {

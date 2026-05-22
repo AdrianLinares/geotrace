@@ -106,11 +106,30 @@ export default function AuthProvider({ children }: Props) {
       }
       const p = data[0]
       console.log('AuthProvider: Persona cargada', p.nombre, p.rol)
+
+      // Sync role to JWT user_metadata so RLS policies can read it
+      await syncRoleToMetadata(p.rol)
+
       // Mapeo mínimo: persona_id, nombre y rol (usado por roleGuards)
       setUser({ persona_id: p.persona_id, nombre: p.nombre, rol: p.rol })
     } catch (e) {
       console.error('AuthProvider: Error inesperado', e)
       setUser(null)
+    }
+  }
+
+  async function syncRoleToMetadata(rol: string) {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { role: rol }
+      })
+      if (error) {
+        console.warn('AuthProvider: No se pudo sincronizar rol al JWT', error.message)
+      } else {
+        console.log('AuthProvider: Rol sincronizado al JWT user_metadata')
+      }
+    } catch (e) {
+      console.warn('AuthProvider: Error sincronizando rol', e)
     }
   }
 

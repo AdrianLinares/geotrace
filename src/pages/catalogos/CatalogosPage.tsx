@@ -10,6 +10,10 @@ import UnidadLitoForm from './UnidadLitoForm'
 import BiozonaForm from './BiozonaForm'
 import EdadForm from './EdadForm'
 import EmpresaForm from './EmpresaForm'
+import PersonaForm from './PersonaForm'
+import CuencaForm from './CuencaForm'
+import CampoForm from './CampoForm'
+import ContratoForm from './ContratoForm'
 import { useCuencas, useCampos, useContratos } from '../../hooks/useCatalogos'
 
 export default function CatalogosPage() {
@@ -50,6 +54,13 @@ export default function CatalogosPage() {
   const { data: cuencas } = useCuencas()
   const { data: campos } = useCampos()
   const { data: contratos } = useContratos()
+  const { data: personas } = useQuery({
+    queryKey: ['persona'],
+    queryFn: async () => {
+      const { data } = await supabase.from('persona').select('*')
+      return data || []
+    }
+  })
   // Generic delete mutation
   const deleteMutation = useMutation({
     mutationFn: async ({ table, idField, idValue }: { table: string, idField: string, idValue: string }) => {
@@ -60,13 +71,18 @@ export default function CatalogosPage() {
     }
   })
 
-  // Generic create/update helpers (simplified)
+  // Generic create/update helpers
   const handleSave = async (table: string, values: any, idField: string) => {
     try {
-      if (values[idField]) {
-        await supabase.from(table).update(values).eq(idField, values[idField])
+      const { [idField]: id, ...payload } = values
+      // Clean empty strings to null for Supabase compatibility
+      const cleanPayload = Object.fromEntries(
+        Object.entries(payload).map(([key, val]) => [key, val === '' ? null : val])
+      )
+      if (id) {
+        await supabase.from(table).update(cleanPayload).eq(idField, id)
       } else {
-        await supabase.from(table).insert(values)
+        await supabase.from(table).insert(cleanPayload)
       }
       qc.invalidateQueries({ queryKey: [table] })
       setShowForm(false)
@@ -77,18 +93,18 @@ export default function CatalogosPage() {
   }
 
   // Simple table renderer
-  const renderTable = (headers: string[], rows: any[], idField: string, table: string) => (
+  const renderTable = (columns: { key: string; label: string }[], rows: any[], idField: string, table: string) => (
     <Table>
       <TableHeader>
         <TableRow>
-          {headers.map(h => <TableHead key={h}>{h}</TableHead>)}
+          {columns.map(c => <TableHead key={c.key}>{c.label}</TableHead>)}
           <TableHead>Acciones</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {rows.map((row: any) => (
           <TableRow key={row[idField]}>
-            {headers.map(h => <TableCell key={h}>{row[h]}</TableCell>)}
+            {columns.map(c => <TableCell key={c.key}>{row[c.key] ?? '-'}</TableCell>)}
             <TableCell className="space-x-2">
               <Button variant="outline" size="sm" onClick={() => { setEditing(row); setShowForm(true) }}>Editar</Button>
               <Button variant="destructive" size="sm" onClick={() => deleteMutation.mutate({ table, idField, idValue: row[idField] })}>Eliminar</Button>
@@ -112,6 +128,7 @@ export default function CatalogosPage() {
           <TabsTrigger value="cuencas">Cuencas</TabsTrigger>
           <TabsTrigger value="campos">Campos</TabsTrigger>
           <TabsTrigger value="contratos">Contratos</TabsTrigger>
+          <TabsTrigger value="personas">Personas</TabsTrigger>
         </TabsList>
 
         {['unidades', 'biozonas', 'edades', 'empresas', 'cuencas', 'campos', 'contratos', 'personas'].map(tab => (
@@ -119,13 +136,51 @@ export default function CatalogosPage() {
             <div className="flex justify-end mb-4">
               <Button onClick={() => { setEditing(null); setShowForm(true) }}>Nuevo</Button>
             </div>
-            {tab === 'unidades' && renderTable(['unidad_lito_id', 'nombre_oficial', 'tipo_unidad', 'rango'], unidades || [], 'unidad_lito_id', 'dic_unidad_lito')}
-            {tab === 'biozonas' && renderTable(['biozona_id', 'nombre_biozona', 'grupo_fosil', 'edad_base', 'edad_tope'], biozonas || [], 'biozona_id', 'dic_biozona')}
-            {tab === 'edades' && renderTable(['edad_id', 'nombre_edad', 'jerarquia', 'base_ma', 'tope_ma'], edades || [], 'edad_id', 'dic_edad')}
-            {tab === 'empresas' && renderTable(['empresa_id', 'nombre_empresa', 'tipo_empresa', 'pais'], empresas || [], 'empresa_id', 'empresa')}
-            {tab === 'cuencas' && renderTable(['cuenca_id', 'nombre_cuenca'], cuencas || [], 'cuenca_id', 'dic_cuenca')}
-            {tab === 'campos' && renderTable(['campo_id', 'nombre_campo'], campos || [], 'campo_id', 'dic_campo')}
-            {tab === 'contratos' && renderTable(['contrato_id', 'nombre_contrato'], contratos || [], 'contrato_id', 'dic_contrato')}
+            {tab === 'unidades' && renderTable([
+              { key: 'unidad_lito_id', label: 'ID' },
+              { key: 'nombre_oficial', label: 'Nombre Oficial' },
+              { key: 'tipo_unidad', label: 'Tipo Unidad' },
+              { key: 'rango', label: 'Rango' },
+            ], unidades || [], 'unidad_lito_id', 'dic_unidad_lito')}
+            {tab === 'biozonas' && renderTable([
+              { key: 'biozona_id', label: 'ID' },
+              { key: 'nombre_biozona', label: 'Nombre Biozona' },
+              { key: 'grupo_fosil', label: 'Grupo Fósil' },
+              { key: 'edad_tope', label: 'Edad Tope' },
+              { key: 'edad_base', label: 'Edad Base' },
+            ], biozonas || [], 'biozona_id', 'dic_biozona')}
+            {tab === 'edades' && renderTable([
+              { key: 'edad_id', label: 'ID' },
+              { key: 'nombre_edad', label: 'Edad' },
+              { key: 'jerarquia', label: 'Jerarquía' },
+              { key: 'tope_ma', label: 'Tope (Ma)' },
+              { key: 'base_ma', label: 'Base (Ma)' },
+            ], edades || [], 'edad_id', 'dic_edad')}
+            {tab === 'empresas' && renderTable([
+              { key: 'empresa_id', label: 'ID' },
+              { key: 'nombre_empresa', label: 'Empresa' },
+              { key: 'tipo_empresa', label: 'Tipo Empresa' },
+              { key: 'pais', label: 'País' },
+            ], empresas || [], 'empresa_id', 'empresa')}
+            {tab === 'cuencas' && renderTable([
+              { key: 'cuenca_id', label: 'ID' },
+              { key: 'nombre_cuenca', label: 'Cuenca' },
+            ], cuencas || [], 'cuenca_id', 'dic_cuenca')}
+            {tab === 'campos' && renderTable([
+              { key: 'campo_id', label: 'ID' },
+              { key: 'nombre_campo', label: 'Campo' },
+            ], campos || [], 'campo_id', 'dic_campo')}
+            {tab === 'contratos' && renderTable([
+              { key: 'contrato_id', label: 'ID' },
+              { key: 'nombre_contrato', label: 'Contrato' },
+            ], contratos || [], 'contrato_id', 'dic_contrato')}
+            {tab === 'personas' && renderTable([
+              { key: 'persona_id', label: 'ID' },
+              { key: 'nombre', label: 'Nombre' },
+              { key: 'rol', label: 'Rol' },
+              { key: 'email', label: 'Email' },
+              { key: 'activo', label: 'Activo' },
+            ], personas || [], 'persona_id', 'persona')}
           </TabsContent>
         ))}
 
@@ -161,6 +216,34 @@ export default function CatalogosPage() {
               <EmpresaForm
                 defaultValues={editing}
                 onSubmit={(v) => handleSave('empresa', v, 'empresa_id')}
+                onCancel={() => { setShowForm(false); setEditing(null) }}
+              />
+            )}
+            {activeTab === 'personas' && (
+              <PersonaForm
+                defaultValues={editing}
+                onSubmit={(v) => handleSave('persona', v, 'persona_id')}
+                onCancel={() => { setShowForm(false); setEditing(null) }}
+              />
+            )}
+            {activeTab === 'cuencas' && (
+              <CuencaForm
+                defaultValues={editing}
+                onSubmit={(v) => handleSave('dic_cuenca', v, 'cuenca_id')}
+                onCancel={() => { setShowForm(false); setEditing(null) }}
+              />
+            )}
+            {activeTab === 'campos' && (
+              <CampoForm
+                defaultValues={editing}
+                onSubmit={(v) => handleSave('dic_campo', v, 'campo_id')}
+                onCancel={() => { setShowForm(false); setEditing(null) }}
+              />
+            )}
+            {activeTab === 'contratos' && (
+              <ContratoForm
+                defaultValues={editing}
+                onSubmit={(v) => handleSave('dic_contrato', v, 'contrato_id')}
                 onCancel={() => { setShowForm(false); setEditing(null) }}
               />
             )}
