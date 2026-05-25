@@ -124,11 +124,11 @@ DROP POLICY IF EXISTS audit_insert_authenticated ON public.auditoria;
 --
 --   Rules:
 --     SELECT  => auth.role() = 'authenticated'
---     INSERT  => (auth.jwt() ->> 'role') IN ('Revisor','Curador','Administrador')
+--     INSERT  => (auth.jwt() -> 'user_metadata' ->> 'role') IN ('Catalogador','Revisor','Curador','Administrador')
 --                OR auth.role() = 'supabase_admin'
---     UPDATE  => (auth.jwt() ->> 'role') IN ('Catalogador','Revisor','Curador','Administrador')
+--     UPDATE  => (auth.jwt() -> 'user_metadata' ->> 'role') IN ('Catalogador','Revisor','Curador','Administrador')
 --                OR auth.role() = 'supabase_admin'
---     DELETE  => (auth.jwt() ->> 'role') IN ('Revisor','Curador','Administrador')
+--     DELETE  => (auth.jwt() -> 'user_metadata' ->> 'role') IN ('Revisor','Curador','Administrador')
 --                OR auth.role() = 'supabase_admin'
 -- ----------------------------------------------------
 
@@ -138,11 +138,11 @@ CREATE POLICY placa_select_all ON public.placa
   FOR SELECT TO public
   USING (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS placa_insert_revisor_plus ON public.placa;
-CREATE POLICY placa_insert_revisor_plus ON public.placa
+DROP POLICY IF EXISTS placa_insert_catalogador_plus ON public.placa;
+CREATE POLICY placa_insert_catalogador_plus ON public.placa
   FOR INSERT TO public
   WITH CHECK (
-    (auth.jwt() ->> 'role') IN ('Revisor', 'Curador', 'Administrador')
+    (auth.jwt() -> 'user_metadata' ->> 'role') IN ('Catalogador', 'Revisor', 'Curador', 'Administrador')
     OR auth.role() = 'supabase_admin'
   );
 
@@ -172,11 +172,11 @@ CREATE POLICY marcado_placa_select_all ON public.marcado_placa
   FOR SELECT TO public
   USING (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS marcado_placa_insert_revisor_plus ON public.marcado_placa;
-CREATE POLICY marcado_placa_insert_revisor_plus ON public.marcado_placa
+DROP POLICY IF EXISTS marcado_placa_insert_catalogador_plus ON public.marcado_placa;
+CREATE POLICY marcado_placa_insert_catalogador_plus ON public.marcado_placa
   FOR INSERT TO public
   WITH CHECK (
-    (auth.jwt() ->> 'role') IN ('Revisor', 'Curador', 'Administrador')
+    (auth.jwt() -> 'user_metadata' ->> 'role') IN ('Catalogador', 'Revisor', 'Curador', 'Administrador')
     OR auth.role() = 'supabase_admin'
   );
 
@@ -206,11 +206,11 @@ CREATE POLICY nota_manuscrita_select_all ON public.nota_manuscrita
   FOR SELECT TO public
   USING (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS nota_manuscrita_insert_revisor_plus ON public.nota_manuscrita;
-CREATE POLICY nota_manuscrita_insert_revisor_plus ON public.nota_manuscrita
+DROP POLICY IF EXISTS nota_manuscrita_insert_catalogador_plus ON public.nota_manuscrita;
+CREATE POLICY nota_manuscrita_insert_catalogador_plus ON public.nota_manuscrita
   FOR INSERT TO public
   WITH CHECK (
-    (auth.jwt() ->> 'role') IN ('Revisor', 'Curador', 'Administrador')
+    (auth.jwt() -> 'user_metadata' ->> 'role') IN ('Catalogador', 'Revisor', 'Curador', 'Administrador')
     OR auth.role() = 'supabase_admin'
   );
 
@@ -240,11 +240,11 @@ CREATE POLICY muestra_select_all ON public.muestra
   FOR SELECT TO public
   USING (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS muestra_insert_revisor_plus ON public.muestra;
-CREATE POLICY muestra_insert_revisor_plus ON public.muestra
+DROP POLICY IF EXISTS muestra_insert_catalogador_plus ON public.muestra;
+CREATE POLICY muestra_insert_catalogador_plus ON public.muestra
   FOR INSERT TO public
   WITH CHECK (
-    (auth.jwt() ->> 'role') IN ('Revisor', 'Curador', 'Administrador')
+    (auth.jwt() -> 'user_metadata' ->> 'role') IN ('Catalogador', 'Revisor', 'Curador', 'Administrador')
     OR auth.role() = 'supabase_admin'
   );
 
@@ -274,11 +274,11 @@ CREATE POLICY muestra_empresa_select_all ON public.muestra_empresa
   FOR SELECT TO public
   USING (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS muestra_empresa_insert_revisor_plus ON public.muestra_empresa;
-CREATE POLICY muestra_empresa_insert_revisor_plus ON public.muestra_empresa
+DROP POLICY IF EXISTS muestra_empresa_insert_catalogador_plus ON public.muestra_empresa;
+CREATE POLICY muestra_empresa_insert_catalogador_plus ON public.muestra_empresa
   FOR INSERT TO public
   WITH CHECK (
-    (auth.jwt() ->> 'role') IN ('Revisor', 'Curador', 'Administrador')
+    (auth.jwt() -> 'user_metadata' ->> 'role') IN ('Catalogador', 'Revisor', 'Curador', 'Administrador')
     OR auth.role() = 'supabase_admin'
   );
 
@@ -308,11 +308,11 @@ CREATE POLICY geologia_select_all ON public.geologia
   FOR SELECT TO public
   USING (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS geologia_insert_revisor_plus ON public.geologia;
-CREATE POLICY geologia_insert_revisor_plus ON public.geologia
+DROP POLICY IF EXISTS geologia_insert_catalogador_plus ON public.geologia;
+CREATE POLICY geologia_insert_catalogador_plus ON public.geologia
   FOR INSERT TO public
   WITH CHECK (
-    (auth.jwt() ->> 'role') IN ('Revisor', 'Curador', 'Administrador')
+    (auth.jwt() -> 'user_metadata' ->> 'role') IN ('Catalogador', 'Revisor', 'Curador', 'Administrador')
     OR auth.role() = 'supabase_admin'
   );
 
@@ -342,11 +342,11 @@ CREATE POLICY microfauna_select_all ON public.microfauna
   FOR SELECT TO public
   USING (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS microfauna_insert_revisor_plus ON public.microfauna;
-CREATE POLICY microfauna_insert_revisor_plus ON public.microfauna
+DROP POLICY IF EXISTS microfauna_insert_catalogador_plus ON public.microfauna;
+CREATE POLICY microfauna_insert_catalogador_plus ON public.microfauna
   FOR INSERT TO public
   WITH CHECK (
-    (auth.jwt() ->> 'role') IN ('Revisor', 'Curador', 'Administrador')
+    (auth.jwt() -> 'user_metadata' ->> 'role') IN ('Catalogador', 'Revisor', 'Curador', 'Administrador')
     OR auth.role() = 'supabase_admin'
   );
 
@@ -376,11 +376,11 @@ CREATE POLICY disposicion_material_select_all ON public.disposicion_material
   FOR SELECT TO public
   USING (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS disposicion_material_insert_revisor_plus ON public.disposicion_material;
-CREATE POLICY disposicion_material_insert_revisor_plus ON public.disposicion_material
+DROP POLICY IF EXISTS disposicion_material_insert_catalogador_plus ON public.disposicion_material;
+CREATE POLICY disposicion_material_insert_catalogador_plus ON public.disposicion_material
   FOR INSERT TO public
   WITH CHECK (
-    (auth.jwt() ->> 'role') IN ('Revisor', 'Curador', 'Administrador')
+    (auth.jwt() -> 'user_metadata' ->> 'role') IN ('Catalogador', 'Revisor', 'Curador', 'Administrador')
     OR auth.role() = 'supabase_admin'
   );
 
@@ -410,11 +410,11 @@ CREATE POLICY estado_conservacion_select_all ON public.estado_conservacion
   FOR SELECT TO public
   USING (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS estado_conservacion_insert_revisor_plus ON public.estado_conservacion;
-CREATE POLICY estado_conservacion_insert_revisor_plus ON public.estado_conservacion
+DROP POLICY IF EXISTS estado_conservacion_insert_catalogador_plus ON public.estado_conservacion;
+CREATE POLICY estado_conservacion_insert_catalogador_plus ON public.estado_conservacion
   FOR INSERT TO public
   WITH CHECK (
-    (auth.jwt() ->> 'role') IN ('Revisor', 'Curador', 'Administrador')
+    (auth.jwt() -> 'user_metadata' ->> 'role') IN ('Catalogador', 'Revisor', 'Curador', 'Administrador')
     OR auth.role() = 'supabase_admin'
   );
 
@@ -444,11 +444,11 @@ CREATE POLICY fuente_dato_select_all ON public.fuente_dato
   FOR SELECT TO public
   USING (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS fuente_dato_insert_revisor_plus ON public.fuente_dato;
-CREATE POLICY fuente_dato_insert_revisor_plus ON public.fuente_dato
+DROP POLICY IF EXISTS fuente_dato_insert_catalogador_plus ON public.fuente_dato;
+CREATE POLICY fuente_dato_insert_catalogador_plus ON public.fuente_dato
   FOR INSERT TO public
   WITH CHECK (
-    (auth.jwt() ->> 'role') IN ('Revisor', 'Curador', 'Administrador')
+    (auth.jwt() -> 'user_metadata' ->> 'role') IN ('Catalogador', 'Revisor', 'Curador', 'Administrador')
     OR auth.role() = 'supabase_admin'
   );
 
@@ -478,11 +478,11 @@ CREATE POLICY ubicacion_fisica_select_all ON public.ubicacion_fisica
   FOR SELECT TO public
   USING (auth.role() = 'authenticated');
 
-DROP POLICY IF EXISTS ubicacion_fisica_insert_revisor_plus ON public.ubicacion_fisica;
-CREATE POLICY ubicacion_fisica_insert_revisor_plus ON public.ubicacion_fisica
+DROP POLICY IF EXISTS ubicacion_fisica_insert_catalogador_plus ON public.ubicacion_fisica;
+CREATE POLICY ubicacion_fisica_insert_catalogador_plus ON public.ubicacion_fisica
   FOR INSERT TO public
   WITH CHECK (
-    (auth.jwt() ->> 'role') IN ('Revisor', 'Curador', 'Administrador')
+    (auth.jwt() -> 'user_metadata' ->> 'role') IN ('Catalogador', 'Revisor', 'Curador', 'Administrador')
     OR auth.role() = 'supabase_admin'
   );
 
