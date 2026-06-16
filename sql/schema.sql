@@ -189,7 +189,7 @@ CREATE TABLE public.CAT_COLECCION (
     CONSTRAINT uq_cat_coleccion_codigo UNIQUE (codigo_coleccion),
     CONSTRAINT uq_cat_coleccion_nombre UNIQUE (nombre_coleccion),
     CONSTRAINT chk_cat_coleccion_estado
-        CHECK (estado_coleccion IN ('Activa', 'Cerrada', 'Inactiva'))
+        CHECK (estado_coleccion IN ('Activa', 'Cerrada'))
 );
 
 COMMENT ON TABLE public.CAT_COLECCION IS 'Colecciones disponibles para catalogación.';
