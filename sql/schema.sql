@@ -1385,5 +1385,419 @@ CREATE INDEX idx_ubicacion_fisica_estado_catalogacion_id ON public.UBICACION_FIS
 CREATE INDEX idx_ubicacion_fisica_revisor_id ON public.UBICACION_FISICA(revisor_id);
 
 -- ============================================================
+-- POZO
+-- ============================================================
+DROP TABLE IF EXISTS public.POZO CASCADE;
+
+CREATE TABLE public.POZO (
+    pozo_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_pozo varchar(255),
+    nombre_pozo varchar(255),
+    cuenca_id bigint,
+    localizacion_geografica_id bigint,
+    localizacion_espacial_id bigint,
+    estado_revision_id bigint,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    CONSTRAINT pk_pozo PRIMARY KEY (pozo_id),
+    CONSTRAINT fk_pozo_cuenca_id FOREIGN KEY (cuenca_id) REFERENCES public.CAT_CUENCA(cuenca_id) ON DELETE SET NULL,
+    CONSTRAINT fk_pozo_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL,
+    CONSTRAINT fk_pozo_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.POZO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_pozo_cuenca_id ON public.POZO(cuenca_id);
+CREATE INDEX idx_pozo_estado_revision_id ON public.POZO(estado_revision_id);
+CREATE INDEX idx_pozo_revisor_id ON public.POZO(revisor_id);
+CREATE INDEX idx_pozo_codigo_pozo ON public.POZO(codigo_pozo);
+
+-- ============================================================
+-- POZO_REPORTADO
+-- ============================================================
+DROP TABLE IF EXISTS public.POZO_REPORTADO CASCADE;
+
+CREATE TABLE public.POZO_REPORTADO (
+    pozo_reportado_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_reportado varchar(255),
+    estado_revision_id bigint,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    estado_catalogacion_id bigint,
+    observaciones text,
+    CONSTRAINT pk_pozo_reportado PRIMARY KEY (pozo_reportado_id),
+    CONSTRAINT fk_pozo_reportado_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL,
+    CONSTRAINT fk_pozo_reportado_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_pozo_reportado_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_pozo_reportado_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.POZO_REPORTADO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_pozo_reportado_estado_revision_id ON public.POZO_REPORTADO(estado_revision_id);
+CREATE INDEX idx_pozo_reportado_catalogador_id ON public.POZO_REPORTADO(catalogador_id);
+CREATE INDEX idx_pozo_reportado_revisor_id ON public.POZO_REPORTADO(revisor_id);
+CREATE INDEX idx_pozo_reportado_estado_catalogacion_id ON public.POZO_REPORTADO(estado_catalogacion_id);
+
+-- ============================================================
+-- REL_POZO_REPORTADO_POZO
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_POZO_REPORTADO_POZO CASCADE;
+
+CREATE TABLE public.REL_POZO_REPORTADO_POZO (
+    rel_pozo_reportado_pozo_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    pozo_reportado_id bigint,
+    pozo_id bigint,
+    observaciones text,
+    CONSTRAINT pk_rel_pozo_reportado_pozo PRIMARY KEY (rel_pozo_reportado_pozo_id),
+    CONSTRAINT fk_rel_pozo_reportado_pozo_pozo_reportado_id FOREIGN KEY (pozo_reportado_id) REFERENCES public.POZO_REPORTADO(pozo_reportado_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_pozo_reportado_pozo_pozo_id FOREIGN KEY (pozo_id) REFERENCES public.POZO(pozo_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_POZO_REPORTADO_POZO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_pozo_reportado_pozo_pozo_reportado_id ON public.REL_POZO_REPORTADO_POZO(pozo_reportado_id);
+CREATE INDEX idx_rel_pozo_reportado_pozo_pozo_id ON public.REL_POZO_REPORTADO_POZO(pozo_id);
+
+-- ============================================================
+-- POZO_EXPLORATORIO
+-- ============================================================
+DROP TABLE IF EXISTS public.POZO_EXPLORATORIO CASCADE;
+
+CREATE TABLE public.POZO_EXPLORATORIO (
+    pozo_exploratorio_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    pozo_id bigint,
+    operador varchar(255),
+    estado_pozo varchar(255),
+    ano_perforacion varchar(255),
+    profundidad_total varchar(255),
+    CONSTRAINT pk_pozo_exploratorio PRIMARY KEY (pozo_exploratorio_id),
+    CONSTRAINT fk_pozo_exploratorio_pozo_id FOREIGN KEY (pozo_id) REFERENCES public.POZO(pozo_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.POZO_EXPLORATORIO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_pozo_exploratorio_pozo_id ON public.POZO_EXPLORATORIO(pozo_id);
+
+-- ============================================================
+-- POZO_ESTRATIGRAFICO
+-- ============================================================
+DROP TABLE IF EXISTS public.POZO_ESTRATIGRAFICO CASCADE;
+
+CREATE TABLE public.POZO_ESTRATIGRAFICO (
+    pozo_estratigrafico_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    pozo_id bigint,
+    proyecto_estratigrafico varchar(255),
+    institucion varchar(255),
+    ano_perforacion varchar(255),
+    CONSTRAINT pk_pozo_estratigrafico PRIMARY KEY (pozo_estratigrafico_id),
+    CONSTRAINT fk_pozo_estratigrafico_pozo_id FOREIGN KEY (pozo_id) REFERENCES public.POZO(pozo_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.POZO_ESTRATIGRAFICO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_pozo_estratigrafico_pozo_id ON public.POZO_ESTRATIGRAFICO(pozo_id);
+
+-- ============================================================
+-- MUESTRA
+-- ============================================================
+DROP TABLE IF EXISTS public.MUESTRA CASCADE;
+
+CREATE TABLE public.MUESTRA (
+    muestra_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_muestra_original varchar(255),
+    codigo_muestra_sistema varchar(255),
+    origen_muestra_id bigint,
+    metodo_adquisicion_id bigint,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    estado_catalogacion_id bigint,
+    observaciones text,
+    CONSTRAINT pk_muestra PRIMARY KEY (muestra_id),
+    CONSTRAINT fk_muestra_origen_muestra_id FOREIGN KEY (origen_muestra_id) REFERENCES public.CAT_ORIGEN_MUESTRA(origen_muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_muestra_metodo_adquisicion_id FOREIGN KEY (metodo_adquisicion_id) REFERENCES public.CAT_METODO_ADQUISICION(metodo_adquisicion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_muestra_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_muestra_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_muestra_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.MUESTRA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_muestra_origen_muestra_id ON public.MUESTRA(origen_muestra_id);
+CREATE INDEX idx_muestra_metodo_adquisicion_id ON public.MUESTRA(metodo_adquisicion_id);
+CREATE INDEX idx_muestra_catalogador_id ON public.MUESTRA(catalogador_id);
+CREATE INDEX idx_muestra_revisor_id ON public.MUESTRA(revisor_id);
+CREATE INDEX idx_muestra_estado_catalogacion_id ON public.MUESTRA(estado_catalogacion_id);
+CREATE INDEX idx_muestra_codigo_muestra_sistema ON public.MUESTRA(codigo_muestra_sistema);
+
+-- ============================================================
+-- MUESTRA_SUPERFICIE
+-- ============================================================
+DROP TABLE IF EXISTS public.MUESTRA_SUPERFICIE CASCADE;
+
+CREATE TABLE public.MUESTRA_SUPERFICIE (
+    muestra_superficie_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    muestra_id bigint,
+    ano_muestreo bigint,
+    codigo_original_muestra varchar(255),
+    colector_id bigint,
+    consecutivo_campo varchar(255),
+    profundidad_muestreo bigint,
+    unidad_medida_id bigint,
+    igm varchar(255),
+    numero_preparacion_lab varchar(255),
+    observaciones text,
+    plancha_topografica_id bigint,
+    localizacion_georeferencial_id bigint,
+    seccion_estratigrafica_id bigint,
+    posicion_estratigrafica_id bigint,
+    localizacion_geografica_id bigint,
+    localizacion_espacial_id bigint,
+    CONSTRAINT pk_muestra_superficie PRIMARY KEY (muestra_superficie_id),
+    CONSTRAINT fk_muestra_superficie_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_muestra_superficie_colector_id FOREIGN KEY (colector_id) REFERENCES public.CAT_COLECTOR(colector_id) ON DELETE SET NULL,
+    CONSTRAINT fk_muestra_superficie_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.MUESTRA_SUPERFICIE IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_muestra_superficie_muestra_id ON public.MUESTRA_SUPERFICIE(muestra_id);
+CREATE INDEX idx_muestra_superficie_colector_id ON public.MUESTRA_SUPERFICIE(colector_id);
+CREATE INDEX idx_muestra_superficie_unidad_medida_id ON public.MUESTRA_SUPERFICIE(unidad_medida_id);
+
+-- ============================================================
+-- MUESTRA_LECHO_MARINO
+-- ============================================================
+DROP TABLE IF EXISTS public.MUESTRA_LECHO_MARINO CASCADE;
+
+CREATE TABLE public.MUESTRA_LECHO_MARINO (
+    muestra_lecho_marino_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    muestra_id bigint,
+    crucero varchar(255),
+    estacion varchar(255),
+    profundidad_agua bigint,
+    unidad_medida_id bigint,
+    localizacion_geografica_id bigint,
+    localizacion_espacial_id bigint,
+    CONSTRAINT pk_muestra_lecho_marino PRIMARY KEY (muestra_lecho_marino_id),
+    CONSTRAINT fk_muestra_lecho_marino_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_muestra_lecho_marino_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.MUESTRA_LECHO_MARINO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_muestra_lecho_marino_muestra_id ON public.MUESTRA_LECHO_MARINO(muestra_id);
+CREATE INDEX idx_muestra_lecho_marino_unidad_medida_id ON public.MUESTRA_LECHO_MARINO(unidad_medida_id);
+
+-- ============================================================
+-- MUESTRA_SUBSUELO
+-- ============================================================
+DROP TABLE IF EXISTS public.MUESTRA_SUBSUELO CASCADE;
+
+CREATE TABLE public.MUESTRA_SUBSUELO (
+    muestra_subsuelo_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    muestra_id bigint,
+    tipo_muestra_subsuelo_id bigint,
+    pozo_id bigint,
+    tipo_intervalo_muestra_id bigint,
+    profundidad_tope bigint,
+    profundidad_base bigint,
+    unidad_medida_id bigint,
+    intervalo_nucleo bigint,
+    CONSTRAINT pk_muestra_subsuelo PRIMARY KEY (muestra_subsuelo_id),
+    CONSTRAINT fk_muestra_subsuelo_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_muestra_subsuelo_tipo_muestra_subsuelo_id FOREIGN KEY (tipo_muestra_subsuelo_id) REFERENCES public.CAT_TIPO_MUESTRA_SUBSUELO(tipo_muestra_subsuelo_id) ON DELETE SET NULL,
+    CONSTRAINT fk_muestra_subsuelo_pozo_id FOREIGN KEY (pozo_id) REFERENCES public.POZO(pozo_id) ON DELETE SET NULL,
+    CONSTRAINT fk_muestra_subsuelo_tipo_intervalo_muestra_id FOREIGN KEY (tipo_intervalo_muestra_id) REFERENCES public.CAT_TIPO_INTERVALO_MUESTRA(tipo_intervalo_muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_muestra_subsuelo_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.MUESTRA_SUBSUELO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_muestra_subsuelo_muestra_id ON public.MUESTRA_SUBSUELO(muestra_id);
+CREATE INDEX idx_muestra_subsuelo_tipo_muestra_subsuelo_id ON public.MUESTRA_SUBSUELO(tipo_muestra_subsuelo_id);
+CREATE INDEX idx_muestra_subsuelo_pozo_id ON public.MUESTRA_SUBSUELO(pozo_id);
+CREATE INDEX idx_muestra_subsuelo_tipo_intervalo_muestra_id ON public.MUESTRA_SUBSUELO(tipo_intervalo_muestra_id);
+CREATE INDEX idx_muestra_subsuelo_unidad_medida_id ON public.MUESTRA_SUBSUELO(unidad_medida_id);
+
+-- ============================================================
+-- NUCLEO
+-- ============================================================
+DROP TABLE IF EXISTS public.NUCLEO CASCADE;
+
+CREATE TABLE public.NUCLEO (
+    nucleo_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    muestra_subsuelo_id bigint,
+    nucleo_reportado boolean,
+    numero_nucleo bigint,
+    profundidad_tope bigint,
+    profundidad_base bigint,
+    unidad_medida_id bigint,
+    observaciones text,
+    CONSTRAINT pk_nucleo PRIMARY KEY (nucleo_id),
+    CONSTRAINT fk_nucleo_muestra_subsuelo_id FOREIGN KEY (muestra_subsuelo_id) REFERENCES public.MUESTRA_SUBSUELO(muestra_subsuelo_id) ON DELETE SET NULL,
+    CONSTRAINT fk_nucleo_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.NUCLEO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_nucleo_muestra_subsuelo_id ON public.NUCLEO(muestra_subsuelo_id);
+CREATE INDEX idx_nucleo_unidad_medida_id ON public.NUCLEO(unidad_medida_id);
+
+-- ============================================================
+-- SECCION_NUCLEO
+-- ============================================================
+DROP TABLE IF EXISTS public.SECCION_NUCLEO CASCADE;
+
+CREATE TABLE public.SECCION_NUCLEO (
+    seccion_nucleo_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nucleo_id bigint,
+    numero_seccion bigint,
+    intervalo_tope bigint,
+    intervalo_base bigint,
+    unidad_medida_id bigint,
+    observaciones text,
+    CONSTRAINT pk_seccion_nucleo PRIMARY KEY (seccion_nucleo_id),
+    CONSTRAINT fk_seccion_nucleo_nucleo_id FOREIGN KEY (nucleo_id) REFERENCES public.NUCLEO(nucleo_id) ON DELETE SET NULL,
+    CONSTRAINT fk_seccion_nucleo_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.SECCION_NUCLEO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_seccion_nucleo_nucleo_id ON public.SECCION_NUCLEO(nucleo_id);
+CREATE INDEX idx_seccion_nucleo_unidad_medida_id ON public.SECCION_NUCLEO(unidad_medida_id);
+
+-- ============================================================
+-- DISPOSICION_MATERIAL
+-- ============================================================
+DROP TABLE IF EXISTS public.DISPOSICION_MATERIAL CASCADE;
+
+CREATE TABLE public.DISPOSICION_MATERIAL (
+    disposicion_material_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    placa_id bigint,
+    muestra_id bigint,
+    codigo_cavidad_id bigint,
+    numero_cavidad varchar(255),
+    tiene_material boolean,
+    estado_material_id bigint,
+    recobro_cualitativo_id bigint,
+    estado_catalogacion_id bigint,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    observaciones text,
+    CONSTRAINT pk_disposicion_material PRIMARY KEY (disposicion_material_id),
+    CONSTRAINT fk_disposicion_material_placa_id FOREIGN KEY (placa_id) REFERENCES public.PLACA(placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_disposicion_material_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_disposicion_material_codigo_cavidad_id FOREIGN KEY (codigo_cavidad_id) REFERENCES public.CAT_CODIGO_CAVIDAD(codigo_cavidad_id) ON DELETE SET NULL,
+    CONSTRAINT fk_disposicion_material_estado_material_id FOREIGN KEY (estado_material_id) REFERENCES public.CAT_ESTADO_MATERIAL(estado_material_id) ON DELETE SET NULL,
+    CONSTRAINT fk_disposicion_material_recobro_cualitativo_id FOREIGN KEY (recobro_cualitativo_id) REFERENCES public.CAT_RECOBRO_CUALITATIVO(recobro_cualitativo_id) ON DELETE SET NULL,
+    CONSTRAINT fk_disposicion_material_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_disposicion_material_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_disposicion_material_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DISPOSICION_MATERIAL IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_disposicion_material_placa_id ON public.DISPOSICION_MATERIAL(placa_id);
+CREATE INDEX idx_disposicion_material_muestra_id ON public.DISPOSICION_MATERIAL(muestra_id);
+CREATE INDEX idx_disposicion_material_codigo_cavidad_id ON public.DISPOSICION_MATERIAL(codigo_cavidad_id);
+CREATE INDEX idx_disposicion_material_estado_material_id ON public.DISPOSICION_MATERIAL(estado_material_id);
+CREATE INDEX idx_disposicion_material_recobro_cualitativo_id ON public.DISPOSICION_MATERIAL(recobro_cualitativo_id);
+CREATE INDEX idx_disposicion_material_estado_catalogacion_id ON public.DISPOSICION_MATERIAL(estado_catalogacion_id);
+CREATE INDEX idx_disposicion_material_revisor_id ON public.DISPOSICION_MATERIAL(revisor_id);
+CREATE INDEX idx_disposicion_material_catalogador_id ON public.DISPOSICION_MATERIAL(catalogador_id);
+
+-- ============================================================
+-- REL_MUESTRA_TRATAMIENTO
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_MUESTRA_TRATAMIENTO CASCADE;
+
+CREATE TABLE public.REL_MUESTRA_TRATAMIENTO (
+    rel_muestra_tratamiento_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    muestra_id bigint,
+    tratamiento_muestra_id bigint,
+    observaciones text,
+    CONSTRAINT pk_rel_muestra_tratamiento PRIMARY KEY (rel_muestra_tratamiento_id),
+    CONSTRAINT fk_rel_muestra_tratamiento_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_tratamiento_tratamiento_muestra_id FOREIGN KEY (tratamiento_muestra_id) REFERENCES public.CAT_TRATAMIENTO_MUESTRA(tratamiento_muestra_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_MUESTRA_TRATAMIENTO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_muestra_tratamiento_muestra_id ON public.REL_MUESTRA_TRATAMIENTO(muestra_id);
+CREATE INDEX idx_rel_muestra_tratamiento_tratamiento_muestra_id ON public.REL_MUESTRA_TRATAMIENTO(tratamiento_muestra_id);
+
+-- ============================================================
+-- REL_MUESTRA_PROYECTO
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_MUESTRA_PROYECTO CASCADE;
+
+CREATE TABLE public.REL_MUESTRA_PROYECTO (
+    rel_muestra_proyecto_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    muestra_id bigint,
+    proyecto_id bigint,
+    CONSTRAINT pk_rel_muestra_proyecto PRIMARY KEY (rel_muestra_proyecto_id),
+    CONSTRAINT fk_rel_muestra_proyecto_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_proyecto_proyecto_id FOREIGN KEY (proyecto_id) REFERENCES public.CAT_PROYECTO(proyecto_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_MUESTRA_PROYECTO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_muestra_proyecto_muestra_id ON public.REL_MUESTRA_PROYECTO(muestra_id);
+CREATE INDEX idx_rel_muestra_proyecto_proyecto_id ON public.REL_MUESTRA_PROYECTO(proyecto_id);
+
+-- ============================================================
+-- REL_MUESTRA_ENTIDAD
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_MUESTRA_ENTIDAD CASCADE;
+
+CREATE TABLE public.REL_MUESTRA_ENTIDAD (
+    rel_muestra_entidad_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    muestra_id bigint,
+    entidad_id bigint,
+    CONSTRAINT pk_rel_muestra_entidad PRIMARY KEY (rel_muestra_entidad_id),
+    CONSTRAINT fk_rel_muestra_entidad_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_entidad_entidad_id FOREIGN KEY (entidad_id) REFERENCES public.CAT_ENTIDAD(entidad_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_MUESTRA_ENTIDAD IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_muestra_entidad_muestra_id ON public.REL_MUESTRA_ENTIDAD(muestra_id);
+CREATE INDEX idx_rel_muestra_entidad_entidad_id ON public.REL_MUESTRA_ENTIDAD(entidad_id);
+
+-- ============================================================
+-- REL_MUESTRA_FECHA_HISTORICA
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_MUESTRA_FECHA_HISTORICA CASCADE;
+
+CREATE TABLE public.REL_MUESTRA_FECHA_HISTORICA (
+    rel_muestra_fecha_historica_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    muestra_id bigint,
+    fecha_historica_id bigint,
+    observaciones text,
+    CONSTRAINT pk_rel_muestra_fecha_historica PRIMARY KEY (rel_muestra_fecha_historica_id),
+    CONSTRAINT fk_rel_muestra_fecha_historica_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_fecha_historica_fecha_historica_id FOREIGN KEY (fecha_historica_id) REFERENCES public.CAT_FECHA_HISTORICA(fecha_historica_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_MUESTRA_FECHA_HISTORICA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_muestra_fecha_historica_muestra_id ON public.REL_MUESTRA_FECHA_HISTORICA(muestra_id);
+CREATE INDEX idx_rel_muestra_fecha_historica_fecha_historica_id ON public.REL_MUESTRA_FECHA_HISTORICA(fecha_historica_id);
+
+-- ============================================================
+-- Actualización de versión del esquema
+-- ============================================================
+INSERT INTO public.schema_version (version, applied_at)
+VALUES (2, now())
+ON CONFLICT (version) DO UPDATE SET applied_at = EXCLUDED.applied_at;
+
 
 COMMIT;
