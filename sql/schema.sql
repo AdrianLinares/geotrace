@@ -1967,6 +1967,157 @@ CREATE INDEX idx_rel_muestra_taxon_reportado_taxon_reportado_id ON public.REL_MU
 CREATE INDEX idx_rel_muestra_taxon_reportado_tipo_duda_id ON public.REL_MUESTRA_TAXON_REPORTADO(tipo_duda_id);
 
 -- ============================================================
+-- Fase 3: biozones
+-- ============================================================
+
+-- ============================================================
+-- DIC_BIOZONA_REPORTADA
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_BIOZONA_REPORTADA CASCADE;
+
+CREATE TABLE public.DIC_BIOZONA_REPORTADA (
+    biozona_reportada_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_reportado varchar(255),
+    autor_biozona_reportada varchar(255),
+    codigo_biozona varchar(255),
+    estado_revision_id bigint,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    CONSTRAINT pk_dic_biozona_reportada PRIMARY KEY (biozona_reportada_id),
+    CONSTRAINT fk_dic_biozona_reportada_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_biozona_reportada_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_biozona_reportada_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_BIOZONA_REPORTADA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_biozona_reportada_biozona_reportada_id ON public.DIC_BIOZONA_REPORTADA(biozona_reportada_id);
+CREATE INDEX idx_dic_biozona_reportada_estado_revision_id ON public.DIC_BIOZONA_REPORTADA(estado_revision_id);
+CREATE INDEX idx_dic_biozona_reportada_catalogador_id ON public.DIC_BIOZONA_REPORTADA(catalogador_id);
+CREATE INDEX idx_dic_biozona_reportada_revisor_id ON public.DIC_BIOZONA_REPORTADA(revisor_id);
+
+-- ============================================================
+-- DIC_BIOZONA_NORMALIZADA
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_BIOZONA_NORMALIZADA CASCADE;
+
+CREATE TABLE public.DIC_BIOZONA_NORMALIZADA (
+    biozona_normalizada_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_normalizado varchar(255),
+    codigo_biozona varchar(255),
+    autor_biozona_normalizada varchar(255),
+    estado_revision_id bigint,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    CONSTRAINT pk_dic_biozona_normalizada PRIMARY KEY (biozona_normalizada_id),
+    CONSTRAINT fk_dic_biozona_normalizada_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_biozona_normalizada_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_BIOZONA_NORMALIZADA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_biozona_normalizada_biozona_normalizada_id ON public.DIC_BIOZONA_NORMALIZADA(biozona_normalizada_id);
+CREATE INDEX idx_dic_biozona_normalizada_estado_revision_id ON public.DIC_BIOZONA_NORMALIZADA(estado_revision_id);
+CREATE INDEX idx_dic_biozona_normalizada_revisor_id ON public.DIC_BIOZONA_NORMALIZADA(revisor_id);
+
+-- ============================================================
+-- DIC_BIOZONA_ACTUALIZADA
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_BIOZONA_ACTUALIZADA CASCADE;
+
+CREATE TABLE public.DIC_BIOZONA_ACTUALIZADA (
+    biozona_actualizada_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_actualizado varchar(255),
+    codigo_biozona_actual varchar(255),
+    fuente_actualizacion varchar(255),
+    fecha_actualizacion timestamptz,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    estado_revision_id bigint,
+    observaciones text,
+    CONSTRAINT pk_dic_biozona_actualizada PRIMARY KEY (biozona_actualizada_id),
+    CONSTRAINT fk_dic_biozona_actualizada_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_biozona_actualizada_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_BIOZONA_ACTUALIZADA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_biozona_actualizada_biozona_actualizada_id ON public.DIC_BIOZONA_ACTUALIZADA(biozona_actualizada_id);
+CREATE INDEX idx_dic_biozona_actualizada_revisor_id ON public.DIC_BIOZONA_ACTUALIZADA(revisor_id);
+CREATE INDEX idx_dic_biozona_actualizada_estado_revision_id ON public.DIC_BIOZONA_ACTUALIZADA(estado_revision_id);
+
+-- ============================================================
+-- REL_BIOZONA_REP_NORM
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_BIOZONA_REP_NORM CASCADE;
+
+CREATE TABLE public.REL_BIOZONA_REP_NORM (
+    rel_biozona_rep_norm_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    biozona_reportada_id bigint,
+    biozona_normalizada_id bigint,
+    observaciones text,
+    CONSTRAINT pk_rel_biozona_rep_norm PRIMARY KEY (rel_biozona_rep_norm_id),
+    CONSTRAINT fk_rel_biozona_rep_norm_biozona_reportada_id FOREIGN KEY (biozona_reportada_id) REFERENCES public.DIC_BIOZONA_REPORTADA(biozona_reportada_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_biozona_rep_norm_biozona_normalizada_id FOREIGN KEY (biozona_normalizada_id) REFERENCES public.DIC_BIOZONA_NORMALIZADA(biozona_normalizada_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_BIOZONA_REP_NORM IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_biozona_rep_norm_rel_biozona_rep_norm_id ON public.REL_BIOZONA_REP_NORM(rel_biozona_rep_norm_id);
+CREATE INDEX idx_rel_biozona_rep_norm_biozona_reportada_id ON public.REL_BIOZONA_REP_NORM(biozona_reportada_id);
+CREATE INDEX idx_rel_biozona_rep_norm_biozona_normalizada_id ON public.REL_BIOZONA_REP_NORM(biozona_normalizada_id);
+
+-- ============================================================
+-- REL_BIOZONA_NORM_ACT
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_BIOZONA_NORM_ACT CASCADE;
+
+CREATE TABLE public.REL_BIOZONA_NORM_ACT (
+    rel_biozona_norm_act_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    biozona_normalizada_id bigint,
+    biozona_actualizada_id bigint,
+    fuente_cambio varchar(255),
+    CONSTRAINT pk_rel_biozona_norm_act PRIMARY KEY (rel_biozona_norm_act_id),
+    CONSTRAINT fk_rel_biozona_norm_act_biozona_normalizada_id FOREIGN KEY (biozona_normalizada_id) REFERENCES public.DIC_BIOZONA_NORMALIZADA(biozona_normalizada_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_biozona_norm_act_biozona_actualizada_id FOREIGN KEY (biozona_actualizada_id) REFERENCES public.DIC_BIOZONA_ACTUALIZADA(biozona_actualizada_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_BIOZONA_NORM_ACT IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_biozona_norm_act_rel_biozona_norm_act_id ON public.REL_BIOZONA_NORM_ACT(rel_biozona_norm_act_id);
+CREATE INDEX idx_rel_biozona_norm_act_biozona_normalizada_id ON public.REL_BIOZONA_NORM_ACT(biozona_normalizada_id);
+CREATE INDEX idx_rel_biozona_norm_act_biozona_actualizada_id ON public.REL_BIOZONA_NORM_ACT(biozona_actualizada_id);
+
+-- ============================================================
+-- REL_MUESTRA_BIOZONA_REPORTADA
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_MUESTRA_BIOZONA_REPORTADA CASCADE;
+
+CREATE TABLE public.REL_MUESTRA_BIOZONA_REPORTADA (
+    rel_muestra_biozona_reportada_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    muestra_id bigint,
+    biozona_reportada_id bigint,
+    orden_registro bigint,
+    tipo_duda_id bigint,
+    comentario_catalogador text,
+    CONSTRAINT pk_rel_muestra_biozona_reportada PRIMARY KEY (rel_muestra_biozona_reportada_id),
+    CONSTRAINT fk_rel_muestra_biozona_reportada_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_biozona_reportada_biozona_reportada_id FOREIGN KEY (biozona_reportada_id) REFERENCES public.DIC_BIOZONA_REPORTADA(biozona_reportada_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_biozona_reportada_tipo_duda_id FOREIGN KEY (tipo_duda_id) REFERENCES public.CAT_TIPO_DUDA(tipo_duda_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_MUESTRA_BIOZONA_REPORTADA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_muestra_biozona_reportada_rel_muestra_biozona_reportada_id ON public.REL_MUESTRA_BIOZONA_REPORTADA(rel_muestra_biozona_reportada_id);
+CREATE INDEX idx_rel_muestra_biozona_reportada_muestra_id ON public.REL_MUESTRA_BIOZONA_REPORTADA(muestra_id);
+CREATE INDEX idx_rel_muestra_biozona_reportada_biozona_reportada_id ON public.REL_MUESTRA_BIOZONA_REPORTADA(biozona_reportada_id);
+CREATE INDEX idx_rel_muestra_biozona_reportada_tipo_duda_id ON public.REL_MUESTRA_BIOZONA_REPORTADA(tipo_duda_id);
+
+-- ============================================================
 -- Actualización de versión del esquema
 -- ============================================================
 INSERT INTO public.schema_version (version, applied_at)
