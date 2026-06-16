@@ -2310,6 +2310,131 @@ CREATE INDEX idx_rel_muestra_edad_reportada_edad_reportada_id ON public.REL_MUES
 CREATE INDEX idx_rel_muestra_edad_reportada_tipo_duda_id ON public.REL_MUESTRA_EDAD_REPORTADA(tipo_duda_id);
 
 -- ============================================================
+-- Fase 3: references
+-- ============================================================
+
+-- ============================================================
+-- CAT_TIPO_DOCUMENTO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_DOCUMENTO CASCADE;
+
+CREATE TABLE public.CAT_TIPO_DOCUMENTO (
+    tipo_documento_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_documento PRIMARY KEY (tipo_documento_id),
+    CONSTRAINT uq_cat_tipo_documento_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_DOCUMENTO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_tipo_documento_tipo_documento_id ON public.CAT_TIPO_DOCUMENTO(tipo_documento_id);
+
+-- Seed CAT_TIPO_DOCUMENTO
+INSERT INTO public.CAT_TIPO_DOCUMENTO (nombre) VALUES ('Artículo') ON CONFLICT DO NOTHING;
+INSERT INTO public.CAT_TIPO_DOCUMENTO (nombre) VALUES ('Libro') ON CONFLICT DO NOTHING;
+INSERT INTO public.CAT_TIPO_DOCUMENTO (nombre) VALUES ('Tesis') ON CONFLICT DO NOTHING;
+INSERT INTO public.CAT_TIPO_DOCUMENTO (nombre) VALUES ('Informe') ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- CAT_TIPO_REFERENCIA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_REFERENCIA CASCADE;
+
+CREATE TABLE public.CAT_TIPO_REFERENCIA (
+    tipo_referencia_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_referencia PRIMARY KEY (tipo_referencia_id),
+    CONSTRAINT uq_cat_tipo_referencia_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_REFERENCIA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_tipo_referencia_tipo_referencia_id ON public.CAT_TIPO_REFERENCIA(tipo_referencia_id);
+
+-- Seed CAT_TIPO_REFERENCIA
+INSERT INTO public.CAT_TIPO_REFERENCIA (nombre) VALUES ('Cita') ON CONFLICT DO NOTHING;
+INSERT INTO public.CAT_TIPO_REFERENCIA (nombre) VALUES ('Referencia') ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- CAT_REFERENCIA_BIBLIOGRAFICA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_REFERENCIA_BIBLIOGRAFICA CASCADE;
+
+CREATE TABLE public.CAT_REFERENCIA_BIBLIOGRAFICA (
+    referencia_bibliografica_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    cita_corta varchar(255),
+    autores varchar(255),
+    ano bigint,
+    titulo varchar(255),
+    fuente varchar(255),
+    doi_url varchar(255),
+    tipo_documento_id bigint,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_referencia_bibliografica PRIMARY KEY (referencia_bibliografica_id),
+    CONSTRAINT fk_cat_referencia_bibliografica_tipo_documento_id FOREIGN KEY (tipo_documento_id) REFERENCES public.CAT_TIPO_DOCUMENTO(tipo_documento_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.CAT_REFERENCIA_BIBLIOGRAFICA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_referencia_bibliografica_referencia_bibliografica_id ON public.CAT_REFERENCIA_BIBLIOGRAFICA(referencia_bibliografica_id);
+CREATE INDEX idx_cat_referencia_bibliografica_tipo_documento_id ON public.CAT_REFERENCIA_BIBLIOGRAFICA(tipo_documento_id);
+
+-- ============================================================
+-- REL_MUESTRA_REFERENCIA_BIBLIOGRAFICA
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_MUESTRA_REFERENCIA_BIBLIOGRAFICA CASCADE;
+
+CREATE TABLE public.REL_MUESTRA_REFERENCIA_BIBLIOGRAFICA (
+    rel_muestra_referencia_bibliografica_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    muestra_id bigint,
+    referencia_bibliografica_id bigint,
+    tipo_referencia_id bigint,
+    observaciones text,
+    CONSTRAINT pk_rel_muestra_referencia_bibliografica PRIMARY KEY (rel_muestra_referencia_bibliografica_id),
+    CONSTRAINT fk_rel_muestra_referencia_bibliografica_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_referencia_bibliografica_referencia_bibliografica_id FOREIGN KEY (referencia_bibliografica_id) REFERENCES public.CAT_REFERENCIA_BIBLIOGRAFICA(referencia_bibliografica_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_referencia_bibliografica_tipo_referencia_id FOREIGN KEY (tipo_referencia_id) REFERENCES public.CAT_TIPO_REFERENCIA(tipo_referencia_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_MUESTRA_REFERENCIA_BIBLIOGRAFICA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_muestra_referencia_bibliografica_rel_muestra_referencia_bibliografica_id ON public.REL_MUESTRA_REFERENCIA_BIBLIOGRAFICA(rel_muestra_referencia_bibliografica_id);
+CREATE INDEX idx_rel_muestra_referencia_bibliografica_muestra_id ON public.REL_MUESTRA_REFERENCIA_BIBLIOGRAFICA(muestra_id);
+CREATE INDEX idx_rel_muestra_referencia_bibliografica_referencia_bibliografica_id ON public.REL_MUESTRA_REFERENCIA_BIBLIOGRAFICA(referencia_bibliografica_id);
+CREATE INDEX idx_rel_muestra_referencia_bibliografica_tipo_referencia_id ON public.REL_MUESTRA_REFERENCIA_BIBLIOGRAFICA(tipo_referencia_id);
+
+-- ============================================================
+-- REL_PLACA_REFERENCIA_BIBLIOGRAFICA
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_PLACA_REFERENCIA_BIBLIOGRAFICA CASCADE;
+
+CREATE TABLE public.REL_PLACA_REFERENCIA_BIBLIOGRAFICA (
+    rel_placa_referencia_bibliografica_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    placa_id bigint,
+    referencia_bibliografica_id bigint,
+    tipo_referencia_id bigint,
+    observaciones text,
+    CONSTRAINT pk_rel_placa_referencia_bibliografica PRIMARY KEY (rel_placa_referencia_bibliografica_id),
+    CONSTRAINT fk_rel_placa_referencia_bibliografica_placa_id FOREIGN KEY (placa_id) REFERENCES public.PLACA(placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_placa_referencia_bibliografica_referencia_bibliografica_id FOREIGN KEY (referencia_bibliografica_id) REFERENCES public.CAT_REFERENCIA_BIBLIOGRAFICA(referencia_bibliografica_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_placa_referencia_bibliografica_tipo_referencia_id FOREIGN KEY (tipo_referencia_id) REFERENCES public.CAT_TIPO_REFERENCIA(tipo_referencia_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_PLACA_REFERENCIA_BIBLIOGRAFICA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_placa_referencia_bibliografica_rel_placa_referencia_bibliografica_id ON public.REL_PLACA_REFERENCIA_BIBLIOGRAFICA(rel_placa_referencia_bibliografica_id);
+CREATE INDEX idx_rel_placa_referencia_bibliografica_placa_id ON public.REL_PLACA_REFERENCIA_BIBLIOGRAFICA(placa_id);
+CREATE INDEX idx_rel_placa_referencia_bibliografica_referencia_bibliografica_id ON public.REL_PLACA_REFERENCIA_BIBLIOGRAFICA(referencia_bibliografica_id);
+CREATE INDEX idx_rel_placa_referencia_bibliografica_tipo_referencia_id ON public.REL_PLACA_REFERENCIA_BIBLIOGRAFICA(tipo_referencia_id);
+
+-- ============================================================
 -- Actualización de versión del esquema
 -- ============================================================
 INSERT INTO public.schema_version (version, applied_at)
