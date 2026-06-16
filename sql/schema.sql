@@ -1793,6 +1793,180 @@ CREATE INDEX idx_rel_muestra_fecha_historica_muestra_id ON public.REL_MUESTRA_FE
 CREATE INDEX idx_rel_muestra_fecha_historica_fecha_historica_id ON public.REL_MUESTRA_FECHA_HISTORICA(fecha_historica_id);
 
 -- ============================================================
+-- Fase 3: taxonomy
+-- ============================================================
+
+-- ============================================================
+-- CAT_TIPO_DUDA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_DUDA CASCADE;
+
+CREATE TABLE public.CAT_TIPO_DUDA (
+    tipo_duda_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_duda PRIMARY KEY (tipo_duda_id),
+    CONSTRAINT uq_cat_tipo_duda_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_DUDA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_tipo_duda_tipo_duda_id ON public.CAT_TIPO_DUDA(tipo_duda_id);
+
+-- Seed CAT_TIPO_DUDA
+INSERT INTO public.CAT_TIPO_DUDA (nombre) VALUES ('Nombre ilegible') ON CONFLICT DO NOTHING;
+INSERT INTO public.CAT_TIPO_DUDA (nombre) VALUES ('Parcialmente ilegible') ON CONFLICT DO NOTHING;
+INSERT INTO public.CAT_TIPO_DUDA (nombre) VALUES ('Código ilegible') ON CONFLICT DO NOTHING;
+INSERT INTO public.CAT_TIPO_DUDA (nombre) VALUES ('Abreviatura ambigua') ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- DIC_TAXON_REPORTADO
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_TAXON_REPORTADO CASCADE;
+
+CREATE TABLE public.DIC_TAXON_REPORTADO (
+    taxon_reportado_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_reportado varchar(255),
+    autor_taxon_reportado varchar(255),
+    estado_revision_id bigint,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    CONSTRAINT pk_dic_taxon_reportado PRIMARY KEY (taxon_reportado_id),
+    CONSTRAINT fk_dic_taxon_reportado_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_taxon_reportado_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_taxon_reportado_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_TAXON_REPORTADO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_taxon_reportado_taxon_reportado_id ON public.DIC_TAXON_REPORTADO(taxon_reportado_id);
+CREATE INDEX idx_dic_taxon_reportado_estado_revision_id ON public.DIC_TAXON_REPORTADO(estado_revision_id);
+CREATE INDEX idx_dic_taxon_reportado_catalogador_id ON public.DIC_TAXON_REPORTADO(catalogador_id);
+CREATE INDEX idx_dic_taxon_reportado_revisor_id ON public.DIC_TAXON_REPORTADO(revisor_id);
+
+-- ============================================================
+-- DIC_TAXON_NORMALIZADO
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_TAXON_NORMALIZADO CASCADE;
+
+CREATE TABLE public.DIC_TAXON_NORMALIZADO (
+    taxon_normalizado_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_normalizado varchar(255),
+    autor_taxon_normalizado varchar(255),
+    estado_revision_id bigint,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    CONSTRAINT pk_dic_taxon_normalizado PRIMARY KEY (taxon_normalizado_id),
+    CONSTRAINT fk_dic_taxon_normalizado_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_taxon_normalizado_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_TAXON_NORMALIZADO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_taxon_normalizado_taxon_normalizado_id ON public.DIC_TAXON_NORMALIZADO(taxon_normalizado_id);
+CREATE INDEX idx_dic_taxon_normalizado_estado_revision_id ON public.DIC_TAXON_NORMALIZADO(estado_revision_id);
+CREATE INDEX idx_dic_taxon_normalizado_revisor_id ON public.DIC_TAXON_NORMALIZADO(revisor_id);
+
+-- ============================================================
+-- DIC_TAXON_ACTUALIZADO
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_TAXON_ACTUALIZADO CASCADE;
+
+CREATE TABLE public.DIC_TAXON_ACTUALIZADO (
+    taxon_actualizado_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_actualizado varchar(255),
+    autor_taxon_actualizado varchar(255),
+    fuente_actualizacion varchar(255),
+    fecha_actualizacion timestamptz,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    estado_revision_id bigint,
+    observaciones text,
+    CONSTRAINT pk_dic_taxon_actualizado PRIMARY KEY (taxon_actualizado_id),
+    CONSTRAINT fk_dic_taxon_actualizado_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_taxon_actualizado_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_TAXON_ACTUALIZADO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_taxon_actualizado_taxon_actualizado_id ON public.DIC_TAXON_ACTUALIZADO(taxon_actualizado_id);
+CREATE INDEX idx_dic_taxon_actualizado_revisor_id ON public.DIC_TAXON_ACTUALIZADO(revisor_id);
+CREATE INDEX idx_dic_taxon_actualizado_estado_revision_id ON public.DIC_TAXON_ACTUALIZADO(estado_revision_id);
+
+-- ============================================================
+-- REL_TAXON_REP_NORM
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_TAXON_REP_NORM CASCADE;
+
+CREATE TABLE public.REL_TAXON_REP_NORM (
+    rel_taxon_rep_norm_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    taxon_reportado_id bigint,
+    taxon_normalizado_id bigint,
+    observaciones text,
+    CONSTRAINT pk_rel_taxon_rep_norm PRIMARY KEY (rel_taxon_rep_norm_id),
+    CONSTRAINT fk_rel_taxon_rep_norm_taxon_reportado_id FOREIGN KEY (taxon_reportado_id) REFERENCES public.DIC_TAXON_REPORTADO(taxon_reportado_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_taxon_rep_norm_taxon_normalizado_id FOREIGN KEY (taxon_normalizado_id) REFERENCES public.DIC_TAXON_NORMALIZADO(taxon_normalizado_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_TAXON_REP_NORM IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_taxon_rep_norm_rel_taxon_rep_norm_id ON public.REL_TAXON_REP_NORM(rel_taxon_rep_norm_id);
+CREATE INDEX idx_rel_taxon_rep_norm_taxon_reportado_id ON public.REL_TAXON_REP_NORM(taxon_reportado_id);
+CREATE INDEX idx_rel_taxon_rep_norm_taxon_normalizado_id ON public.REL_TAXON_REP_NORM(taxon_normalizado_id);
+
+-- ============================================================
+-- REL_TAXON_NORM_ACT
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_TAXON_NORM_ACT CASCADE;
+
+CREATE TABLE public.REL_TAXON_NORM_ACT (
+    rel_taxon_norm_act_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    taxon_normalizado_id bigint,
+    taxon_actualizado_id bigint,
+    observaciones text,
+    CONSTRAINT pk_rel_taxon_norm_act PRIMARY KEY (rel_taxon_norm_act_id),
+    CONSTRAINT fk_rel_taxon_norm_act_taxon_normalizado_id FOREIGN KEY (taxon_normalizado_id) REFERENCES public.DIC_TAXON_NORMALIZADO(taxon_normalizado_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_taxon_norm_act_taxon_actualizado_id FOREIGN KEY (taxon_actualizado_id) REFERENCES public.DIC_TAXON_ACTUALIZADO(taxon_actualizado_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_TAXON_NORM_ACT IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_taxon_norm_act_rel_taxon_norm_act_id ON public.REL_TAXON_NORM_ACT(rel_taxon_norm_act_id);
+CREATE INDEX idx_rel_taxon_norm_act_taxon_normalizado_id ON public.REL_TAXON_NORM_ACT(taxon_normalizado_id);
+CREATE INDEX idx_rel_taxon_norm_act_taxon_actualizado_id ON public.REL_TAXON_NORM_ACT(taxon_actualizado_id);
+
+-- ============================================================
+-- REL_MUESTRA_TAXON_REPORTADO
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_MUESTRA_TAXON_REPORTADO CASCADE;
+
+CREATE TABLE public.REL_MUESTRA_TAXON_REPORTADO (
+    rel_muestra_taxon_reportado_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    muestra_id bigint,
+    taxon_reportado_id bigint,
+    orden_registro bigint,
+    tipo_duda_id bigint,
+    comentario_catalogador text,
+    CONSTRAINT pk_rel_muestra_taxon_reportado PRIMARY KEY (rel_muestra_taxon_reportado_id),
+    CONSTRAINT fk_rel_muestra_taxon_reportado_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_taxon_reportado_taxon_reportado_id FOREIGN KEY (taxon_reportado_id) REFERENCES public.DIC_TAXON_REPORTADO(taxon_reportado_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_taxon_reportado_tipo_duda_id FOREIGN KEY (tipo_duda_id) REFERENCES public.CAT_TIPO_DUDA(tipo_duda_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_MUESTRA_TAXON_REPORTADO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_muestra_taxon_reportado_rel_muestra_taxon_reportado_id ON public.REL_MUESTRA_TAXON_REPORTADO(rel_muestra_taxon_reportado_id);
+CREATE INDEX idx_rel_muestra_taxon_reportado_muestra_id ON public.REL_MUESTRA_TAXON_REPORTADO(muestra_id);
+CREATE INDEX idx_rel_muestra_taxon_reportado_taxon_reportado_id ON public.REL_MUESTRA_TAXON_REPORTADO(taxon_reportado_id);
+CREATE INDEX idx_rel_muestra_taxon_reportado_tipo_duda_id ON public.REL_MUESTRA_TAXON_REPORTADO(tipo_duda_id);
+
+-- ============================================================
 -- Actualización de versión del esquema
 -- ============================================================
 INSERT INTO public.schema_version (version, applied_at)
