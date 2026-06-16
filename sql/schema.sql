@@ -788,5 +788,602 @@ COMMENT ON TABLE public.CAT_DISENO_PLACA IS 'Tabla generada desde el inventario 
 CREATE INDEX idx_cat_diseno_placa_diseno_placa_id ON public.CAT_DISENO_PLACA(diseno_placa_id);
 
 -- ============================================================
+-- CAT_CLASE_PLACA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_CLASE_PLACA CASCADE;
+
+CREATE TABLE public.CAT_CLASE_PLACA (
+    clase_placa_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_clase varchar(255),
+    nombre varchar(255),
+    definicion varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_clase_placa PRIMARY KEY (clase_placa_id),
+    CONSTRAINT uq_cat_clase_placa_codigo_clase UNIQUE (codigo_clase)
+);
+
+COMMENT ON TABLE public.CAT_CLASE_PLACA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_clase_placa_clase_placa_id ON public.CAT_CLASE_PLACA(clase_placa_id);
+
+-- ============================================================
+-- CAT_ETAPA_USO_PLACA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_ETAPA_USO_PLACA CASCADE;
+
+CREATE TABLE public.CAT_ETAPA_USO_PLACA (
+    etapa_uso_placa_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_etapa_uso_placa varchar(255),
+    nombre varchar(255),
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_etapa_uso_placa PRIMARY KEY (etapa_uso_placa_id),
+    CONSTRAINT uq_cat_etapa_uso_placa_codigo_etapa_uso_placa UNIQUE (codigo_etapa_uso_placa)
+);
+
+COMMENT ON TABLE public.CAT_ETAPA_USO_PLACA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_etapa_uso_placa_etapa_uso_placa_id ON public.CAT_ETAPA_USO_PLACA(etapa_uso_placa_id);
+
+-- ============================================================
+-- CAT_CONFIGURACION_CAVIDADES
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_CONFIGURACION_CAVIDADES CASCADE;
+
+CREATE TABLE public.CAT_CONFIGURACION_CAVIDADES (
+    configuracion_cavidades_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    diseno_placa_id bigint,
+    total_cavidades bigint,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_configuracion_cavidades PRIMARY KEY (configuracion_cavidades_id),
+    CONSTRAINT fk_cat_configuracion_cavidades_diseno_placa_id FOREIGN KEY (diseno_placa_id) REFERENCES public.CAT_DISENO_PLACA(diseno_placa_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.CAT_CONFIGURACION_CAVIDADES IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_configuracion_cavidades_diseno_placa_id ON public.CAT_CONFIGURACION_CAVIDADES(diseno_placa_id);
+CREATE INDEX idx_cat_configuracion_cavidades_configuracion_cavidades_id ON public.CAT_CONFIGURACION_CAVIDADES(configuracion_cavidades_id);
+
+-- ============================================================
+-- CAT_MATERIAL_PLACA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_MATERIAL_PLACA CASCADE;
+
+CREATE TABLE public.CAT_MATERIAL_PLACA (
+    material_placa_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_material_placa PRIMARY KEY (material_placa_id),
+    CONSTRAINT uq_cat_material_placa_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_MATERIAL_PLACA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_material_placa_material_placa_id ON public.CAT_MATERIAL_PLACA(material_placa_id);
+
+-- ============================================================
+-- CAT_COLOR_PLACA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_COLOR_PLACA CASCADE;
+
+CREATE TABLE public.CAT_COLOR_PLACA (
+    color_placa_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_color_placa PRIMARY KEY (color_placa_id),
+    CONSTRAINT uq_cat_color_placa_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_COLOR_PLACA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_color_placa_color_placa_id ON public.CAT_COLOR_PLACA(color_placa_id);
+
+-- ============================================================
+-- CAT_CONFIGURACION_REJILLA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_CONFIGURACION_REJILLA CASCADE;
+
+CREATE TABLE public.CAT_CONFIGURACION_REJILLA (
+    configuracion_rejilla_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    numero_subdivisiones bigint,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_configuracion_rejilla PRIMARY KEY (configuracion_rejilla_id),
+    CONSTRAINT uq_cat_configuracion_rejilla_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_CONFIGURACION_REJILLA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_configuracion_rejilla_configuracion_rejilla_id ON public.CAT_CONFIGURACION_REJILLA(configuracion_rejilla_id);
+
+-- ============================================================
+-- CAT_TIPO_PROTECCION
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_PROTECCION CASCADE;
+
+CREATE TABLE public.CAT_TIPO_PROTECCION (
+    tipo_proteccion_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_proteccion PRIMARY KEY (tipo_proteccion_id),
+    CONSTRAINT uq_cat_tipo_proteccion_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_PROTECCION IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_tipo_proteccion_tipo_proteccion_id ON public.CAT_TIPO_PROTECCION(tipo_proteccion_id);
+
+-- ============================================================
+-- CAT_SISTEMA_ENSAMBLE
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_SISTEMA_ENSAMBLE CASCADE;
+
+CREATE TABLE public.CAT_SISTEMA_ENSAMBLE (
+    sistema_ensamble_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_sistema_ensamble PRIMARY KEY (sistema_ensamble_id),
+    CONSTRAINT uq_cat_sistema_ensamble_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_SISTEMA_ENSAMBLE IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_sistema_ensamble_sistema_ensamble_id ON public.CAT_SISTEMA_ENSAMBLE(sistema_ensamble_id);
+
+-- ============================================================
+-- CAT_CLASE_P_TIPO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_CLASE_P_TIPO CASCADE;
+
+CREATE TABLE public.CAT_CLASE_P_TIPO (
+    clase_ptipo_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    activo boolean,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_clase_p_tipo PRIMARY KEY (clase_ptipo_id),
+    CONSTRAINT uq_cat_clase_p_tipo_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_CLASE_P_TIPO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_clase_p_tipo_clase_ptipo_id ON public.CAT_CLASE_P_TIPO(clase_ptipo_id);
+
+-- ============================================================
+-- CAT_POSICION_ANOTACION
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_POSICION_ANOTACION CASCADE;
+
+CREATE TABLE public.CAT_POSICION_ANOTACION (
+    posicion_anotacion_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_posicion_anotacion PRIMARY KEY (posicion_anotacion_id),
+    CONSTRAINT uq_cat_posicion_anotacion_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_POSICION_ANOTACION IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_posicion_anotacion_posicion_anotacion_id ON public.CAT_POSICION_ANOTACION(posicion_anotacion_id);
+
+-- ============================================================
+-- CAT_TIPO_RELACION_PLACA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_RELACION_PLACA CASCADE;
+
+CREATE TABLE public.CAT_TIPO_RELACION_PLACA (
+    tipo_relacion_placa_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    activo boolean,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_relacion_placa PRIMARY KEY (tipo_relacion_placa_id),
+    CONSTRAINT uq_cat_tipo_relacion_placa_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_RELACION_PLACA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_tipo_relacion_placa_tipo_relacion_placa_id ON public.CAT_TIPO_RELACION_PLACA(tipo_relacion_placa_id);
+
+-- ============================================================
+-- CAT_ESTADO_MATERIAL
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_ESTADO_MATERIAL CASCADE;
+
+CREATE TABLE public.CAT_ESTADO_MATERIAL (
+    estado_material_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    estado_material varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_estado_material PRIMARY KEY (estado_material_id)
+);
+
+COMMENT ON TABLE public.CAT_ESTADO_MATERIAL IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_estado_material_estado_material_id ON public.CAT_ESTADO_MATERIAL(estado_material_id);
+
+-- ============================================================
+-- CAT_RECOBRO_CUALITATIVO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_RECOBRO_CUALITATIVO CASCADE;
+
+CREATE TABLE public.CAT_RECOBRO_CUALITATIVO (
+    recobro_cualitativo_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    recobro_cualitativo varchar(255),
+    orden_visual bigint,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_recobro_cualitativo PRIMARY KEY (recobro_cualitativo_id)
+);
+
+COMMENT ON TABLE public.CAT_RECOBRO_CUALITATIVO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_recobro_cualitativo_recobro_cualitativo_id ON public.CAT_RECOBRO_CUALITATIVO(recobro_cualitativo_id);
+
+-- ============================================================
+-- CAT_VIDRIO_ESTADO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_VIDRIO_ESTADO CASCADE;
+
+CREATE TABLE public.CAT_VIDRIO_ESTADO (
+    vidrio_estado_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    vidrio_estado varchar(255),
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_vidrio_estado PRIMARY KEY (vidrio_estado_id)
+);
+
+COMMENT ON TABLE public.CAT_VIDRIO_ESTADO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_vidrio_estado_vidrio_estado_id ON public.CAT_VIDRIO_ESTADO(vidrio_estado_id);
+
+-- ============================================================
+-- CAT_ACETATO_ESTADO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_ACETATO_ESTADO CASCADE;
+
+CREATE TABLE public.CAT_ACETATO_ESTADO (
+    acetato_estado_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    acetato_estado varchar(255),
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_acetato_estado PRIMARY KEY (acetato_estado_id)
+);
+
+COMMENT ON TABLE public.CAT_ACETATO_ESTADO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_acetato_estado_acetato_estado_id ON public.CAT_ACETATO_ESTADO(acetato_estado_id);
+
+-- ============================================================
+-- CAT_MARCO_PLACA_ESTADO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_MARCO_PLACA_ESTADO CASCADE;
+
+CREATE TABLE public.CAT_MARCO_PLACA_ESTADO (
+    marco_placa_estado_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    marco_placa_estado varchar(255),
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_marco_placa_estado PRIMARY KEY (marco_placa_estado_id)
+);
+
+COMMENT ON TABLE public.CAT_MARCO_PLACA_ESTADO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_marco_placa_estado_marco_placa_estado_id ON public.CAT_MARCO_PLACA_ESTADO(marco_placa_estado_id);
+
+-- ============================================================
+-- CAT_PRIORIDAD_INTERVENCION
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_PRIORIDAD_INTERVENCION CASCADE;
+
+CREATE TABLE public.CAT_PRIORIDAD_INTERVENCION (
+    prioridad_intervencion_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_prioridad_intervencion PRIMARY KEY (prioridad_intervencion_id),
+    CONSTRAINT uq_cat_prioridad_intervencion_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_PRIORIDAD_INTERVENCION IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_prioridad_intervencion_prioridad_intervencion_id ON public.CAT_PRIORIDAD_INTERVENCION(prioridad_intervencion_id);
+
+-- ============================================================
+-- PLACA
+-- ============================================================
+DROP TABLE IF EXISTS public.PLACA CASCADE;
+
+CREATE TABLE public.PLACA (
+    placa_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_ubicacion varchar(255),
+    codigo_coleccion varchar(255),
+    codigo_placa varchar(255),
+    clase_placa_id bigint,
+    etapa_uso_placa_id bigint,
+    diseno_placa_id bigint,
+    configuracion_cavidades_id bigint,
+    material_placa_id bigint,
+    color_placa_id bigint,
+    configuracion_rejilla_id bigint,
+    tipo_proteccion_id bigint,
+    sistema_ensamble_id bigint,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    estado_catalogacion_id bigint,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    CONSTRAINT pk_placa PRIMARY KEY (placa_id),
+    CONSTRAINT fk_placa_clase_placa_id FOREIGN KEY (clase_placa_id) REFERENCES public.CAT_CLASE_PLACA(clase_placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_placa_etapa_uso_placa_id FOREIGN KEY (etapa_uso_placa_id) REFERENCES public.CAT_ETAPA_USO_PLACA(etapa_uso_placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_placa_diseno_placa_id FOREIGN KEY (diseno_placa_id) REFERENCES public.CAT_DISENO_PLACA(diseno_placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_placa_configuracion_cavidades_id FOREIGN KEY (configuracion_cavidades_id) REFERENCES public.CAT_CONFIGURACION_CAVIDADES(configuracion_cavidades_id) ON DELETE SET NULL,
+    CONSTRAINT fk_placa_material_placa_id FOREIGN KEY (material_placa_id) REFERENCES public.CAT_MATERIAL_PLACA(material_placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_placa_color_placa_id FOREIGN KEY (color_placa_id) REFERENCES public.CAT_COLOR_PLACA(color_placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_placa_configuracion_rejilla_id FOREIGN KEY (configuracion_rejilla_id) REFERENCES public.CAT_CONFIGURACION_REJILLA(configuracion_rejilla_id) ON DELETE SET NULL,
+    CONSTRAINT fk_placa_tipo_proteccion_id FOREIGN KEY (tipo_proteccion_id) REFERENCES public.CAT_TIPO_PROTECCION(tipo_proteccion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_placa_sistema_ensamble_id FOREIGN KEY (sistema_ensamble_id) REFERENCES public.CAT_SISTEMA_ENSAMBLE(sistema_ensamble_id) ON DELETE SET NULL,
+    CONSTRAINT fk_placa_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_placa_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_placa_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.PLACA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_placa_clase_placa_id ON public.PLACA(clase_placa_id);
+CREATE INDEX idx_placa_etapa_uso_placa_id ON public.PLACA(etapa_uso_placa_id);
+CREATE INDEX idx_placa_diseno_placa_id ON public.PLACA(diseno_placa_id);
+CREATE INDEX idx_placa_configuracion_cavidades_id ON public.PLACA(configuracion_cavidades_id);
+CREATE INDEX idx_placa_material_placa_id ON public.PLACA(material_placa_id);
+CREATE INDEX idx_placa_color_placa_id ON public.PLACA(color_placa_id);
+CREATE INDEX idx_placa_configuracion_rejilla_id ON public.PLACA(configuracion_rejilla_id);
+CREATE INDEX idx_placa_tipo_proteccion_id ON public.PLACA(tipo_proteccion_id);
+CREATE INDEX idx_placa_sistema_ensamble_id ON public.PLACA(sistema_ensamble_id);
+CREATE INDEX idx_placa_catalogador_id ON public.PLACA(catalogador_id);
+CREATE INDEX idx_placa_estado_catalogacion_id ON public.PLACA(estado_catalogacion_id);
+CREATE INDEX idx_placa_revisor_id ON public.PLACA(revisor_id);
+CREATE INDEX idx_placa_codigo_placa ON public.PLACA(codigo_placa);
+
+-- ============================================================
+-- MARCADO_PLACA
+-- ============================================================
+DROP TABLE IF EXISTS public.MARCADO_PLACA CASCADE;
+
+CREATE TABLE public.MARCADO_PLACA (
+    marcado_placa_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    placa_id bigint,
+    tinta_negra boolean,
+    tinta_azul boolean,
+    tinta_roja boolean,
+    tinta_verde boolean,
+    lapiz boolean,
+    impresion_negro boolean,
+    impresion_azul boolean,
+    etiqueta_adherida boolean,
+    observaciones text,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    estado_catalogacion_id bigint,
+    CONSTRAINT pk_marcado_placa PRIMARY KEY (marcado_placa_id),
+    CONSTRAINT fk_marcado_placa_placa_id FOREIGN KEY (placa_id) REFERENCES public.PLACA(placa_id) ON DELETE CASCADE,
+    CONSTRAINT fk_marcado_placa_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_marcado_placa_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_marcado_placa_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
+    CONSTRAINT uq_marcado_placa_placa_id UNIQUE (placa_id)
+);
+
+COMMENT ON TABLE public.MARCADO_PLACA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_marcado_placa_placa_id ON public.MARCADO_PLACA(placa_id);
+CREATE INDEX idx_marcado_placa_catalogador_id ON public.MARCADO_PLACA(catalogador_id);
+CREATE INDEX idx_marcado_placa_revisor_id ON public.MARCADO_PLACA(revisor_id);
+CREATE INDEX idx_marcado_placa_estado_catalogacion_id ON public.MARCADO_PLACA(estado_catalogacion_id);
+
+-- ============================================================
+-- ANOTACION_PLACA
+-- ============================================================
+DROP TABLE IF EXISTS public.ANOTACION_PLACA CASCADE;
+
+CREATE TABLE public.ANOTACION_PLACA (
+    anotacion_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    placa_id bigint,
+    posicion_anotacion_id bigint,
+    codigo_posicion varchar(255),
+    texto_anotacion varchar(255),
+    estado_catalogacion_id bigint,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    CONSTRAINT pk_anotacion_placa PRIMARY KEY (anotacion_id),
+    CONSTRAINT fk_anotacion_placa_placa_id FOREIGN KEY (placa_id) REFERENCES public.PLACA(placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_anotacion_placa_posicion_anotacion_id FOREIGN KEY (posicion_anotacion_id) REFERENCES public.CAT_POSICION_ANOTACION(posicion_anotacion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_anotacion_placa_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_anotacion_placa_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_anotacion_placa_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.ANOTACION_PLACA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_anotacion_placa_placa_id ON public.ANOTACION_PLACA(placa_id);
+CREATE INDEX idx_anotacion_placa_posicion_anotacion_id ON public.ANOTACION_PLACA(posicion_anotacion_id);
+CREATE INDEX idx_anotacion_placa_estado_catalogacion_id ON public.ANOTACION_PLACA(estado_catalogacion_id);
+CREATE INDEX idx_anotacion_placa_revisor_id ON public.ANOTACION_PLACA(revisor_id);
+CREATE INDEX idx_anotacion_placa_catalogador_id ON public.ANOTACION_PLACA(catalogador_id);
+
+-- ============================================================
+-- ESTADO_CONSERVACION_INICIAL
+-- ============================================================
+DROP TABLE IF EXISTS public.ESTADO_CONSERVACION_INICIAL CASCADE;
+
+CREATE TABLE public.ESTADO_CONSERVACION_INICIAL (
+    estado_conservacion_inicial_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    placa_id bigint,
+    vidrio_estado varchar(255),
+    acetato_estado varchar(255),
+    marco_placa_estado varchar(255),
+    presencia_hongos boolean,
+    crecimiento_cristales boolean,
+    oxidacion boolean,
+    material_fuera_cavidad boolean,
+    riesgo_contaminacion boolean,
+    observaciones text,
+    prioridad_intervencion_id bigint,
+    estado_catalogacion_id bigint,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    CONSTRAINT pk_estado_conservacion_inicial PRIMARY KEY (estado_conservacion_inicial_id),
+    CONSTRAINT fk_estado_conservacion_inicial_placa_id FOREIGN KEY (placa_id) REFERENCES public.PLACA(placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_estado_conservacion_inicial_prioridad_intervencion_id FOREIGN KEY (prioridad_intervencion_id) REFERENCES public.CAT_PRIORIDAD_INTERVENCION(prioridad_intervencion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_estado_conservacion_inicial_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_estado_conservacion_inicial_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_estado_conservacion_inicial_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.ESTADO_CONSERVACION_INICIAL IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_estado_conservacion_inicial_placa_id ON public.ESTADO_CONSERVACION_INICIAL(placa_id);
+CREATE INDEX idx_estado_conservacion_inicial_prioridad_intervencion_id ON public.ESTADO_CONSERVACION_INICIAL(prioridad_intervencion_id);
+CREATE INDEX idx_estado_conservacion_inicial_estado_catalogacion_id ON public.ESTADO_CONSERVACION_INICIAL(estado_catalogacion_id);
+CREATE INDEX idx_estado_conservacion_inicial_revisor_id ON public.ESTADO_CONSERVACION_INICIAL(revisor_id);
+CREATE INDEX idx_estado_conservacion_inicial_catalogador_id ON public.ESTADO_CONSERVACION_INICIAL(catalogador_id);
+
+-- ============================================================
+-- REL_PLACA_PLACA
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_PLACA_PLACA CASCADE;
+
+CREATE TABLE public.REL_PLACA_PLACA (
+    rel_placa_placa_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    placa_origen_id bigint,
+    placa_destino_id bigint,
+    tipo_relacion_placa_id bigint,
+    observaciones text,
+    CONSTRAINT pk_rel_placa_placa PRIMARY KEY (rel_placa_placa_id),
+    CONSTRAINT fk_rel_placa_placa_placa_origen_id FOREIGN KEY (placa_origen_id) REFERENCES public.PLACA(placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_placa_placa_placa_destino_id FOREIGN KEY (placa_destino_id) REFERENCES public.PLACA(placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_placa_placa_tipo_relacion_placa_id FOREIGN KEY (tipo_relacion_placa_id) REFERENCES public.CAT_TIPO_RELACION_PLACA(tipo_relacion_placa_id) ON DELETE SET NULL,
+    CONSTRAINT chk_rel_placa_placa_no_self CHECK (placa_origen_id <> placa_destino_id)
+);
+
+COMMENT ON TABLE public.REL_PLACA_PLACA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_placa_placa_placa_origen_id ON public.REL_PLACA_PLACA(placa_origen_id);
+CREATE INDEX idx_rel_placa_placa_placa_destino_id ON public.REL_PLACA_PLACA(placa_destino_id);
+CREATE INDEX idx_rel_placa_placa_tipo_relacion_placa_id ON public.REL_PLACA_PLACA(tipo_relacion_placa_id);
+
+-- ============================================================
+-- REL_PLACA_AUTOR
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_PLACA_AUTOR CASCADE;
+
+CREATE TABLE public.REL_PLACA_AUTOR (
+    rel_placa_autor_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    placa_id bigint,
+    autor_id bigint,
+    rol_autor_id bigint,
+    observaciones text,
+    CONSTRAINT pk_rel_placa_autor PRIMARY KEY (rel_placa_autor_id),
+    CONSTRAINT fk_rel_placa_autor_placa_id FOREIGN KEY (placa_id) REFERENCES public.PLACA(placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_placa_autor_autor_id FOREIGN KEY (autor_id) REFERENCES public.DIC_AUTOR(autor_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_placa_autor_rol_autor_id FOREIGN KEY (rol_autor_id) REFERENCES public.CAT_ROL_AUTOR(rol_autor_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_PLACA_AUTOR IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_placa_autor_placa_id ON public.REL_PLACA_AUTOR(placa_id);
+CREATE INDEX idx_rel_placa_autor_autor_id ON public.REL_PLACA_AUTOR(autor_id);
+CREATE INDEX idx_rel_placa_autor_rol_autor_id ON public.REL_PLACA_AUTOR(rol_autor_id);
+
+-- ============================================================
+-- PLACA_TIPO
+-- ============================================================
+DROP TABLE IF EXISTS public.PLACA_TIPO CASCADE;
+
+CREATE TABLE public.PLACA_TIPO (
+    placa_tipo_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    placa_id bigint,
+    clase_ptipo_id bigint,
+    observaciones text,
+    CONSTRAINT pk_placa_tipo PRIMARY KEY (placa_tipo_id),
+    CONSTRAINT fk_placa_tipo_placa_id FOREIGN KEY (placa_id) REFERENCES public.PLACA(placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_placa_tipo_clase_ptipo_id FOREIGN KEY (clase_ptipo_id) REFERENCES public.CAT_CLASE_P_TIPO(clase_ptipo_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.PLACA_TIPO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_placa_tipo_placa_id ON public.PLACA_TIPO(placa_id);
+CREATE INDEX idx_placa_tipo_clase_ptipo_id ON public.PLACA_TIPO(clase_ptipo_id);
+
+-- ============================================================
+-- UBICACION_FISICA
+-- ============================================================
+DROP TABLE IF EXISTS public.UBICACION_FISICA CASCADE;
+
+CREATE TABLE public.UBICACION_FISICA (
+    ubicacion_fisica_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_ubicacion varchar(255),
+    placa_id bigint,
+    mueble_id bigint,
+    seccion_id bigint,
+    zona_id bigint,
+    numero_bandeja varchar(255),
+    material_bandeja_id bigint,
+    columna_bandeja_id bigint,
+    posicion_placa varchar(255),
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    estado_catalogacion_id bigint,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    CONSTRAINT pk_ubicacion_fisica PRIMARY KEY (ubicacion_fisica_id),
+    CONSTRAINT fk_ubicacion_fisica_placa_id FOREIGN KEY (placa_id) REFERENCES public.PLACA(placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_ubicacion_fisica_mueble_id FOREIGN KEY (mueble_id) REFERENCES public.CAT_MUEBLE(mueble_id) ON DELETE SET NULL,
+    CONSTRAINT fk_ubicacion_fisica_seccion_id FOREIGN KEY (seccion_id) REFERENCES public.CAT_SECCION(seccion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_ubicacion_fisica_zona_id FOREIGN KEY (zona_id) REFERENCES public.CAT_ZONA(zona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_ubicacion_fisica_material_bandeja_id FOREIGN KEY (material_bandeja_id) REFERENCES public.CAT_MATERIAL_BANDEJA(material_bandeja_id) ON DELETE SET NULL,
+    CONSTRAINT fk_ubicacion_fisica_columna_bandeja_id FOREIGN KEY (columna_bandeja_id) REFERENCES public.CAT_COLUMNA_BANDEJA(columna_bandeja_id) ON DELETE SET NULL,
+    CONSTRAINT fk_ubicacion_fisica_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_ubicacion_fisica_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_ubicacion_fisica_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT uq_ubicacion_fisica_ubicacion UNIQUE (mueble_id, seccion_id, zona_id, numero_bandeja, columna_bandeja_id, posicion_placa)
+);
+
+COMMENT ON TABLE public.UBICACION_FISICA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_ubicacion_fisica_placa_id ON public.UBICACION_FISICA(placa_id);
+CREATE INDEX idx_ubicacion_fisica_mueble_id ON public.UBICACION_FISICA(mueble_id);
+CREATE INDEX idx_ubicacion_fisica_seccion_id ON public.UBICACION_FISICA(seccion_id);
+CREATE INDEX idx_ubicacion_fisica_zona_id ON public.UBICACION_FISICA(zona_id);
+CREATE INDEX idx_ubicacion_fisica_material_bandeja_id ON public.UBICACION_FISICA(material_bandeja_id);
+CREATE INDEX idx_ubicacion_fisica_columna_bandeja_id ON public.UBICACION_FISICA(columna_bandeja_id);
+CREATE INDEX idx_ubicacion_fisica_catalogador_id ON public.UBICACION_FISICA(catalogador_id);
+CREATE INDEX idx_ubicacion_fisica_estado_catalogacion_id ON public.UBICACION_FISICA(estado_catalogacion_id);
+CREATE INDEX idx_ubicacion_fisica_revisor_id ON public.UBICACION_FISICA(revisor_id);
+
+-- ============================================================
 
 COMMIT;
