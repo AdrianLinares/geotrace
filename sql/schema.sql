@@ -554,5 +554,239 @@ CREATE INDEX idx_cat_mueble_color_mueble_id ON public.CAT_MUEBLE(color_mueble_id
 CREATE INDEX idx_cat_mueble_mueble_id ON public.CAT_MUEBLE(mueble_id);
 
 -- ============================================================
+-- CAT_CUENCA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_CUENCA CASCADE;
+
+CREATE TABLE public.CAT_CUENCA (
+    cuenca_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_cuenca varchar(255),
+    cuenca_abrev varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_cuenca PRIMARY KEY (cuenca_id),
+    CONSTRAINT uq_cat_cuenca_nombre_cuenca UNIQUE (nombre_cuenca)
+);
+
+COMMENT ON TABLE public.CAT_CUENCA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_cuenca_cuenca_id ON public.CAT_CUENCA(cuenca_id);
+
+-- ============================================================
+-- CAT_UNIDAD_MEDIDA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_UNIDAD_MEDIDA CASCADE;
+
+CREATE TABLE public.CAT_UNIDAD_MEDIDA (
+    unidad_medida_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    unidad varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_unidad_medida PRIMARY KEY (unidad_medida_id)
+);
+
+COMMENT ON TABLE public.CAT_UNIDAD_MEDIDA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_unidad_medida_unidad_medida_id ON public.CAT_UNIDAD_MEDIDA(unidad_medida_id);
+
+-- ============================================================
+-- CAT_TIPO_MUESTRA_SUBSUELO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_MUESTRA_SUBSUELO CASCADE;
+
+CREATE TABLE public.CAT_TIPO_MUESTRA_SUBSUELO (
+    tipo_muestra_subsuelo_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_muestra_subsuelo PRIMARY KEY (tipo_muestra_subsuelo_id),
+    CONSTRAINT uq_cat_tipo_muestra_subsuelo_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_MUESTRA_SUBSUELO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_tipo_muestra_subsuelo_tipo_muestra_subsuelo_id ON public.CAT_TIPO_MUESTRA_SUBSUELO(tipo_muestra_subsuelo_id);
+
+-- ============================================================
+-- CAT_TIPO_INTERVALO_MUESTRA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_INTERVALO_MUESTRA CASCADE;
+
+CREATE TABLE public.CAT_TIPO_INTERVALO_MUESTRA (
+    tipo_intervalo_muestra_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    tipo varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_intervalo_muestra PRIMARY KEY (tipo_intervalo_muestra_id)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_INTERVALO_MUESTRA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_tipo_intervalo_muestra_tipo_intervalo_muestra_id ON public.CAT_TIPO_INTERVALO_MUESTRA(tipo_intervalo_muestra_id);
+
+-- ============================================================
+-- CAT_ORIGEN_MUESTRA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_ORIGEN_MUESTRA CASCADE;
+
+CREATE TABLE public.CAT_ORIGEN_MUESTRA (
+    origen_muestra_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    significado varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_origen_muestra PRIMARY KEY (origen_muestra_id),
+    CONSTRAINT uq_cat_origen_muestra_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_ORIGEN_MUESTRA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_origen_muestra_origen_muestra_id ON public.CAT_ORIGEN_MUESTRA(origen_muestra_id);
+
+-- ============================================================
+-- CAT_METODO_ADQUISICION
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_METODO_ADQUISICION CASCADE;
+
+CREATE TABLE public.CAT_METODO_ADQUISICION (
+    metodo_adquisicion_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    origen_muestra_id bigint,
+    codigo_metodo_adquisicion varchar(255),
+    nombre varchar(255),
+    tipo varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_metodo_adquisicion PRIMARY KEY (metodo_adquisicion_id),
+    CONSTRAINT fk_cat_metodo_adquisicion_origen_muestra_id FOREIGN KEY (origen_muestra_id) REFERENCES public.CAT_ORIGEN_MUESTRA(origen_muestra_id) ON DELETE SET NULL,
+    CONSTRAINT uq_cat_metodo_adquisicion_codigo_metodo_adquisicion UNIQUE (codigo_metodo_adquisicion)
+);
+
+COMMENT ON TABLE public.CAT_METODO_ADQUISICION IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_metodo_adquisicion_origen_muestra_id ON public.CAT_METODO_ADQUISICION(origen_muestra_id);
+CREATE INDEX idx_cat_metodo_adquisicion_metodo_adquisicion_id ON public.CAT_METODO_ADQUISICION(metodo_adquisicion_id);
+
+-- ============================================================
+-- CAT_COLECTOR
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_COLECTOR CASCADE;
+
+CREATE TABLE public.CAT_COLECTOR (
+    colector_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    iniciales varchar(255),
+    nombre varchar(255),
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_colector PRIMARY KEY (colector_id),
+    CONSTRAINT uq_cat_colector_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_COLECTOR IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_colector_colector_id ON public.CAT_COLECTOR(colector_id);
+
+-- ============================================================
+-- CAT_PROYECTO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_PROYECTO CASCADE;
+
+CREATE TABLE public.CAT_PROYECTO (
+    proyecto_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    entidad_id bigint,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_proyecto PRIMARY KEY (proyecto_id),
+    CONSTRAINT fk_cat_proyecto_entidad_id FOREIGN KEY (entidad_id) REFERENCES public.CAT_ENTIDAD(entidad_id) ON DELETE SET NULL,
+    CONSTRAINT uq_cat_proyecto_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_PROYECTO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_proyecto_entidad_id ON public.CAT_PROYECTO(entidad_id);
+CREATE INDEX idx_cat_proyecto_proyecto_id ON public.CAT_PROYECTO(proyecto_id);
+
+-- ============================================================
+-- CAT_TRATAMIENTO_MUESTRA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TRATAMIENTO_MUESTRA CASCADE;
+
+CREATE TABLE public.CAT_TRATAMIENTO_MUESTRA (
+    tratamiento_muestra_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tratamiento_muestra PRIMARY KEY (tratamiento_muestra_id),
+    CONSTRAINT uq_cat_tratamiento_muestra_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TRATAMIENTO_MUESTRA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_tratamiento_muestra_tratamiento_muestra_id ON public.CAT_TRATAMIENTO_MUESTRA(tratamiento_muestra_id);
+
+-- ============================================================
+-- CAT_TIPO_FECHA_HISTORICA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_FECHA_HISTORICA CASCADE;
+
+CREATE TABLE public.CAT_TIPO_FECHA_HISTORICA (
+    tipo_fecha_historica_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    activo boolean,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_fecha_historica PRIMARY KEY (tipo_fecha_historica_id),
+    CONSTRAINT uq_cat_tipo_fecha_historica_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_FECHA_HISTORICA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_tipo_fecha_historica_tipo_fecha_historica_id ON public.CAT_TIPO_FECHA_HISTORICA(tipo_fecha_historica_id);
+
+-- ============================================================
+-- CAT_FECHA_HISTORICA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_FECHA_HISTORICA CASCADE;
+
+CREATE TABLE public.CAT_FECHA_HISTORICA (
+    fecha_historica_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    fecha_texto_original varchar(255),
+    fecha_interpretada timestamptz,
+    tipo_fecha_historica_id bigint,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_fecha_historica PRIMARY KEY (fecha_historica_id),
+    CONSTRAINT fk_cat_fecha_historica_tipo_fecha_historica_id FOREIGN KEY (tipo_fecha_historica_id) REFERENCES public.CAT_TIPO_FECHA_HISTORICA(tipo_fecha_historica_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.CAT_FECHA_HISTORICA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_fecha_historica_tipo_fecha_historica_id ON public.CAT_FECHA_HISTORICA(tipo_fecha_historica_id);
+CREATE INDEX idx_cat_fecha_historica_fecha_historica_id ON public.CAT_FECHA_HISTORICA(fecha_historica_id);
+
+-- ============================================================
+-- CAT_DISENO_PLACA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_DISENO_PLACA CASCADE;
+
+CREATE TABLE public.CAT_DISENO_PLACA (
+    diseno_placa_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_diseno_placa PRIMARY KEY (diseno_placa_id),
+    CONSTRAINT uq_cat_diseno_placa_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_DISENO_PLACA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_diseno_placa_diseno_placa_id ON public.CAT_DISENO_PLACA(diseno_placa_id);
+
+-- ============================================================
 
 COMMIT;
