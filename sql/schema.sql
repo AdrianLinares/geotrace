@@ -2118,6 +2118,198 @@ CREATE INDEX idx_rel_muestra_biozona_reportada_biozona_reportada_id ON public.RE
 CREATE INDEX idx_rel_muestra_biozona_reportada_tipo_duda_id ON public.REL_MUESTRA_BIOZONA_REPORTADA(tipo_duda_id);
 
 -- ============================================================
+-- Fase 3: chrono
+-- ============================================================
+
+-- ============================================================
+-- DIC_RANGO_CRONO
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_RANGO_CRONO CASCADE;
+
+CREATE TABLE public.DIC_RANGO_CRONO (
+    rango_cronoestratigrafico_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    observaciones text,
+    parent_id bigint,
+    CONSTRAINT pk_dic_rango_crono PRIMARY KEY (rango_cronoestratigrafico_id),
+    CONSTRAINT fk_dic_rango_crono_parent_id FOREIGN KEY (parent_id) REFERENCES public.DIC_RANGO_CRONO(rango_cronoestratigrafico_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_RANGO_CRONO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_rango_crono_rango_cronoestratigrafico_id ON public.DIC_RANGO_CRONO(rango_cronoestratigrafico_id);
+CREATE INDEX idx_dic_rango_crono_parent_id ON public.DIC_RANGO_CRONO(parent_id);
+
+-- ============================================================
+-- CAT_TIPO_REF_ESTRATIGRAFICA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_REF_ESTRATIGRAFICA CASCADE;
+
+CREATE TABLE public.CAT_TIPO_REF_ESTRATIGRAFICA (
+    tipo_ref_estratigrafica_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_ref_estratigrafica PRIMARY KEY (tipo_ref_estratigrafica_id),
+    CONSTRAINT uq_cat_tipo_ref_estratigrafica_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_REF_ESTRATIGRAFICA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_tipo_ref_estratigrafica_tipo_ref_estratigrafica_id ON public.CAT_TIPO_REF_ESTRATIGRAFICA(tipo_ref_estratigrafica_id);
+
+-- Seed CAT_TIPO_REF_ESTRATIGRAFICA
+INSERT INTO public.CAT_TIPO_REF_ESTRATIGRAFICA (nombre) VALUES ('Sobre la base') ON CONFLICT DO NOTHING;
+INSERT INTO public.CAT_TIPO_REF_ESTRATIGRAFICA (nombre) VALUES ('Bajo el techo') ON CONFLICT DO NOTHING;
+INSERT INTO public.CAT_TIPO_REF_ESTRATIGRAFICA (nombre) VALUES ('En el núcleo') ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- DIC_EDAD_REPORTADA
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_EDAD_REPORTADA CASCADE;
+
+CREATE TABLE public.DIC_EDAD_REPORTADA (
+    edad_reportada_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_reportado varchar(255),
+    estado_revision_id bigint,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    CONSTRAINT pk_dic_edad_reportada PRIMARY KEY (edad_reportada_id),
+    CONSTRAINT fk_dic_edad_reportada_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_edad_reportada_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_edad_reportada_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_EDAD_REPORTADA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_edad_reportada_edad_reportada_id ON public.DIC_EDAD_REPORTADA(edad_reportada_id);
+CREATE INDEX idx_dic_edad_reportada_estado_revision_id ON public.DIC_EDAD_REPORTADA(estado_revision_id);
+CREATE INDEX idx_dic_edad_reportada_catalogador_id ON public.DIC_EDAD_REPORTADA(catalogador_id);
+CREATE INDEX idx_dic_edad_reportada_revisor_id ON public.DIC_EDAD_REPORTADA(revisor_id);
+
+-- ============================================================
+-- DIC_EDAD_NORMALIZADA
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_EDAD_NORMALIZADA CASCADE;
+
+CREATE TABLE public.DIC_EDAD_NORMALIZADA (
+    edad_normalizada_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_normalizado varchar(255),
+    rango_cronoestratigrafico_id bigint,
+    estado_revision_id bigint,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    CONSTRAINT pk_dic_edad_normalizada PRIMARY KEY (edad_normalizada_id),
+    CONSTRAINT fk_dic_edad_normalizada_rango_cronoestratigrafico_id FOREIGN KEY (rango_cronoestratigrafico_id) REFERENCES public.DIC_RANGO_CRONO(rango_cronoestratigrafico_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_edad_normalizada_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_edad_normalizada_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_EDAD_NORMALIZADA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_edad_normalizada_edad_normalizada_id ON public.DIC_EDAD_NORMALIZADA(edad_normalizada_id);
+CREATE INDEX idx_dic_edad_normalizada_rango_cronoestratigrafico_id ON public.DIC_EDAD_NORMALIZADA(rango_cronoestratigrafico_id);
+CREATE INDEX idx_dic_edad_normalizada_estado_revision_id ON public.DIC_EDAD_NORMALIZADA(estado_revision_id);
+CREATE INDEX idx_dic_edad_normalizada_revisor_id ON public.DIC_EDAD_NORMALIZADA(revisor_id);
+
+-- ============================================================
+-- DIC_EDAD_ACTUALIZADA
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_EDAD_ACTUALIZADA CASCADE;
+
+CREATE TABLE public.DIC_EDAD_ACTUALIZADA (
+    edad_actualizada_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_actualizado varchar(255),
+    escala_tiempo varchar(255),
+    fuente_actualizacion varchar(255),
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    estado_revision_id bigint,
+    observaciones text,
+    CONSTRAINT pk_dic_edad_actualizada PRIMARY KEY (edad_actualizada_id),
+    CONSTRAINT fk_dic_edad_actualizada_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_edad_actualizada_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_EDAD_ACTUALIZADA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_edad_actualizada_edad_actualizada_id ON public.DIC_EDAD_ACTUALIZADA(edad_actualizada_id);
+CREATE INDEX idx_dic_edad_actualizada_revisor_id ON public.DIC_EDAD_ACTUALIZADA(revisor_id);
+CREATE INDEX idx_dic_edad_actualizada_estado_revision_id ON public.DIC_EDAD_ACTUALIZADA(estado_revision_id);
+
+-- ============================================================
+-- REL_EDAD_REP_NORM
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_EDAD_REP_NORM CASCADE;
+
+CREATE TABLE public.REL_EDAD_REP_NORM (
+    rel_edad_rep_norm_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    edad_reportada_id bigint,
+    edad_normalizada_id bigint,
+    observaciones text,
+    CONSTRAINT pk_rel_edad_rep_norm PRIMARY KEY (rel_edad_rep_norm_id),
+    CONSTRAINT fk_rel_edad_rep_norm_edad_reportada_id FOREIGN KEY (edad_reportada_id) REFERENCES public.DIC_EDAD_REPORTADA(edad_reportada_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_edad_rep_norm_edad_normalizada_id FOREIGN KEY (edad_normalizada_id) REFERENCES public.DIC_EDAD_NORMALIZADA(edad_normalizada_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_EDAD_REP_NORM IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_edad_rep_norm_rel_edad_rep_norm_id ON public.REL_EDAD_REP_NORM(rel_edad_rep_norm_id);
+CREATE INDEX idx_rel_edad_rep_norm_edad_reportada_id ON public.REL_EDAD_REP_NORM(edad_reportada_id);
+CREATE INDEX idx_rel_edad_rep_norm_edad_normalizada_id ON public.REL_EDAD_REP_NORM(edad_normalizada_id);
+
+-- ============================================================
+-- REL_EDAD_NORM_ACT
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_EDAD_NORM_ACT CASCADE;
+
+CREATE TABLE public.REL_EDAD_NORM_ACT (
+    rel_edad_norm_act_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    edad_normalizada_id bigint,
+    edad_actualizada_id bigint,
+    fuente_cambio varchar(255),
+    CONSTRAINT pk_rel_edad_norm_act PRIMARY KEY (rel_edad_norm_act_id),
+    CONSTRAINT fk_rel_edad_norm_act_edad_normalizada_id FOREIGN KEY (edad_normalizada_id) REFERENCES public.DIC_EDAD_NORMALIZADA(edad_normalizada_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_edad_norm_act_edad_actualizada_id FOREIGN KEY (edad_actualizada_id) REFERENCES public.DIC_EDAD_ACTUALIZADA(edad_actualizada_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_EDAD_NORM_ACT IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_edad_norm_act_rel_edad_norm_act_id ON public.REL_EDAD_NORM_ACT(rel_edad_norm_act_id);
+CREATE INDEX idx_rel_edad_norm_act_edad_normalizada_id ON public.REL_EDAD_NORM_ACT(edad_normalizada_id);
+CREATE INDEX idx_rel_edad_norm_act_edad_actualizada_id ON public.REL_EDAD_NORM_ACT(edad_actualizada_id);
+
+-- ============================================================
+-- REL_MUESTRA_EDAD_REPORTADA
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_MUESTRA_EDAD_REPORTADA CASCADE;
+
+CREATE TABLE public.REL_MUESTRA_EDAD_REPORTADA (
+    rel_muestra_edad_reportada_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    muestra_id bigint,
+    edad_reportada_id bigint,
+    orden_registro bigint,
+    tipo_duda_id bigint,
+    comentario_catalogador text,
+    CONSTRAINT pk_rel_muestra_edad_reportada PRIMARY KEY (rel_muestra_edad_reportada_id),
+    CONSTRAINT fk_rel_muestra_edad_reportada_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_edad_reportada_edad_reportada_id FOREIGN KEY (edad_reportada_id) REFERENCES public.DIC_EDAD_REPORTADA(edad_reportada_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_edad_reportada_tipo_duda_id FOREIGN KEY (tipo_duda_id) REFERENCES public.CAT_TIPO_DUDA(tipo_duda_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_MUESTRA_EDAD_REPORTADA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_muestra_edad_reportada_rel_muestra_edad_reportada_id ON public.REL_MUESTRA_EDAD_REPORTADA(rel_muestra_edad_reportada_id);
+CREATE INDEX idx_rel_muestra_edad_reportada_muestra_id ON public.REL_MUESTRA_EDAD_REPORTADA(muestra_id);
+CREATE INDEX idx_rel_muestra_edad_reportada_edad_reportada_id ON public.REL_MUESTRA_EDAD_REPORTADA(edad_reportada_id);
+CREATE INDEX idx_rel_muestra_edad_reportada_tipo_duda_id ON public.REL_MUESTRA_EDAD_REPORTADA(tipo_duda_id);
+
+-- ============================================================
 -- Actualización de versión del esquema
 -- ============================================================
 INSERT INTO public.schema_version (version, applied_at)
