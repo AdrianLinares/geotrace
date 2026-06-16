@@ -2435,10 +2435,306 @@ CREATE INDEX idx_rel_placa_referencia_bibliografica_referencia_bibliografica_id 
 CREATE INDEX idx_rel_placa_referencia_bibliografica_tipo_referencia_id ON public.REL_PLACA_REFERENCIA_BIBLIOGRAFICA(tipo_referencia_id);
 
 -- ============================================================
+-- Fase 3: litho
+-- ============================================================
+
+-- ============================================================
+-- CAT_RANGO_LITO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_RANGO_LITO CASCADE;
+
+CREATE TABLE public.CAT_RANGO_LITO (
+    rango_lito_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_rango_lito PRIMARY KEY (rango_lito_id),
+    CONSTRAINT uq_cat_rango_lito_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_RANGO_LITO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_rango_lito_rango_lito_id ON public.CAT_RANGO_LITO(rango_lito_id);
+
+-- ============================================================
+-- CAT_ESTADO_NOMENCLATURA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_ESTADO_NOMENCLATURA CASCADE;
+
+CREATE TABLE public.CAT_ESTADO_NOMENCLATURA (
+    estado_nomenclatura_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    estado_nomenclatura varchar(255),
+    significado text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_estado_nomenclatura PRIMARY KEY (estado_nomenclatura_id)
+);
+
+COMMENT ON TABLE public.CAT_ESTADO_NOMENCLATURA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_estado_nomenclatura_estado_nomenclatura_id ON public.CAT_ESTADO_NOMENCLATURA(estado_nomenclatura_id);
+
+-- Seed CAT_ESTADO_NOMENCLATURA
+INSERT INTO public.CAT_ESTADO_NOMENCLATURA (estado_nomenclatura, significado) VALUES ('Vigente', 'Nombre vigente y aceptado') ON CONFLICT DO NOTHING;
+INSERT INTO public.CAT_ESTADO_NOMENCLATURA (estado_nomenclatura, significado) VALUES ('En desuso', 'Nombre que ya no se utiliza') ON CONFLICT DO NOTHING;
+INSERT INTO public.CAT_ESTADO_NOMENCLATURA (estado_nomenclatura, significado) VALUES ('Sinónimo', 'Nombre sinónimo de otro válido') ON CONFLICT DO NOTHING;
+INSERT INTO public.CAT_ESTADO_NOMENCLATURA (estado_nomenclatura, significado) VALUES ('Propuesto', 'Nombre propuesto pero no formalizado') ON CONFLICT DO NOTHING;
+INSERT INTO public.CAT_ESTADO_NOMENCLATURA (estado_nomenclatura, significado) VALUES ('Revisado', 'Nombre revisado por especialista') ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- DIC_UNI_LITO_REPORTADA
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_UNI_LITO_REPORTADA CASCADE;
+
+CREATE TABLE public.DIC_UNI_LITO_REPORTADA (
+    uni_lito_reportada_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_uni_lito_reportada varchar(255),
+    nombre_reportado varchar(255),
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    estado_revision_id bigint,
+    observaciones text,
+    CONSTRAINT pk_dic_uni_lito_reportada PRIMARY KEY (uni_lito_reportada_id),
+    CONSTRAINT fk_dic_uni_lito_reportada_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_uni_lito_reportada_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_uni_lito_reportada_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_UNI_LITO_REPORTADA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_uni_lito_reportada_uni_lito_reportada_id ON public.DIC_UNI_LITO_REPORTADA(uni_lito_reportada_id);
+CREATE INDEX idx_dic_uni_lito_reportada_catalogador_id ON public.DIC_UNI_LITO_REPORTADA(catalogador_id);
+CREATE INDEX idx_dic_uni_lito_reportada_revisor_id ON public.DIC_UNI_LITO_REPORTADA(revisor_id);
+CREATE INDEX idx_dic_uni_lito_reportada_estado_revision_id ON public.DIC_UNI_LITO_REPORTADA(estado_revision_id);
+
+-- ============================================================
+-- DIC_UNI_LITO_NORMALIZADA
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_UNI_LITO_NORMALIZADA CASCADE;
+
+CREATE TABLE public.DIC_UNI_LITO_NORMALIZADA (
+    uni_lito_normalizada_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    cod_uni_lito_normalizada varchar(255),
+    nombre_normalizado varchar(255),
+    rango_lito_id bigint,
+    referencia_bibliografica_id bigint,
+    observaciones text,
+    revisor_id bigint,
+    estado_revision_id bigint,
+    fecha_revision timestamptz,
+    CONSTRAINT pk_dic_uni_lito_normalizada PRIMARY KEY (uni_lito_normalizada_id),
+    CONSTRAINT fk_dic_uni_lito_normalizada_rango_lito_id FOREIGN KEY (rango_lito_id) REFERENCES public.CAT_RANGO_LITO(rango_lito_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_uni_lito_normalizada_referencia_bibliografica_id FOREIGN KEY (referencia_bibliografica_id) REFERENCES public.CAT_REFERENCIA_BIBLIOGRAFICA(referencia_bibliografica_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_uni_lito_normalizada_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_uni_lito_normalizada_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_UNI_LITO_NORMALIZADA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_uni_lito_normalizada_uni_lito_normalizada_id ON public.DIC_UNI_LITO_NORMALIZADA(uni_lito_normalizada_id);
+CREATE INDEX idx_dic_uni_lito_normalizada_rango_lito_id ON public.DIC_UNI_LITO_NORMALIZADA(rango_lito_id);
+CREATE INDEX idx_dic_uni_lito_normalizada_referencia_bibliografica_id ON public.DIC_UNI_LITO_NORMALIZADA(referencia_bibliografica_id);
+CREATE INDEX idx_dic_uni_lito_normalizada_revisor_id ON public.DIC_UNI_LITO_NORMALIZADA(revisor_id);
+CREATE INDEX idx_dic_uni_lito_normalizada_estado_revision_id ON public.DIC_UNI_LITO_NORMALIZADA(estado_revision_id);
+
+-- ============================================================
+-- DIC_UNI_LITO_ACTUALIZADA
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_UNI_LITO_ACTUALIZADA CASCADE;
+
+CREATE TABLE public.DIC_UNI_LITO_ACTUALIZADA (
+    uni_lito_actualizada_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    cod_uni_lito_actualizada varchar(255),
+    nombre_oficial varchar(255),
+    rango_lito_id bigint,
+    estado_nomenclatura_id bigint,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    estado_revision_id bigint,
+    observaciones text,
+    CONSTRAINT pk_dic_uni_lito_actualizada PRIMARY KEY (uni_lito_actualizada_id),
+    CONSTRAINT fk_dic_uni_lito_actualizada_rango_lito_id FOREIGN KEY (rango_lito_id) REFERENCES public.CAT_RANGO_LITO(rango_lito_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_uni_lito_actualizada_estado_nomenclatura_id FOREIGN KEY (estado_nomenclatura_id) REFERENCES public.CAT_ESTADO_NOMENCLATURA(estado_nomenclatura_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_uni_lito_actualizada_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_uni_lito_actualizada_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_UNI_LITO_ACTUALIZADA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_uni_lito_actualizada_uni_lito_actualizada_id ON public.DIC_UNI_LITO_ACTUALIZADA(uni_lito_actualizada_id);
+CREATE INDEX idx_dic_uni_lito_actualizada_rango_lito_id ON public.DIC_UNI_LITO_ACTUALIZADA(rango_lito_id);
+CREATE INDEX idx_dic_uni_lito_actualizada_estado_nomenclatura_id ON public.DIC_UNI_LITO_ACTUALIZADA(estado_nomenclatura_id);
+CREATE INDEX idx_dic_uni_lito_actualizada_revisor_id ON public.DIC_UNI_LITO_ACTUALIZADA(revisor_id);
+CREATE INDEX idx_dic_uni_lito_actualizada_estado_revision_id ON public.DIC_UNI_LITO_ACTUALIZADA(estado_revision_id);
+
+-- ============================================================
+-- DIC_DESCRIPCION_LITO_REPORTADA
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_DESCRIPCION_LITO_REPORTADA CASCADE;
+
+CREATE TABLE public.DIC_DESCRIPCION_LITO_REPORTADA (
+    descripcion_lito_reportada_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    descripcion_reportada text,
+    minerales varchar(255),
+    estado_catalogacion_id bigint,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    CONSTRAINT pk_dic_descripcion_lito_reportada PRIMARY KEY (descripcion_lito_reportada_id),
+    CONSTRAINT fk_dic_descripcion_lito_reportada_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_descripcion_lito_reportada_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_descripcion_lito_reportada_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_DESCRIPCION_LITO_REPORTADA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_descripcion_lito_reportada_descripcion_lito_reportada_id ON public.DIC_DESCRIPCION_LITO_REPORTADA(descripcion_lito_reportada_id);
+CREATE INDEX idx_dic_descripcion_lito_reportada_estado_catalogacion_id ON public.DIC_DESCRIPCION_LITO_REPORTADA(estado_catalogacion_id);
+CREATE INDEX idx_dic_descripcion_lito_reportada_catalogador_id ON public.DIC_DESCRIPCION_LITO_REPORTADA(catalogador_id);
+CREATE INDEX idx_dic_descripcion_lito_reportada_revisor_id ON public.DIC_DESCRIPCION_LITO_REPORTADA(revisor_id);
+
+-- ============================================================
+-- DIC_DESCRIPCION_LITO_NORM
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_DESCRIPCION_LITO_NORM CASCADE;
+
+CREATE TABLE public.DIC_DESCRIPCION_LITO_NORM (
+    descripcion_lito_normalizada_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    litologia_principal varchar(255),
+    modificador varchar(255),
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    CONSTRAINT pk_dic_descripcion_lito_norm PRIMARY KEY (descripcion_lito_normalizada_id),
+    CONSTRAINT fk_dic_descripcion_lito_norm_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_DESCRIPCION_LITO_NORM IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_descripcion_lito_norm_descripcion_lito_normalizada_id ON public.DIC_DESCRIPCION_LITO_NORM(descripcion_lito_normalizada_id);
+CREATE INDEX idx_dic_descripcion_lito_norm_revisor_id ON public.DIC_DESCRIPCION_LITO_NORM(revisor_id);
+
+-- ============================================================
+-- REL_MUESTRA_DESCRIPCION_LITO
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_MUESTRA_DESCRIPCION_LITO CASCADE;
+
+CREATE TABLE public.REL_MUESTRA_DESCRIPCION_LITO (
+    rel_muestra_descripcion_lito_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    muestra_id bigint,
+    descripcion_lito_reportada_id bigint,
+    orden_registro bigint,
+    tipo_duda_id bigint,
+    comentario_catalogador text,
+    CONSTRAINT pk_rel_muestra_descripcion_lito PRIMARY KEY (rel_muestra_descripcion_lito_id),
+    CONSTRAINT fk_rel_muestra_descripcion_lito_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_descripcion_lito_descripcion_lito_reportada_id FOREIGN KEY (descripcion_lito_reportada_id) REFERENCES public.DIC_DESCRIPCION_LITO_REPORTADA(descripcion_lito_reportada_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_descripcion_lito_tipo_duda_id FOREIGN KEY (tipo_duda_id) REFERENCES public.CAT_TIPO_DUDA(tipo_duda_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_MUESTRA_DESCRIPCION_LITO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_muestra_descripcion_lito_rel_muestra_descripcion_lito_id ON public.REL_MUESTRA_DESCRIPCION_LITO(rel_muestra_descripcion_lito_id);
+CREATE INDEX idx_rel_muestra_descripcion_lito_muestra_id ON public.REL_MUESTRA_DESCRIPCION_LITO(muestra_id);
+CREATE INDEX idx_rel_muestra_descripcion_lito_descripcion_lito_reportada_id ON public.REL_MUESTRA_DESCRIPCION_LITO(descripcion_lito_reportada_id);
+CREATE INDEX idx_rel_muestra_descripcion_lito_tipo_duda_id ON public.REL_MUESTRA_DESCRIPCION_LITO(tipo_duda_id);
+
+-- ============================================================
+-- REL_MUESTRA_DESC_LITO_REP_NORM
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_MUESTRA_DESC_LITO_REP_NORM CASCADE;
+
+CREATE TABLE public.REL_MUESTRA_DESC_LITO_REP_NORM (
+    rel_descripcion_lito_rep_norm_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    descripcion_lito_reportada_id bigint,
+    descripcion_lito_normalizada_id bigint,
+    observaciones text,
+    CONSTRAINT pk_rel_muestra_desc_lito_rep_norm PRIMARY KEY (rel_descripcion_lito_rep_norm_id),
+    CONSTRAINT fk_rel_muestra_desc_lito_rep_norm_descripcion_lito_reportada_id FOREIGN KEY (descripcion_lito_reportada_id) REFERENCES public.DIC_DESCRIPCION_LITO_REPORTADA(descripcion_lito_reportada_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_desc_lito_rep_norm_descripcion_lito_normalizada_id FOREIGN KEY (descripcion_lito_normalizada_id) REFERENCES public.DIC_DESCRIPCION_LITO_NORM(descripcion_lito_normalizada_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_MUESTRA_DESC_LITO_REP_NORM IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_muestra_desc_lito_rep_norm_rel_descripcion_lito_rep_norm_id ON public.REL_MUESTRA_DESC_LITO_REP_NORM(rel_descripcion_lito_rep_norm_id);
+CREATE INDEX idx_rel_muestra_desc_lito_rep_norm_descripcion_lito_reportada_id ON public.REL_MUESTRA_DESC_LITO_REP_NORM(descripcion_lito_reportada_id);
+CREATE INDEX idx_rel_muestra_desc_lito_rep_norm_descripcion_lito_normalizada_id ON public.REL_MUESTRA_DESC_LITO_REP_NORM(descripcion_lito_normalizada_id);
+
+-- ============================================================
+-- REL_MUESTRA_UNI_LITO_REPORTADA
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_MUESTRA_UNI_LITO_REPORTADA CASCADE;
+
+CREATE TABLE public.REL_MUESTRA_UNI_LITO_REPORTADA (
+    rel_muestra_uni_lito_reportada_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    muestra_id bigint,
+    uni_lito_reportada_id bigint,
+    tipo_duda_id bigint,
+    comentario_catalogador text,
+    CONSTRAINT pk_rel_muestra_uni_lito_reportada PRIMARY KEY (rel_muestra_uni_lito_reportada_id),
+    CONSTRAINT fk_rel_muestra_uni_lito_reportada_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_uni_lito_reportada_uni_lito_reportada_id FOREIGN KEY (uni_lito_reportada_id) REFERENCES public.DIC_UNI_LITO_REPORTADA(uni_lito_reportada_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_uni_lito_reportada_tipo_duda_id FOREIGN KEY (tipo_duda_id) REFERENCES public.CAT_TIPO_DUDA(tipo_duda_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_MUESTRA_UNI_LITO_REPORTADA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_muestra_uni_lito_reportada_rel_muestra_uni_lito_reportada_id ON public.REL_MUESTRA_UNI_LITO_REPORTADA(rel_muestra_uni_lito_reportada_id);
+CREATE INDEX idx_rel_muestra_uni_lito_reportada_muestra_id ON public.REL_MUESTRA_UNI_LITO_REPORTADA(muestra_id);
+CREATE INDEX idx_rel_muestra_uni_lito_reportada_uni_lito_reportada_id ON public.REL_MUESTRA_UNI_LITO_REPORTADA(uni_lito_reportada_id);
+CREATE INDEX idx_rel_muestra_uni_lito_reportada_tipo_duda_id ON public.REL_MUESTRA_UNI_LITO_REPORTADA(tipo_duda_id);
+
+-- ============================================================
+-- REL_MUESTRA_UNI_LITO_REP_NORM
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_MUESTRA_UNI_LITO_REP_NORM CASCADE;
+
+CREATE TABLE public.REL_MUESTRA_UNI_LITO_REP_NORM (
+    rel_uni_lito_rep_norm_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    uni_lito_reportada_id bigint,
+    uni_lito_normalizada_id bigint,
+    observaciones text,
+    CONSTRAINT pk_rel_muestra_uni_lito_rep_norm PRIMARY KEY (rel_uni_lito_rep_norm_id),
+    CONSTRAINT fk_rel_muestra_uni_lito_rep_norm_uni_lito_reportada_id FOREIGN KEY (uni_lito_reportada_id) REFERENCES public.DIC_UNI_LITO_REPORTADA(uni_lito_reportada_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_uni_lito_rep_norm_uni_lito_normalizada_id FOREIGN KEY (uni_lito_normalizada_id) REFERENCES public.DIC_UNI_LITO_NORMALIZADA(uni_lito_normalizada_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_MUESTRA_UNI_LITO_REP_NORM IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_muestra_uni_lito_rep_norm_rel_uni_lito_rep_norm_id ON public.REL_MUESTRA_UNI_LITO_REP_NORM(rel_uni_lito_rep_norm_id);
+CREATE INDEX idx_rel_muestra_uni_lito_rep_norm_uni_lito_reportada_id ON public.REL_MUESTRA_UNI_LITO_REP_NORM(uni_lito_reportada_id);
+CREATE INDEX idx_rel_muestra_uni_lito_rep_norm_uni_lito_normalizada_id ON public.REL_MUESTRA_UNI_LITO_REP_NORM(uni_lito_normalizada_id);
+
+-- ============================================================
+-- REL_MUESTRA_UNI_LITO_NORM_ACT
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_MUESTRA_UNI_LITO_NORM_ACT CASCADE;
+
+CREATE TABLE public.REL_MUESTRA_UNI_LITO_NORM_ACT (
+    rel_uni_lito_norm_act_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    uni_lito_normalizada_id bigint,
+    uni_lito_actualizada_id bigint,
+    observaciones text,
+    CONSTRAINT pk_rel_muestra_uni_lito_norm_act PRIMARY KEY (rel_uni_lito_norm_act_id),
+    CONSTRAINT fk_rel_muestra_uni_lito_norm_act_uni_lito_normalizada_id FOREIGN KEY (uni_lito_normalizada_id) REFERENCES public.DIC_UNI_LITO_NORMALIZADA(uni_lito_normalizada_id) ON DELETE SET NULL,
+    CONSTRAINT fk_rel_muestra_uni_lito_norm_act_uni_lito_actualizada_id FOREIGN KEY (uni_lito_actualizada_id) REFERENCES public.DIC_UNI_LITO_ACTUALIZADA(uni_lito_actualizada_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.REL_MUESTRA_UNI_LITO_NORM_ACT IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_rel_muestra_uni_lito_norm_act_rel_uni_lito_norm_act_id ON public.REL_MUESTRA_UNI_LITO_NORM_ACT(rel_uni_lito_norm_act_id);
+CREATE INDEX idx_rel_muestra_uni_lito_norm_act_uni_lito_normalizada_id ON public.REL_MUESTRA_UNI_LITO_NORM_ACT(uni_lito_normalizada_id);
+CREATE INDEX idx_rel_muestra_uni_lito_norm_act_uni_lito_actualizada_id ON public.REL_MUESTRA_UNI_LITO_NORM_ACT(uni_lito_actualizada_id);
+
+-- ============================================================
 -- Actualización de versión del esquema
 -- ============================================================
 INSERT INTO public.schema_version (version, applied_at)
-VALUES (2, now())
+VALUES (3, now())
 ON CONFLICT (version) DO UPDATE SET applied_at = EXCLUDED.applied_at;
 
 
