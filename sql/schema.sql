@@ -393,5 +393,166 @@ CREATE INDEX idx_dic_autor_entidad_id ON public.DIC_AUTOR(entidad_id);
 CREATE INDEX idx_dic_autor_especialidad_id ON public.DIC_AUTOR(especialidad_id);
 
 -- ============================================================
+-- CAT_MATERIAL_MUEBLE
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_MATERIAL_MUEBLE CASCADE;
+
+CREATE TABLE public.CAT_MATERIAL_MUEBLE (
+    material_mueble_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_material_mueble PRIMARY KEY (material_mueble_id),
+    CONSTRAINT uq_cat_material_mueble_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_MATERIAL_MUEBLE IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_material_mueble_material_mueble_id ON public.CAT_MATERIAL_MUEBLE(material_mueble_id);
+
+-- ============================================================
+-- CAT_COLOR_MUEBLE
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_COLOR_MUEBLE CASCADE;
+
+CREATE TABLE public.CAT_COLOR_MUEBLE (
+    color_mueble_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_color_mueble PRIMARY KEY (color_mueble_id),
+    CONSTRAINT uq_cat_color_mueble_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_COLOR_MUEBLE IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_color_mueble_color_mueble_id ON public.CAT_COLOR_MUEBLE(color_mueble_id);
+
+-- ============================================================
+-- CAT_SECCION
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_SECCION CASCADE;
+
+CREATE TABLE public.CAT_SECCION (
+    seccion_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_seccion varchar(255),
+    nombre varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_seccion PRIMARY KEY (seccion_id),
+    CONSTRAINT uq_cat_seccion_codigo_seccion UNIQUE (codigo_seccion)
+);
+
+COMMENT ON TABLE public.CAT_SECCION IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_seccion_seccion_id ON public.CAT_SECCION(seccion_id);
+
+-- ============================================================
+-- CAT_ZONA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_ZONA CASCADE;
+
+CREATE TABLE public.CAT_ZONA (
+    zona_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_zona varchar(255),
+    nombre varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_zona PRIMARY KEY (zona_id),
+    CONSTRAINT uq_cat_zona_codigo_zona UNIQUE (codigo_zona)
+);
+
+COMMENT ON TABLE public.CAT_ZONA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_zona_zona_id ON public.CAT_ZONA(zona_id);
+
+-- ============================================================
+-- CAT_MATERIAL_BANDEJA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_MATERIAL_BANDEJA CASCADE;
+
+CREATE TABLE public.CAT_MATERIAL_BANDEJA (
+    material_bandeja_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_material_bandeja varchar(255),
+    nombre varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_material_bandeja PRIMARY KEY (material_bandeja_id),
+    CONSTRAINT uq_cat_material_bandeja_codigo_material_bandeja UNIQUE (codigo_material_bandeja)
+);
+
+COMMENT ON TABLE public.CAT_MATERIAL_BANDEJA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_material_bandeja_material_bandeja_id ON public.CAT_MATERIAL_BANDEJA(material_bandeja_id);
+
+-- ============================================================
+-- CAT_COLUMNA_BANDEJA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_COLUMNA_BANDEJA CASCADE;
+
+CREATE TABLE public.CAT_COLUMNA_BANDEJA (
+    columna_bandeja_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_columna varchar(255),
+    nombre varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_columna_bandeja PRIMARY KEY (columna_bandeja_id),
+    CONSTRAINT uq_cat_columna_bandeja_codigo_columna UNIQUE (codigo_columna)
+);
+
+COMMENT ON TABLE public.CAT_COLUMNA_BANDEJA IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_columna_bandeja_columna_bandeja_id ON public.CAT_COLUMNA_BANDEJA(columna_bandeja_id);
+
+-- ============================================================
+-- CAT_CODIGO_CAVIDAD
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_CODIGO_CAVIDAD CASCADE;
+
+CREATE TABLE public.CAT_CODIGO_CAVIDAD (
+    codigo_cavidad_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_cavidad varchar(255),
+    tipo_cavidad varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_codigo_cavidad PRIMARY KEY (codigo_cavidad_id),
+    CONSTRAINT uq_cat_codigo_cavidad_codigo_cavidad UNIQUE (codigo_cavidad)
+);
+
+COMMENT ON TABLE public.CAT_CODIGO_CAVIDAD IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_codigo_cavidad_codigo_cavidad_id ON public.CAT_CODIGO_CAVIDAD(codigo_cavidad_id);
+
+-- ============================================================
+-- CAT_MUEBLE
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_MUEBLE CASCADE;
+
+CREATE TABLE public.CAT_MUEBLE (
+    mueble_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_mueble varchar(255),
+    material_mueble_id bigint,
+    color_mueble_id bigint,
+    tiene_secciones varchar(255),
+    tiene_zonas varchar(255),
+    capacidad_bandejas varchar(255),
+    capacidad_posiciones varchar(255),
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_mueble PRIMARY KEY (mueble_id),
+    CONSTRAINT fk_cat_mueble_material_mueble_id FOREIGN KEY (material_mueble_id) REFERENCES public.CAT_MATERIAL_MUEBLE(material_mueble_id) ON DELETE SET NULL,
+    CONSTRAINT fk_cat_mueble_color_mueble_id FOREIGN KEY (color_mueble_id) REFERENCES public.CAT_COLOR_MUEBLE(color_mueble_id) ON DELETE SET NULL,
+    CONSTRAINT uq_cat_mueble_codigo_mueble UNIQUE (codigo_mueble)
+);
+
+COMMENT ON TABLE public.CAT_MUEBLE IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_mueble_material_mueble_id ON public.CAT_MUEBLE(material_mueble_id);
+CREATE INDEX idx_cat_mueble_color_mueble_id ON public.CAT_MUEBLE(color_mueble_id);
+CREATE INDEX idx_cat_mueble_mueble_id ON public.CAT_MUEBLE(mueble_id);
+
+-- ============================================================
 
 COMMIT;
