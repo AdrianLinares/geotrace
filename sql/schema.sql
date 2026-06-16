@@ -270,4 +270,128 @@ INSERT INTO public.schema_version (version, applied_at)
 VALUES (1, now())
 ON CONFLICT (version) DO UPDATE SET applied_at = EXCLUDED.applied_at;
 
+-- ============================================================
+-- Fase 1 (continuación): catálogos de autoría y helper de triggers
+-- ============================================================
+
+-- ============================================================
+-- set_updated_at(): función de trigger para actualizar updated_at
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS trigger AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION public.set_updated_at() IS 'Trigger genérico que actualiza la columna updated_at con la fecha/hora actual.';
+
+-- ============================================================
+-- CAT_TIPO_AUTOR
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_AUTOR CASCADE;
+
+CREATE TABLE public.CAT_TIPO_AUTOR (
+    tipo_autor_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_autor PRIMARY KEY (tipo_autor_id),
+    CONSTRAINT uq_cat_tipo_autor_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_AUTOR IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_tipo_autor_tipo_autor_id ON public.CAT_TIPO_AUTOR(tipo_autor_id);
+
+-- ============================================================
+-- CAT_ROL_AUTOR
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_ROL_AUTOR CASCADE;
+
+CREATE TABLE public.CAT_ROL_AUTOR (
+    rol_autor_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_rol_autor varchar(255),
+    nombre varchar(255),
+    descripcion text,
+    activo boolean,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_rol_autor PRIMARY KEY (rol_autor_id),
+    CONSTRAINT uq_cat_rol_autor_codigo_rol_autor UNIQUE (codigo_rol_autor)
+);
+
+COMMENT ON TABLE public.CAT_ROL_AUTOR IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_rol_autor_rol_autor_id ON public.CAT_ROL_AUTOR(rol_autor_id);
+
+-- ============================================================
+-- CAT_ESPECIALIDAD
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_ESPECIALIDAD CASCADE;
+
+CREATE TABLE public.CAT_ESPECIALIDAD (
+    especialidad_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_especialidad varchar(100),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_especialidad PRIMARY KEY (especialidad_id),
+    CONSTRAINT uq_cat_especialidad_nombre_especialidad UNIQUE (nombre_especialidad)
+);
+
+COMMENT ON TABLE public.CAT_ESPECIALIDAD IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_especialidad_especialidad_id ON public.CAT_ESPECIALIDAD(especialidad_id);
+
+-- ============================================================
+-- CAT_ENTIDAD
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_ENTIDAD CASCADE;
+
+CREATE TABLE public.CAT_ENTIDAD (
+    entidad_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_entidad varchar(255),
+    nombre_entidad varchar(255),
+    tipo_entidad varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_entidad PRIMARY KEY (entidad_id),
+    CONSTRAINT uq_cat_entidad_codigo_entidad UNIQUE (codigo_entidad)
+);
+
+COMMENT ON TABLE public.CAT_ENTIDAD IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_entidad_entidad_id ON public.CAT_ENTIDAD(entidad_id);
+
+-- ============================================================
+-- DIC_AUTOR
+-- ============================================================
+DROP TABLE IF EXISTS public.DIC_AUTOR CASCADE;
+
+CREATE TABLE public.DIC_AUTOR (
+    autor_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_autor varchar(255),
+    nombre_autor varchar(255),
+    tipo_autor_id bigint,
+    entidad_id bigint,
+    especialidad_id bigint,
+    observaciones text,
+    CONSTRAINT pk_dic_autor PRIMARY KEY (autor_id),
+    CONSTRAINT fk_dic_autor_tipo_autor_id FOREIGN KEY (tipo_autor_id) REFERENCES public.CAT_TIPO_AUTOR(tipo_autor_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_autor_entidad_id FOREIGN KEY (entidad_id) REFERENCES public.CAT_ENTIDAD(entidad_id) ON DELETE SET NULL,
+    CONSTRAINT fk_dic_autor_especialidad_id FOREIGN KEY (especialidad_id) REFERENCES public.CAT_ESPECIALIDAD(especialidad_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DIC_AUTOR IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_dic_autor_tipo_autor_id ON public.DIC_AUTOR(tipo_autor_id);
+CREATE INDEX idx_dic_autor_entidad_id ON public.DIC_AUTOR(entidad_id);
+CREATE INDEX idx_dic_autor_especialidad_id ON public.DIC_AUTOR(especialidad_id);
+
+-- ============================================================
+
 COMMIT;
