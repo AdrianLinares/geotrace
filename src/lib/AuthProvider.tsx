@@ -39,7 +39,7 @@ export default function AuthProvider({ children }: Props) {
       if (data.session?.user) {
         // Si hay sesión, cargamos la persona asociada por email
         console.log('AuthProvider: Sesión inicial encontrada', data.session.user.email)
-        fetchPersonaAndSet(data.session.user.email).finally(() => {
+        fetchPersonaAndSet(data.session.user.email, data.session.user.id).finally(() => {
           sessionHandled.current = true
           if (mounted.current) setAuthLoading(false)
         })
@@ -64,7 +64,7 @@ export default function AuthProvider({ children }: Props) {
       if (event === 'SIGNED_IN' && session?.user) {
         // Cuando un usuario firma, recargamos su `persona` desde la tabla
         setAuthLoading(true)
-        fetchPersonaAndSet(session.user.email).finally(() => {
+        fetchPersonaAndSet(session.user.email, session.user.id).finally(() => {
           if (mounted.current) setAuthLoading(false)
         })
       } else if (event === 'SIGNED_OUT') {
@@ -85,13 +85,32 @@ export default function AuthProvider({ children }: Props) {
    * - Si no encuentra persona, setUser(null)
    * - Se usa `ilike` para coincidencia case-insensitive
    */
-  async function fetchPersonaAndSet(email?: string | null) {
+  function resolveRol(relaciones?: any[]): string {
+    if (!relaciones || relaciones.length === 0) return 'Catalogador'
+
+    const roles = relaciones
+      .filter(
+        (r: any) =>
+          r.activo !== false &&
+          (r.fecha_fin == null || new Date(r.fecha_fin) > new Date())
+      )
+      .map((r: any) => r.CAT_ROL)
+      .filter(Boolean)
+
+    const highest = roles.sort(
+      (a: any, b: any) => (b.jerarquia || 0) - (a.jerarquia || 0)
+    )[0]
+
+    return highest?.nombre || 'Catalogador'
+  }
+
+  async function fetchPersonaAndSet(email?: string | null, userId?: string | null) {
     if (!email) { setUser(null); return }
     try {
       const { data, error } = await supabase
-        .from('persona')
-        .select('*')
-        .ilike('email', email)
+        .from('PERSONA')
+        .select('*, REL_PERSONA_ROL(rol_id, activo, fecha_fin, CAT_ROL(nombre, jerarquia))')
+        .ilike('correo', email)
         .limit(1)
 
       if (error) {
@@ -105,13 +124,29 @@ export default function AuthProvider({ children }: Props) {
         return
       }
       const p = data[0]
-      console.log('AuthProvider: Persona cargada', p.nombre, p.rol)
+
+      // Resolve effective role: prefer explicit legacy/new field, otherwise
+      // pick the active CAT_ROL with the highest hierarchy.
+      const rolAsignado = p.rol || resolveRol(p.REL_PERSONA_ROL)
+      console.log('AuthProvider: Persona cargada', p.nombre, rolAsignado)
+
+      // One-time link: associate Supabase auth user with persona record
+      if (p && !p.auth_user_id && userId) {
+        try {
+          await supabase
+            .from('PERSONA')
+            .update({ auth_user_id: userId })
+            .eq('persona_id', p.persona_id)
+        } catch (e) {
+          console.warn('AuthProvider: No se pudo vincular auth_user_id', e)
+        }
+      }
 
       // Sync role to JWT user_metadata so RLS policies can read it
-      await syncRoleToMetadata(p.rol)
+      await syncRoleToMetadata(rolAsignado)
 
       // Mapeo mínimo: persona_id, nombre y rol (usado por roleGuards)
-      setUser({ persona_id: p.persona_id, nombre: p.nombre, rol: p.rol })
+      setUser({ persona_id: p.persona_id, nombre: p.nombre, rol: rolAsignado })
     } catch (e) {
       console.error('AuthProvider: Error inesperado', e)
       setUser(null)

@@ -1,45 +1,45 @@
--- Tabla de Auditoría para registrar operaciones CRUD
--- Ejecutar este script en Supabase después de crear el resto del esquema
+-- ============================================================
+-- Tabla de auditoría unificada
+-- ============================================================
+-- Registra cada operación DML (INSERT, UPDATE, DELETE) que dispare
+-- la función audit_trigger_func() definida en sql/triggers.sql.
+-- Solo los administradores pueden leer la pista de auditoría.
+-- ============================================================
 
-CREATE TABLE IF NOT EXISTS auditoria (
-  id BIGSERIAL PRIMARY KEY,
-  tabla TEXT NOT NULL,
-  accion TEXT NOT NULL CHECK (accion IN ('CREATE', 'UPDATE', 'DELETE', 'READ')),
-  registro_id TEXT NOT NULL,
-  usuario_id UUID,
-  usuario_nombre TEXT,
-  cambios JSONB,
-  timestamp TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  
-  -- Índices para búsqueda rápida
-  CONSTRAINT tabla_registro_idx UNIQUE (tabla, registro_id, timestamp)
+-- Limpiar tabla anterior si existiera (esquema anterior)
+DROP TABLE IF EXISTS public.auditoria_cambios CASCADE;
+DROP TABLE IF EXISTS public.auditoria CASCADE;
+
+CREATE TABLE public.auditoria (
+  auditoria_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  tabla text NOT NULL,
+  operacion text NOT NULL CHECK (operacion IN ('INSERT','UPDATE','DELETE')),
+  registro_id bigint NOT NULL,
+  usuario_id uuid REFERENCES auth.users(id),
+  cambios jsonb,
+  created_at timestamptz DEFAULT now()
 );
 
--- Índices para optimizar consultas comunes
-CREATE INDEX idx_auditoria_usuario ON auditoria(usuario_id);
-CREATE INDEX idx_auditoria_tabla ON auditoria(tabla);
-CREATE INDEX idx_auditoria_accion ON auditoria(accion);
-CREATE INDEX idx_auditoria_timestamp ON auditoria(timestamp DESC);
+COMMENT ON TABLE public.auditoria IS 'Pista de auditoría unificada para operaciones DML.';
+COMMENT ON COLUMN public.auditoria.tabla IS 'Tabla donde ocurrió la operación.';
+COMMENT ON COLUMN public.auditoria.operacion IS 'Tipo de operación: INSERT, UPDATE o DELETE.';
+COMMENT ON COLUMN public.auditoria.registro_id IS 'Valor de la clave primaria del registro afectado.';
+COMMENT ON COLUMN public.auditoria.usuario_id IS 'Identificador de auth.users que realizó la operación.';
+COMMENT ON COLUMN public.auditoria.cambios IS 'JSON con los valores del registro (old/new en UPDATE).';
 
--- Habilitar RLS (Row-Level Security)
-ALTER TABLE auditoria ENABLE ROW LEVEL SECURITY;
+-- Índices básicos para consultas de auditoría
+CREATE INDEX idx_auditoria_tabla ON public.auditoria(tabla);
+CREATE INDEX idx_auditoria_operacion ON public.auditoria(operacion);
+CREATE INDEX idx_auditoria_registro_id ON public.auditoria(registro_id);
+CREATE INDEX idx_auditoria_usuario_id ON public.auditoria(usuario_id);
+CREATE INDEX idx_auditoria_created_at ON public.auditoria(created_at DESC);
 
--- Política: solo admins pueden ver/eliminar auditoría
-CREATE POLICY audit_read_admin ON auditoria FOR SELECT
-  USING (
-    auth.role() = 'supabase_admin' OR
-    (auth.jwt() ->> 'role') = 'Administrador'
-  );
+-- RLS: solo administradores pueden leer la auditoría
+ALTER TABLE public.auditoria ENABLE ROW LEVEL SECURITY;
 
--- Política: cualquier usuario autenticado puede crear registros de auditoría
-CREATE POLICY audit_insert_authenticated ON auditoria FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS auditoria_select_admin_only ON public.auditoria;
+CREATE POLICY auditoria_select_admin_only ON public.auditoria
+  FOR SELECT TO authenticated
+  USING (current_user_has_role('Administrador'));
 
--- Comentarios
-COMMENT ON TABLE auditoria IS 'Registro de auditoría para todas las operaciones CRUD en el sistema';
-COMMENT ON COLUMN auditoria.tabla IS 'Nombre de la tabla donde ocurrió la operación';
-COMMENT ON COLUMN auditoria.accion IS 'Tipo de operación: CREATE, UPDATE, DELETE, READ';
-COMMENT ON COLUMN auditoria.registro_id IS 'ID del registro afectado';
-COMMENT ON COLUMN auditoria.usuario_id IS 'ID del usuario (de auth.users)';
-COMMENT ON COLUMN auditoria.usuario_nombre IS 'Nombre del usuario para referencia rápida';
-COMMENT ON COLUMN auditoria.cambios IS 'JSON con campos antes/después de UPDATE (opcional)';
+-- Los inserts los realiza el trigger SECURITY DEFINER, que ignora RLS.

@@ -536,15 +536,17 @@ CREATE TABLE public.CAT_MUEBLE (
     color_mueble_id bigint,
     tiene_secciones varchar(255),
     tiene_zonas varchar(255),
-    capacidad_bandejas varchar(255),
-    capacidad_posiciones varchar(255),
+    capacidad_bandejas integer,
+    capacidad_posiciones integer,
     observaciones text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT pk_cat_mueble PRIMARY KEY (mueble_id),
     CONSTRAINT fk_cat_mueble_material_mueble_id FOREIGN KEY (material_mueble_id) REFERENCES public.CAT_MATERIAL_MUEBLE(material_mueble_id) ON DELETE SET NULL,
     CONSTRAINT fk_cat_mueble_color_mueble_id FOREIGN KEY (color_mueble_id) REFERENCES public.CAT_COLOR_MUEBLE(color_mueble_id) ON DELETE SET NULL,
-    CONSTRAINT uq_cat_mueble_codigo_mueble UNIQUE (codigo_mueble)
+    CONSTRAINT uq_cat_mueble_codigo_mueble UNIQUE (codigo_mueble),
+    CONSTRAINT chk_cat_mueble_capacidad_bandejas CHECK (capacidad_bandejas >= 0),
+    CONSTRAINT chk_cat_mueble_capacidad_posiciones CHECK (capacidad_posiciones >= 0)
 );
 
 COMMENT ON TABLE public.CAT_MUEBLE IS 'Tabla generada desde el inventario de campos.';
@@ -1114,8 +1116,8 @@ DROP TABLE IF EXISTS public.PLACA CASCADE;
 
 CREATE TABLE public.PLACA (
     placa_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-    codigo_ubicacion varchar(255),
-    codigo_coleccion varchar(255),
+    ubicacion_id bigint,
+    coleccion_id bigint,
     codigo_placa varchar(255),
     clase_placa_id bigint,
     etapa_uso_placa_id bigint,
@@ -1132,6 +1134,7 @@ CREATE TABLE public.PLACA (
     revisor_id bigint,
     fecha_revision timestamptz,
     CONSTRAINT pk_placa PRIMARY KEY (placa_id),
+    CONSTRAINT fk_placa_coleccion_id FOREIGN KEY (coleccion_id) REFERENCES public.CAT_COLECCION(coleccion_id) ON DELETE SET NULL,
     CONSTRAINT fk_placa_clase_placa_id FOREIGN KEY (clase_placa_id) REFERENCES public.CAT_CLASE_PLACA(clase_placa_id) ON DELETE SET NULL,
     CONSTRAINT fk_placa_etapa_uso_placa_id FOREIGN KEY (etapa_uso_placa_id) REFERENCES public.CAT_ETAPA_USO_PLACA(etapa_uso_placa_id) ON DELETE SET NULL,
     CONSTRAINT fk_placa_diseno_placa_id FOREIGN KEY (diseno_placa_id) REFERENCES public.CAT_DISENO_PLACA(diseno_placa_id) ON DELETE SET NULL,
@@ -1161,6 +1164,8 @@ CREATE INDEX idx_placa_catalogador_id ON public.PLACA(catalogador_id);
 CREATE INDEX idx_placa_estado_catalogacion_id ON public.PLACA(estado_catalogacion_id);
 CREATE INDEX idx_placa_revisor_id ON public.PLACA(revisor_id);
 CREATE INDEX idx_placa_codigo_placa ON public.PLACA(codigo_placa);
+CREATE INDEX idx_placa_ubicacion_id ON public.PLACA(ubicacion_id);
+CREATE INDEX idx_placa_coleccion_id ON public.PLACA(coleccion_id);
 
 -- ============================================================
 -- MARCADO_PLACA
@@ -1239,9 +1244,9 @@ DROP TABLE IF EXISTS public.ESTADO_CONSERVACION_INICIAL CASCADE;
 CREATE TABLE public.ESTADO_CONSERVACION_INICIAL (
     estado_conservacion_inicial_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
     placa_id bigint,
-    vidrio_estado varchar(255),
-    acetato_estado varchar(255),
-    marco_placa_estado varchar(255),
+    vidrio_estado_id bigint,
+    acetato_estado_id bigint,
+    marco_placa_estado_id bigint,
     presencia_hongos boolean,
     crecimiento_cristales boolean,
     oxidacion boolean,
@@ -1256,6 +1261,9 @@ CREATE TABLE public.ESTADO_CONSERVACION_INICIAL (
     fecha_ingreso timestamptz,
     CONSTRAINT pk_estado_conservacion_inicial PRIMARY KEY (estado_conservacion_inicial_id),
     CONSTRAINT fk_estado_conservacion_inicial_placa_id FOREIGN KEY (placa_id) REFERENCES public.PLACA(placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_estado_conservacion_inicial_vidrio_estado_id FOREIGN KEY (vidrio_estado_id) REFERENCES public.CAT_VIDRIO_ESTADO(vidrio_estado_id) ON DELETE SET NULL,
+    CONSTRAINT fk_estado_conservacion_inicial_acetato_estado_id FOREIGN KEY (acetato_estado_id) REFERENCES public.CAT_ACETATO_ESTADO(acetato_estado_id) ON DELETE SET NULL,
+    CONSTRAINT fk_estado_conservacion_inicial_marco_placa_estado_id FOREIGN KEY (marco_placa_estado_id) REFERENCES public.CAT_MARCO_PLACA_ESTADO(marco_placa_estado_id) ON DELETE SET NULL,
     CONSTRAINT fk_estado_conservacion_inicial_prioridad_intervencion_id FOREIGN KEY (prioridad_intervencion_id) REFERENCES public.CAT_PRIORIDAD_INTERVENCION(prioridad_intervencion_id) ON DELETE SET NULL,
     CONSTRAINT fk_estado_conservacion_inicial_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
     CONSTRAINT fk_estado_conservacion_inicial_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
@@ -1265,6 +1273,9 @@ CREATE TABLE public.ESTADO_CONSERVACION_INICIAL (
 COMMENT ON TABLE public.ESTADO_CONSERVACION_INICIAL IS 'Tabla generada desde el inventario de campos.';
 
 CREATE INDEX idx_estado_conservacion_inicial_placa_id ON public.ESTADO_CONSERVACION_INICIAL(placa_id);
+CREATE INDEX idx_estado_conservacion_inicial_vidrio_estado_id ON public.ESTADO_CONSERVACION_INICIAL(vidrio_estado_id);
+CREATE INDEX idx_estado_conservacion_inicial_acetato_estado_id ON public.ESTADO_CONSERVACION_INICIAL(acetato_estado_id);
+CREATE INDEX idx_estado_conservacion_inicial_marco_placa_estado_id ON public.ESTADO_CONSERVACION_INICIAL(marco_placa_estado_id);
 CREATE INDEX idx_estado_conservacion_inicial_prioridad_intervencion_id ON public.ESTADO_CONSERVACION_INICIAL(prioridad_intervencion_id);
 CREATE INDEX idx_estado_conservacion_inicial_estado_catalogacion_id ON public.ESTADO_CONSERVACION_INICIAL(estado_catalogacion_id);
 CREATE INDEX idx_estado_conservacion_inicial_revisor_id ON public.ESTADO_CONSERVACION_INICIAL(revisor_id);
@@ -1384,6 +1395,10 @@ CREATE INDEX idx_ubicacion_fisica_catalogador_id ON public.UBICACION_FISICA(cata
 CREATE INDEX idx_ubicacion_fisica_estado_catalogacion_id ON public.UBICACION_FISICA(estado_catalogacion_id);
 CREATE INDEX idx_ubicacion_fisica_revisor_id ON public.UBICACION_FISICA(revisor_id);
 
+ALTER TABLE public.PLACA
+    ADD CONSTRAINT fk_placa_ubicacion_id
+        FOREIGN KEY (ubicacion_id) REFERENCES public.UBICACION_FISICA(ubicacion_fisica_id) ON DELETE SET NULL;
+
 -- ============================================================
 -- POZO
 -- ============================================================
@@ -1396,12 +1411,17 @@ CREATE TABLE public.POZO (
     cuenca_id bigint,
     localizacion_geografica_id bigint,
     localizacion_espacial_id bigint,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz DEFAULT now(),
+    estado_catalogacion_id bigint,
     estado_revision_id bigint,
     revisor_id bigint,
     fecha_revision timestamptz,
     observaciones text,
     CONSTRAINT pk_pozo PRIMARY KEY (pozo_id),
     CONSTRAINT fk_pozo_cuenca_id FOREIGN KEY (cuenca_id) REFERENCES public.CAT_CUENCA(cuenca_id) ON DELETE SET NULL,
+    CONSTRAINT fk_pozo_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_pozo_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
     CONSTRAINT fk_pozo_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL,
     CONSTRAINT fk_pozo_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
 );
@@ -1409,6 +1429,8 @@ CREATE TABLE public.POZO (
 COMMENT ON TABLE public.POZO IS 'Tabla generada desde el inventario de campos.';
 
 CREATE INDEX idx_pozo_cuenca_id ON public.POZO(cuenca_id);
+CREATE INDEX idx_pozo_catalogador_id ON public.POZO(catalogador_id);
+CREATE INDEX idx_pozo_estado_catalogacion_id ON public.POZO(estado_catalogacion_id);
 CREATE INDEX idx_pozo_estado_revision_id ON public.POZO(estado_revision_id);
 CREATE INDEX idx_pozo_revisor_id ON public.POZO(revisor_id);
 CREATE INDEX idx_pozo_codigo_pozo ON public.POZO(codigo_pozo);
@@ -1561,7 +1583,8 @@ CREATE TABLE public.MUESTRA_SUPERFICIE (
     CONSTRAINT pk_muestra_superficie PRIMARY KEY (muestra_superficie_id),
     CONSTRAINT fk_muestra_superficie_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
     CONSTRAINT fk_muestra_superficie_colector_id FOREIGN KEY (colector_id) REFERENCES public.CAT_COLECTOR(colector_id) ON DELETE SET NULL,
-    CONSTRAINT fk_muestra_superficie_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL
+    CONSTRAINT fk_muestra_superficie_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL,
+    CONSTRAINT uq_muestra_superficie_muestra_id UNIQUE (muestra_id)
 );
 
 COMMENT ON TABLE public.MUESTRA_SUPERFICIE IS 'Tabla generada desde el inventario de campos.';
@@ -1586,7 +1609,8 @@ CREATE TABLE public.MUESTRA_LECHO_MARINO (
     localizacion_espacial_id bigint,
     CONSTRAINT pk_muestra_lecho_marino PRIMARY KEY (muestra_lecho_marino_id),
     CONSTRAINT fk_muestra_lecho_marino_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
-    CONSTRAINT fk_muestra_lecho_marino_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL
+    CONSTRAINT fk_muestra_lecho_marino_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL,
+    CONSTRAINT uq_muestra_lecho_marino_muestra_id UNIQUE (muestra_id)
 );
 
 COMMENT ON TABLE public.MUESTRA_LECHO_MARINO IS 'Tabla generada desde el inventario de campos.';
@@ -1614,7 +1638,8 @@ CREATE TABLE public.MUESTRA_SUBSUELO (
     CONSTRAINT fk_muestra_subsuelo_tipo_muestra_subsuelo_id FOREIGN KEY (tipo_muestra_subsuelo_id) REFERENCES public.CAT_TIPO_MUESTRA_SUBSUELO(tipo_muestra_subsuelo_id) ON DELETE SET NULL,
     CONSTRAINT fk_muestra_subsuelo_pozo_id FOREIGN KEY (pozo_id) REFERENCES public.POZO(pozo_id) ON DELETE SET NULL,
     CONSTRAINT fk_muestra_subsuelo_tipo_intervalo_muestra_id FOREIGN KEY (tipo_intervalo_muestra_id) REFERENCES public.CAT_TIPO_INTERVALO_MUESTRA(tipo_intervalo_muestra_id) ON DELETE SET NULL,
-    CONSTRAINT fk_muestra_subsuelo_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL
+    CONSTRAINT fk_muestra_subsuelo_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL,
+    CONSTRAINT uq_muestra_subsuelo_muestra_id UNIQUE (muestra_id)
 );
 
 COMMENT ON TABLE public.MUESTRA_SUBSUELO IS 'Tabla generada desde el inventario de campos.';
@@ -3615,7 +3640,7 @@ ALTER TABLE public.POZO
 -- Actualización de versión del esquema
 -- ============================================================
 INSERT INTO public.schema_version (version, applied_at)
-VALUES (4, now())
+VALUES (5, now())
 ON CONFLICT (version) DO UPDATE SET applied_at = EXCLUDED.applied_at;
 
 
