@@ -1395,6 +1395,10 @@ CREATE INDEX idx_ubicacion_fisica_catalogador_id ON public.UBICACION_FISICA(cata
 CREATE INDEX idx_ubicacion_fisica_estado_catalogacion_id ON public.UBICACION_FISICA(estado_catalogacion_id);
 CREATE INDEX idx_ubicacion_fisica_revisor_id ON public.UBICACION_FISICA(revisor_id);
 
+ALTER TABLE public.PLACA
+    ADD CONSTRAINT fk_placa_ubicacion_id
+        FOREIGN KEY (ubicacion_id) REFERENCES public.UBICACION_FISICA(ubicacion_fisica_id) ON DELETE SET NULL;
+
 -- ============================================================
 -- POZO
 -- ============================================================
@@ -1407,12 +1411,17 @@ CREATE TABLE public.POZO (
     cuenca_id bigint,
     localizacion_geografica_id bigint,
     localizacion_espacial_id bigint,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz DEFAULT now(),
+    estado_catalogacion_id bigint,
     estado_revision_id bigint,
     revisor_id bigint,
     fecha_revision timestamptz,
     observaciones text,
     CONSTRAINT pk_pozo PRIMARY KEY (pozo_id),
     CONSTRAINT fk_pozo_cuenca_id FOREIGN KEY (cuenca_id) REFERENCES public.CAT_CUENCA(cuenca_id) ON DELETE SET NULL,
+    CONSTRAINT fk_pozo_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_pozo_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
     CONSTRAINT fk_pozo_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL,
     CONSTRAINT fk_pozo_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
 );
@@ -1420,6 +1429,8 @@ CREATE TABLE public.POZO (
 COMMENT ON TABLE public.POZO IS 'Tabla generada desde el inventario de campos.';
 
 CREATE INDEX idx_pozo_cuenca_id ON public.POZO(cuenca_id);
+CREATE INDEX idx_pozo_catalogador_id ON public.POZO(catalogador_id);
+CREATE INDEX idx_pozo_estado_catalogacion_id ON public.POZO(estado_catalogacion_id);
 CREATE INDEX idx_pozo_estado_revision_id ON public.POZO(estado_revision_id);
 CREATE INDEX idx_pozo_revisor_id ON public.POZO(revisor_id);
 CREATE INDEX idx_pozo_codigo_pozo ON public.POZO(codigo_pozo);
