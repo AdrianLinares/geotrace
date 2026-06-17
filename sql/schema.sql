@@ -2731,6 +2731,339 @@ CREATE INDEX idx_rel_muestra_uni_lito_norm_act_uni_lito_normalizada_id ON public
 CREATE INDEX idx_rel_muestra_uni_lito_norm_act_uni_lito_actualizada_id ON public.REL_MUESTRA_UNI_LITO_NORM_ACT(uni_lito_actualizada_id);
 
 -- ============================================================
+-- Fase 4: Documents + Relations + Localization
+-- ============================================================
+
+-- ============================================================
+-- CAT_IDIOMA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_IDIOMA CASCADE;
+
+CREATE TABLE public.CAT_IDIOMA (
+    idioma_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    codigo_iso varchar(10),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_idioma PRIMARY KEY (idioma_id),
+    CONSTRAINT uq_cat_idioma_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_IDIOMA IS 'Catálogo de idiomas para documentos asociados.';
+
+CREATE INDEX idx_cat_idioma_idioma_id ON public.CAT_IDIOMA(idioma_id);
+
+INSERT INTO public.CAT_IDIOMA (nombre, codigo_iso) VALUES
+    ('Español', 'es'),
+    ('Inglés', 'en'),
+    ('Francés', 'fr')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- ============================================================
+-- CAT_FORMATO_DOCUMENTO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_FORMATO_DOCUMENTO CASCADE;
+
+CREATE TABLE public.CAT_FORMATO_DOCUMENTO (
+    formato_documento_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_formato_documento PRIMARY KEY (formato_documento_id),
+    CONSTRAINT uq_cat_formato_documento_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_FORMATO_DOCUMENTO IS 'Formato físico o digital de un documento asociado.';
+
+CREATE INDEX idx_cat_formato_documento_formato_documento_id ON public.CAT_FORMATO_DOCUMENTO(formato_documento_id);
+
+INSERT INTO public.CAT_FORMATO_DOCUMENTO (nombre) VALUES
+    ('Original'),
+    ('Fotocopia'),
+    ('PDF'),
+    ('Manuscrito'),
+    ('Escaneado')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- ============================================================
+-- CAT_TIPO_DOCUMENTO_ASOCIADO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_DOCUMENTO_ASOCIADO CASCADE;
+
+CREATE TABLE public.CAT_TIPO_DOCUMENTO_ASOCIADO (
+    tipo_documento_asociado_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_documento varchar(255),
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_documento_asociado PRIMARY KEY (tipo_documento_asociado_id),
+    CONSTRAINT uq_cat_tipo_documento_asociado_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_DOCUMENTO_ASOCIADO IS 'Tipos de documentos vinculados a registros científicos.';
+
+CREATE INDEX idx_cat_tipo_documento_asociado_tipo_documento_asociado_id ON public.CAT_TIPO_DOCUMENTO_ASOCIADO(tipo_documento_asociado_id);
+
+INSERT INTO public.CAT_TIPO_DOCUMENTO_ASOCIADO (codigo_documento, nombre) VALUES
+    ('CARTA_DIST', 'Carta distribución'),
+    ('RES_ESTRAT', 'Resumen estratigráfico'),
+    ('INF_BIOEST', 'Informe bioestratigráfico'),
+    ('FOTOGRAFIA', 'Fotografía'),
+    ('NOTA_CAMPO', 'Nota de campo'),
+    ('MAPA_GEO', 'Mapa geológico')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- ============================================================
+-- CAT_DOCUMENTO_FAMILIA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_DOCUMENTO_FAMILIA CASCADE;
+
+CREATE TABLE public.CAT_DOCUMENTO_FAMILIA (
+    documento_familia_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    titulo_base varchar(255),
+    tipo_documento_asociado_id bigint,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_documento_familia PRIMARY KEY (documento_familia_id),
+    CONSTRAINT fk_cat_documento_familia_tipo_documento_asociado_id FOREIGN KEY (tipo_documento_asociado_id) REFERENCES public.CAT_TIPO_DOCUMENTO_ASOCIADO(tipo_documento_asociado_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.CAT_DOCUMENTO_FAMILIA IS 'Agrupación lógica de documentos por título base y tipo.';
+
+CREATE INDEX idx_cat_documento_familia_documento_familia_id ON public.CAT_DOCUMENTO_FAMILIA(documento_familia_id);
+CREATE INDEX idx_cat_documento_familia_tipo_documento_asociado_id ON public.CAT_DOCUMENTO_FAMILIA(tipo_documento_asociado_id);
+
+-- ============================================================
+-- CAT_TIPO_RELACION_DOCUMENTO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_RELACION_DOCUMENTO CASCADE;
+
+CREATE TABLE public.CAT_TIPO_RELACION_DOCUMENTO (
+    tipo_relacion_documento_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_relacion_documento PRIMARY KEY (tipo_relacion_documento_id),
+    CONSTRAINT uq_cat_tipo_relacion_documento_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_RELACION_DOCUMENTO IS 'Tipos de relación entre documentos (jerárquica, derivativa, etc.).';
+
+CREATE INDEX idx_cat_tipo_relacion_documento_tipo_relacion_documento_id ON public.CAT_TIPO_RELACION_DOCUMENTO(tipo_relacion_documento_id);
+
+INSERT INTO public.CAT_TIPO_RELACION_DOCUMENTO (nombre, descripcion) VALUES
+    ('Anexo de', 'Documento que se anexa a otro'),
+    ('Versión de', 'Versión alternativa del mismo documento'),
+    ('Digitalización de', 'Versión digital de un documento físico'),
+    ('Derivado de', 'Documento derivado de otro')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- ============================================================
+-- DOCUMENTO_ASOCIADO
+-- ============================================================
+DROP TABLE IF EXISTS public.DOCUMENTO_ASOCIADO CASCADE;
+
+CREATE TABLE public.DOCUMENTO_ASOCIADO (
+    documento_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_familia_id bigint,
+    version_documento varchar(255),
+    titulo_documento varchar(255),
+    tipo_documento_asociado_id bigint,
+    fecha_documento timestamptz,
+    resumen text,
+    entidad_id bigint,
+    idioma_id bigint,
+    formato_documento_id bigint,
+    numero_paginas bigint,
+    documento_digitalizado boolean,
+    nombre_archivo varchar(255),
+    ruta_archivo varchar(255),
+    fecha_digitalizacion timestamptz,
+    estado_catalogacion_id bigint,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_documento_asociado PRIMARY KEY (documento_id),
+    CONSTRAINT fk_documento_asociado_documento_familia_id FOREIGN KEY (documento_familia_id) REFERENCES public.CAT_DOCUMENTO_FAMILIA(documento_familia_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_asociado_tipo_documento_asociado_id FOREIGN KEY (tipo_documento_asociado_id) REFERENCES public.CAT_TIPO_DOCUMENTO_ASOCIADO(tipo_documento_asociado_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_asociado_entidad_id FOREIGN KEY (entidad_id) REFERENCES public.CAT_ENTIDAD(entidad_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_asociado_idioma_id FOREIGN KEY (idioma_id) REFERENCES public.CAT_IDIOMA(idioma_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_asociado_formato_documento_id FOREIGN KEY (formato_documento_id) REFERENCES public.CAT_FORMATO_DOCUMENTO(formato_documento_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_asociado_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_asociado_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_asociado_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DOCUMENTO_ASOCIADO IS 'Documentos vinculados a placas, muestras, pozos y secciones estratigráficas.';
+
+CREATE INDEX idx_documento_asociado_documento_id ON public.DOCUMENTO_ASOCIADO(documento_id);
+CREATE INDEX idx_documento_asociado_documento_familia_id ON public.DOCUMENTO_ASOCIADO(documento_familia_id);
+CREATE INDEX idx_documento_asociado_tipo_documento_asociado_id ON public.DOCUMENTO_ASOCIADO(tipo_documento_asociado_id);
+CREATE INDEX idx_documento_asociado_entidad_id ON public.DOCUMENTO_ASOCIADO(entidad_id);
+CREATE INDEX idx_documento_asociado_idioma_id ON public.DOCUMENTO_ASOCIADO(idioma_id);
+CREATE INDEX idx_documento_asociado_formato_documento_id ON public.DOCUMENTO_ASOCIADO(formato_documento_id);
+CREATE INDEX idx_documento_asociado_estado_catalogacion_id ON public.DOCUMENTO_ASOCIADO(estado_catalogacion_id);
+CREATE INDEX idx_documento_asociado_catalogador_id ON public.DOCUMENTO_ASOCIADO(catalogador_id);
+CREATE INDEX idx_documento_asociado_revisor_id ON public.DOCUMENTO_ASOCIADO(revisor_id);
+
+-- ============================================================
+-- DOCUMENTO_SECCION
+-- ============================================================
+DROP TABLE IF EXISTS public.DOCUMENTO_SECCION CASCADE;
+
+CREATE TABLE public.DOCUMENTO_SECCION (
+    documento_seccion_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_id bigint,
+    pagina_inicial varchar(255),
+    pagina_final varchar(255),
+    titulo_seccion varchar(255),
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    estado_catalogacion_id bigint,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_documento_seccion PRIMARY KEY (documento_seccion_id),
+    CONSTRAINT fk_documento_seccion_documento_id FOREIGN KEY (documento_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_documento_seccion_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_seccion_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_seccion_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DOCUMENTO_SECCION IS 'Secciones internas de un documento asociado (artículos, capítulos, etc.).';
+
+CREATE INDEX idx_documento_seccion_documento_seccion_id ON public.DOCUMENTO_SECCION(documento_seccion_id);
+CREATE INDEX idx_documento_seccion_documento_id ON public.DOCUMENTO_SECCION(documento_id);
+CREATE INDEX idx_documento_seccion_catalogador_id ON public.DOCUMENTO_SECCION(catalogador_id);
+CREATE INDEX idx_documento_seccion_estado_catalogacion_id ON public.DOCUMENTO_SECCION(estado_catalogacion_id);
+CREATE INDEX idx_documento_seccion_revisor_id ON public.DOCUMENTO_SECCION(revisor_id);
+
+-- ============================================================
+-- REL_DOCUMENTO_DOCUMENTO
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_DOCUMENTO_DOCUMENTO CASCADE;
+
+CREATE TABLE public.REL_DOCUMENTO_DOCUMENTO (
+    rel_documento_documento_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_padre_id bigint,
+    documento_hijo_id bigint,
+    tipo_relacion_documento_id bigint,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_rel_documento_documento PRIMARY KEY (rel_documento_documento_id),
+    CONSTRAINT fk_rel_documento_documento_documento_padre_id FOREIGN KEY (documento_padre_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rel_documento_documento_documento_hijo_id FOREIGN KEY (documento_hijo_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rel_documento_documento_tipo_relacion_documento_id FOREIGN KEY (tipo_relacion_documento_id) REFERENCES public.CAT_TIPO_RELACION_DOCUMENTO(tipo_relacion_documento_id) ON DELETE SET NULL,
+    CONSTRAINT chk_rel_documento_documento_no_self CHECK (documento_padre_id <> documento_hijo_id)
+);
+
+COMMENT ON TABLE public.REL_DOCUMENTO_DOCUMENTO IS 'Relaciones jerárquicas o derivativas entre documentos asociados.';
+
+CREATE INDEX idx_rel_documento_documento_rel_documento_documento_id ON public.REL_DOCUMENTO_DOCUMENTO(rel_documento_documento_id);
+CREATE INDEX idx_rel_documento_documento_documento_padre_id ON public.REL_DOCUMENTO_DOCUMENTO(documento_padre_id);
+CREATE INDEX idx_rel_documento_documento_documento_hijo_id ON public.REL_DOCUMENTO_DOCUMENTO(documento_hijo_id);
+CREATE INDEX idx_rel_documento_documento_tipo_relacion_documento_id ON public.REL_DOCUMENTO_DOCUMENTO(tipo_relacion_documento_id);
+
+-- ============================================================
+-- REL_DOCUMENTO_MUESTRA
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_DOCUMENTO_MUESTRA CASCADE;
+
+CREATE TABLE public.REL_DOCUMENTO_MUESTRA (
+    rel_documento_muestra_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_id bigint,
+    muestra_id bigint,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_rel_documento_muestra PRIMARY KEY (rel_documento_muestra_id),
+    CONSTRAINT fk_rel_documento_muestra_documento_id FOREIGN KEY (documento_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rel_documento_muestra_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE CASCADE
+);
+
+COMMENT ON TABLE public.REL_DOCUMENTO_MUESTRA IS 'Vínculo entre documentos y muestras.';
+
+CREATE INDEX idx_rel_documento_muestra_rel_documento_muestra_id ON public.REL_DOCUMENTO_MUESTRA(rel_documento_muestra_id);
+CREATE INDEX idx_rel_documento_muestra_documento_id ON public.REL_DOCUMENTO_MUESTRA(documento_id);
+CREATE INDEX idx_rel_documento_muestra_muestra_id ON public.REL_DOCUMENTO_MUESTRA(muestra_id);
+
+-- ============================================================
+-- REL_DOCUMENTO_PLACA
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_DOCUMENTO_PLACA CASCADE;
+
+CREATE TABLE public.REL_DOCUMENTO_PLACA (
+    rel_documento_placa_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_id bigint,
+    placa_id bigint,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_rel_documento_placa PRIMARY KEY (rel_documento_placa_id),
+    CONSTRAINT fk_rel_documento_placa_documento_id FOREIGN KEY (documento_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rel_documento_placa_placa_id FOREIGN KEY (placa_id) REFERENCES public.PLACA(placa_id) ON DELETE CASCADE
+);
+
+COMMENT ON TABLE public.REL_DOCUMENTO_PLACA IS 'Vínculo entre documentos y placas.';
+
+CREATE INDEX idx_rel_documento_placa_rel_documento_placa_id ON public.REL_DOCUMENTO_PLACA(rel_documento_placa_id);
+CREATE INDEX idx_rel_documento_placa_documento_id ON public.REL_DOCUMENTO_PLACA(documento_id);
+CREATE INDEX idx_rel_documento_placa_placa_id ON public.REL_DOCUMENTO_PLACA(placa_id);
+
+-- ============================================================
+-- REL_DOCUMENTO_POZO
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_DOCUMENTO_POZO CASCADE;
+
+CREATE TABLE public.REL_DOCUMENTO_POZO (
+    rel_documento_pozo_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_id bigint,
+    pozo_id bigint,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_rel_documento_pozo PRIMARY KEY (rel_documento_pozo_id),
+    CONSTRAINT fk_rel_documento_pozo_documento_id FOREIGN KEY (documento_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rel_documento_pozo_pozo_id FOREIGN KEY (pozo_id) REFERENCES public.POZO(pozo_id) ON DELETE CASCADE
+);
+
+COMMENT ON TABLE public.REL_DOCUMENTO_POZO IS 'Vínculo entre documentos y pozos.';
+
+CREATE INDEX idx_rel_documento_pozo_rel_documento_pozo_id ON public.REL_DOCUMENTO_POZO(rel_documento_pozo_id);
+CREATE INDEX idx_rel_documento_pozo_documento_id ON public.REL_DOCUMENTO_POZO(documento_id);
+CREATE INDEX idx_rel_documento_pozo_pozo_id ON public.REL_DOCUMENTO_POZO(pozo_id);
+
+-- ============================================================
+-- REL_DOCUMENTO_PROYECTO
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_DOCUMENTO_PROYECTO CASCADE;
+
+CREATE TABLE public.REL_DOCUMENTO_PROYECTO (
+    rel_documento_proyecto_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_id bigint,
+    proyecto_id bigint,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_rel_documento_proyecto PRIMARY KEY (rel_documento_proyecto_id),
+    CONSTRAINT fk_rel_documento_proyecto_documento_id FOREIGN KEY (documento_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rel_documento_proyecto_proyecto_id FOREIGN KEY (proyecto_id) REFERENCES public.CAT_PROYECTO(proyecto_id) ON DELETE CASCADE
+);
+
+COMMENT ON TABLE public.REL_DOCUMENTO_PROYECTO IS 'Vínculo entre documentos y proyectos.';
+
+CREATE INDEX idx_rel_documento_proyecto_rel_documento_proyecto_id ON public.REL_DOCUMENTO_PROYECTO(rel_documento_proyecto_id);
+CREATE INDEX idx_rel_documento_proyecto_documento_id ON public.REL_DOCUMENTO_PROYECTO(documento_id);
+CREATE INDEX idx_rel_documento_proyecto_proyecto_id ON public.REL_DOCUMENTO_PROYECTO(proyecto_id);
+
+-- ============================================================
 -- Actualización de versión del esquema
 -- ============================================================
 INSERT INTO public.schema_version (version, applied_at)
