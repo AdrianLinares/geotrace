@@ -38,6 +38,8 @@ DECLARE
   v_group_e text[] := ARRAY['DIC_AUTOR', 'DIC_BIOZONA_ACTUALIZADA', 'DIC_BIOZONA_NORMALIZADA', 'DIC_BIOZONA_REPORTADA', 'DIC_DESCRIPCION_LITO_NORM', 'DIC_DESCRIPCION_LITO_REPORTADA', 'DIC_EDAD_ACTUALIZADA', 'DIC_EDAD_NORMALIZADA', 'DIC_EDAD_REPORTADA', 'DIC_RANGO_CRONO', 'DIC_TAXON_ACTUALIZADO', 'DIC_TAXON_NORMALIZADO', 'DIC_TAXON_REPORTADO', 'DIC_UNI_LITO_ACTUALIZADA', 'DIC_UNI_LITO_NORMALIZADA', 'DIC_UNI_LITO_REPORTADA', 'LOCALIZACION_ESPACIAL', 'LOCALIZACION_GEOGRAFICA', 'LOCALIZACION_GEOREFERENCIAL', 'POSICION_ESTRATIGRAFICA', 'SECCION_ESTRATIGRAFICA', 'schema_version'];
   v_all_tables text[];
   tbl text;
+  v_has_catalogador boolean;
+  v_update_expr text;
 BEGIN
   v_all_tables := v_group_a || v_group_b || v_group_c || v_group_d || v_group_e;
 
@@ -56,10 +58,24 @@ BEGIN
 
   -- Group A: data + relations
   FOREACH tbl IN ARRAY v_group_a LOOP
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = tbl
+        AND column_name = 'catalogador_id'
+    ) INTO v_has_catalogador;
+
+    IF v_has_catalogador THEN
+      v_update_expr := '(current_user_has_role(''Administrador'') OR current_user_has_role(''Curador'') OR current_user_has_role(''Revisor'') OR (current_user_has_role(''Catalogador'') AND catalogador_id = (SELECT persona_id FROM public.PERSONA WHERE auth_user_id = auth.uid())))';
+    ELSE
+      v_update_expr := '(current_user_has_role(''Administrador'') OR current_user_has_role(''Curador'') OR current_user_has_role(''Revisor''))';
+    END IF;
+
     EXECUTE format('CREATE POLICY %I ON public.%I FOR SELECT TO authenticated USING (current_user_has_role(''Administrador'') OR current_user_has_role(''Curador'') OR current_user_has_role(''Revisor'') OR current_user_has_role(''Catalogador''))', tbl || '_select_policy', tbl);
     EXECUTE format('CREATE POLICY %I ON public.%I FOR INSERT TO authenticated WITH CHECK (current_user_has_role(''Administrador'') OR current_user_has_role(''Curador'') OR current_user_has_role(''Catalogador''))', tbl || '_insert_policy', tbl);
-    EXECUTE format('CREATE POLICY %I ON public.%I FOR UPDATE TO authenticated USING (current_user_has_role(''Administrador'') OR current_user_has_role(''Curador'') OR current_user_has_role(''Revisor'')) WITH CHECK (current_user_has_role(''Administrador'') OR current_user_has_role(''Curador'') OR current_user_has_role(''Revisor''))', tbl || '_update_policy', tbl);
-    EXECUTE format('CREATE POLICY %I ON public.%I FOR DELETE TO authenticated USING (current_user_has_role(''Administrador'') OR current_user_has_role(''Curador''))', tbl || '_delete_policy', tbl);
+    EXECUTE format('CREATE POLICY %I ON public.%I FOR UPDATE TO authenticated USING (%s) WITH CHECK (%s)', tbl || '_update_policy', tbl, v_update_expr, v_update_expr);
+    EXECUTE format('CREATE POLICY %I ON public.%I FOR DELETE TO authenticated USING (current_user_has_role(''Administrador''))', tbl || '_delete_policy', tbl);
   END LOOP;
 
   -- Group B: catalogs
