@@ -123,7 +123,7 @@ export default function MuestraModal({ isOpen, onClose, muestraToEdit, placaId }
 
       // Save conservacion
       if (values.conservacion && muestraId) {
-        await supabase.from('estado_conservacion').upsert({
+        await supabase.from('estado_conservacion_inicial').upsert({
           muestra_id: muestraId,
           ...values.conservacion,
           catalogador_id: user?.persona_id,
