@@ -71,9 +71,9 @@ Chain strategy: feature-branch-chain
 
 ## Phase 5: RLS + Auth + Seed + Triggers + Audit (PR 5)
 
-- [ ] 5.1 Replace `sql/rls_policies_rbac.sql`: enable RLS on all 146 tables; apply Group A (data), B (catalogs), C (documents), D (auth) policy templates using `current_user_has_role()`
-- [ ] 5.2 Replace `sql/triggers.sql`: adapt `audit_trigger_func()` to use `NEW.id::TEXT` → dynamic PK column name via `TG_RELID`; attach to all auditable tables
-- [ ] 5.3 Replace `sql/audit.sql`: merge `auditoria` + `auditoria_cambios` into unified table with `bigint` PK references; add RLS (Group G: Admin-only SELECT)
-- [ ] 5.4 Create `sql/seed.sql`: extract reference data from DEV Excel for tables that have seed data; leave empty tables for frontend testing
-- [ ] 5.5 Modify `src/lib/AuthProvider.tsx`: after fetching persona, write `auth_user_id` from `auth.uid()` to `PERSONA.auth_user_id` if not already set (one-time link)
-- [ ] 5.6 Add `sql/tests/` directory with `DO $$ ... END $$` blocks: verify FK integrity, CHECK constraints, RLS per group template, seed row counts
+- [x] 5.1 Replace `sql/rls_policies_rbac.sql`: enable RLS on all 146 tables; apply Group A (data), B (catalogs), C (documents), D (auth) policy templates using `current_user_has_role()`
+- [x] 5.2 Replace `sql/triggers.sql`: adapt `audit_trigger_func()` to use `NEW.id::TEXT` → dynamic PK column name via `TG_RELID`; attach to all auditable tables
+- [x] 5.3 Replace `sql/audit.sql`: merge `auditoria` + `auditoria_cambios` into unified table with `bigint` PK references; add RLS (Group G: Admin-only SELECT)
+- [x] 5.4 Create `sql/seed.sql`: extract reference data from DEV Excel for tables that have seed data; leave empty tables for frontend testing
+- [x] 5.5 Modify `src/lib/AuthProvider.tsx`: after fetching persona, write `auth_user_id` from `auth.uid()` to `PERSONA.auth_user_id` if not already set (one-time link)
+- [x] 5.6 Add `sql/tests/` directory with `DO $$ ... END $$` blocks: verify FK integrity, CHECK constraints, RLS per group template, seed row counts

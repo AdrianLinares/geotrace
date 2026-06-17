@@ -1,0 +1,233 @@
+-- ============================================================
+-- Validaciones del esquema GeoTrace
+-- ============================================================
+-- Se ejecuta después de crear el esquema, RLS, triggers y seed.
+-- Cada prueba está aislada en BEGIN...EXCEPTION para reportar
+-- el resultado sin detener el bloque completo.
+-- ============================================================
+
+DO $$
+DECLARE
+  v_count integer;
+  v_expected integer := 144;
+BEGIN
+
+  -- 1. Integridad referencial (FK)
+  BEGIN
+    INSERT INTO public.PLACA (clase_placa_id)
+    VALUES (-999999);
+    RAISE EXCEPTION 'TEST 1 FAILED: la inserción con FK inválida no fue rechazada';
+  EXCEPTION WHEN foreign_key_violation THEN
+    RAISE NOTICE 'TEST 1 PASSED: FK integrity enforced on PLACA';
+  END;
+
+  -- 2. CHECK constraints / tipos booleanos
+  BEGIN
+    INSERT INTO public.CAT_ROL_AUTOR (codigo_rol_autor, nombre, activo)
+    VALUES ('TEST-1', 'Test', 'no_es_bool');
+    RAISE EXCEPTION 'TEST 2 FAILED: el valor booleano inválido fue aceptado';
+  EXCEPTION WHEN invalid_text_representation THEN
+    RAISE NOTICE 'TEST 2 PASSED: boolean CHECK/type enforced';
+  END;
+
+  -- 3. Existencia de políticas RLS en todas las tablas
+  SELECT COUNT(DISTINCT tablename) INTO v_count
+  FROM pg_policies
+  WHERE schemaname = 'public'
+    AND tablename IN (
+      'ANOTACION_PLACA',
+      'CAT_ACCIDENTE_GEOGRAFICO_NORM',
+      'CAT_ACETATO_ESTADO',
+      'CAT_CLASE_PLACA',
+      'CAT_CLASE_P_TIPO',
+      'CAT_CODIGO_CAVIDAD',
+      'CAT_COLECCION',
+      'CAT_COLECTOR',
+      'CAT_COLOR_MUEBLE',
+      'CAT_COLOR_PLACA',
+      'CAT_COLUMNA_BANDEJA',
+      'CAT_CONFIGURACION_CAVIDADES',
+      'CAT_CONFIGURACION_REJILLA',
+      'CAT_CUENCA',
+      'CAT_DEPARTAMENTO',
+      'CAT_DISENO_PLACA',
+      'CAT_DOCUMENTO_FAMILIA',
+      'CAT_ENTIDAD',
+      'CAT_ESPECIALIDAD',
+      'CAT_ESTADO_CATALOGACION',
+      'CAT_ESTADO_MATERIAL',
+      'CAT_ESTADO_NOMENCLATURA',
+      'CAT_ESTADO_REVISION',
+      'CAT_ETAPA_USO_PLACA',
+      'CAT_FECHA_HISTORICA',
+      'CAT_FORMATO_DOCUMENTO',
+      'CAT_FUENTE_ESPACIAL',
+      'CAT_IDIOMA',
+      'CAT_MARCO_PLACA_ESTADO',
+      'CAT_MATERIAL_BANDEJA',
+      'CAT_MATERIAL_MUEBLE',
+      'CAT_MATERIAL_PLACA',
+      'CAT_METODO_ADQUISICION',
+      'CAT_METODO_ESPACIAL',
+      'CAT_MUEBLE',
+      'CAT_MUNICIPIO',
+      'CAT_NIVEL_DETALLE_LOCALIDAD',
+      'CAT_ORIGEN_MUESTRA',
+      'CAT_PAIS',
+      'CAT_PERMISO',
+      'CAT_PLANCHA_TOPOGRAFICA',
+      'CAT_POLIGONAL',
+      'CAT_POSICION_ANOTACION',
+      'CAT_PRECISION_ESPACIAL',
+      'CAT_PRIORIDAD_INTERVENCION',
+      'CAT_PROYECTO',
+      'CAT_RANGO_LITO',
+      'CAT_RECOBRO_CUALITATIVO',
+      'CAT_REFERENCIA_BIBLIOGRAFICA',
+      'CAT_ROL',
+      'CAT_ROL_AUTOR',
+      'CAT_SECCION',
+      'CAT_SISTEMA_COORD',
+      'CAT_SISTEMA_ENSAMBLE',
+      'CAT_TIPO_AUTOR',
+      'CAT_TIPO_DOCUMENTO',
+      'CAT_TIPO_DOCUMENTO_ASOCIADO',
+      'CAT_TIPO_DUDA',
+      'CAT_TIPO_FECHA_HISTORICA',
+      'CAT_TIPO_INTERVALO_MUESTRA',
+      'CAT_TIPO_MUESTRA_SUBSUELO',
+      'CAT_TIPO_PROTECCION',
+      'CAT_TIPO_PUNTO_MUESTREO',
+      'CAT_TIPO_REFERENCIA',
+      'CAT_TIPO_REF_ESTRATIGRAFICA',
+      'CAT_TIPO_RELACION_DOCUMENTO',
+      'CAT_TIPO_RELACION_PLACA',
+      'CAT_TRATAMIENTO_MUESTRA',
+      'CAT_UNIDAD_MEDIDA',
+      'CAT_VIA_NORM',
+      'CAT_VIDRIO_ESTADO',
+      'CAT_ZONA',
+      'DIC_AUTOR',
+      'DIC_BIOZONA_ACTUALIZADA',
+      'DIC_BIOZONA_NORMALIZADA',
+      'DIC_BIOZONA_REPORTADA',
+      'DIC_DESCRIPCION_LITO_NORM',
+      'DIC_DESCRIPCION_LITO_REPORTADA',
+      'DIC_EDAD_ACTUALIZADA',
+      'DIC_EDAD_NORMALIZADA',
+      'DIC_EDAD_REPORTADA',
+      'DIC_RANGO_CRONO',
+      'DIC_TAXON_ACTUALIZADO',
+      'DIC_TAXON_NORMALIZADO',
+      'DIC_TAXON_REPORTADO',
+      'DIC_UNI_LITO_ACTUALIZADA',
+      'DIC_UNI_LITO_NORMALIZADA',
+      'DIC_UNI_LITO_REPORTADA',
+      'DISPOSICION_MATERIAL',
+      'DOCUMENTO_ASOCIADO',
+      'DOCUMENTO_SECCION',
+      'ESTADO_CONSERVACION_INICIAL',
+      'LOCALIZACION_ESPACIAL',
+      'LOCALIZACION_GEOGRAFICA',
+      'LOCALIZACION_GEOREFERENCIAL',
+      'MARCADO_PLACA',
+      'MUESTRA',
+      'MUESTRA_LECHO_MARINO',
+      'MUESTRA_SUBSUELO',
+      'MUESTRA_SUPERFICIE',
+      'NUCLEO',
+      'PERSONA',
+      'PLACA',
+      'PLACA_TIPO',
+      'POSICION_ESTRATIGRAFICA',
+      'POZO',
+      'POZO_ESTRATIGRAFICO',
+      'POZO_EXPLORATORIO',
+      'POZO_REPORTADO',
+      'REL_BIOZONA_NORM_ACT',
+      'REL_BIOZONA_REP_NORM',
+      'REL_DOCUMENTO_DOCUMENTO',
+      'REL_DOCUMENTO_MUESTRA',
+      'REL_DOCUMENTO_PLACA',
+      'REL_DOCUMENTO_POZO',
+      'REL_DOCUMENTO_PROYECTO',
+      'REL_DOCUMENTO_SECCION_ESTRATIGR',
+      'REL_EDAD_NORM_ACT',
+      'REL_EDAD_REP_NORM',
+      'REL_MUESTRA_BIOZONA_REPORTADA',
+      'REL_MUESTRA_DESCRIPCION_LITO',
+      'REL_MUESTRA_DESC_LITO_REP_NORM',
+      'REL_MUESTRA_EDAD_REPORTADA',
+      'REL_MUESTRA_ENTIDAD',
+      'REL_MUESTRA_FECHA_HISTORICA',
+      'REL_MUESTRA_PROYECTO',
+      'REL_MUESTRA_REFERENCIA_BIBLIOGRAFICA',
+      'REL_MUESTRA_TAXON_REPORTADO',
+      'REL_MUESTRA_TRATAMIENTO',
+      'REL_MUESTRA_UNI_LITO_NORM_ACT',
+      'REL_MUESTRA_UNI_LITO_REPORTADA',
+      'REL_MUESTRA_UNI_LITO_REP_NORM',
+      'REL_PERSONA_ROL',
+      'REL_PLACA_AUTOR',
+      'REL_PLACA_PLACA',
+      'REL_PLACA_REFERENCIA_BIBLIOGRAFICA',
+      'REL_POZO_REPORTADO_POZO',
+      'REL_ROL_PERMISO',
+      'REL_TAXON_NORM_ACT',
+      'REL_TAXON_REP_NORM',
+      'SECCION_ESTRATIGRAFICA',
+      'SECCION_NUCLEO',
+      'UBICACION_FISICA',
+      'schema_version'
+    );
+  IF v_count = v_expected THEN
+    RAISE NOTICE 'TEST 3 PASSED: all % tables have RLS policies', v_expected;
+  ELSE
+    RAISE EXCEPTION 'TEST 3 FAILED: % tables with policies, expected %', v_count, v_expected;
+  END IF;
+
+  -- 4. Verificación de conteos de seed
+  IF (SELECT COUNT(*) FROM public.CAT_COLECCION) > 0 THEN
+    RAISE NOTICE 'TEST 4a PASSED: CAT_COLECCION seeded';
+  ELSE
+    RAISE EXCEPTION 'TEST 4a FAILED: CAT_COLECCION is empty';
+  END IF;
+  IF (SELECT COUNT(*) FROM public.PERSONA) > 0 THEN
+    RAISE NOTICE 'TEST 4b PASSED: PERSONA seeded';
+  ELSE
+    RAISE EXCEPTION 'TEST 4b FAILED: PERSONA is empty';
+  END IF;
+  IF (SELECT COUNT(*) FROM public.CAT_ROL) > 0 THEN
+    RAISE NOTICE 'TEST 4c PASSED: CAT_ROL seeded';
+  ELSE
+    RAISE EXCEPTION 'TEST 4c FAILED: CAT_ROL is empty';
+  END IF;
+  IF (SELECT COUNT(*) FROM public.REL_PERSONA_ROL) > 0 THEN
+    RAISE NOTICE 'TEST 4d PASSED: REL_PERSONA_ROL seeded';
+  ELSE
+    RAISE EXCEPTION 'TEST 4d FAILED: REL_PERSONA_ROL is empty';
+  END IF;
+  IF (SELECT COUNT(*) FROM public.CAT_PERMISO) > 0 THEN
+    RAISE NOTICE 'TEST 4e PASSED: CAT_PERMISO seeded';
+  ELSE
+    RAISE EXCEPTION 'TEST 4e FAILED: CAT_PERMISO is empty';
+  END IF;
+  IF (SELECT COUNT(*) FROM public.CAT_MUEBLE) > 0 THEN
+    RAISE NOTICE 'TEST 4f PASSED: CAT_MUEBLE seeded';
+  ELSE
+    RAISE EXCEPTION 'TEST 4f FAILED: CAT_MUEBLE is empty';
+  END IF;
+  IF (SELECT COUNT(*) FROM public.CAT_CUENCA) > 0 THEN
+    RAISE NOTICE 'TEST 4g PASSED: CAT_CUENCA seeded';
+  ELSE
+    RAISE EXCEPTION 'TEST 4g FAILED: CAT_CUENCA is empty';
+  END IF;
+  IF (SELECT COUNT(*) FROM public.CAT_ENTIDAD) > 0 THEN
+    RAISE NOTICE 'TEST 4h PASSED: CAT_ENTIDAD seeded';
+  ELSE
+    RAISE EXCEPTION 'TEST 4h FAILED: CAT_ENTIDAD is empty';
+  END IF;
+
+  RAISE NOTICE 'ALL SCHEMA VALIDATION TESTS PASSED';
+END;
+$$;
