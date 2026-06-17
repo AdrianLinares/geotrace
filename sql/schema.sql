@@ -1244,9 +1244,9 @@ DROP TABLE IF EXISTS public.ESTADO_CONSERVACION_INICIAL CASCADE;
 CREATE TABLE public.ESTADO_CONSERVACION_INICIAL (
     estado_conservacion_inicial_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
     placa_id bigint,
-    vidrio_estado varchar(255),
-    acetato_estado varchar(255),
-    marco_placa_estado varchar(255),
+    vidrio_estado_id bigint,
+    acetato_estado_id bigint,
+    marco_placa_estado_id bigint,
     presencia_hongos boolean,
     crecimiento_cristales boolean,
     oxidacion boolean,
@@ -1261,6 +1261,9 @@ CREATE TABLE public.ESTADO_CONSERVACION_INICIAL (
     fecha_ingreso timestamptz,
     CONSTRAINT pk_estado_conservacion_inicial PRIMARY KEY (estado_conservacion_inicial_id),
     CONSTRAINT fk_estado_conservacion_inicial_placa_id FOREIGN KEY (placa_id) REFERENCES public.PLACA(placa_id) ON DELETE SET NULL,
+    CONSTRAINT fk_estado_conservacion_inicial_vidrio_estado_id FOREIGN KEY (vidrio_estado_id) REFERENCES public.CAT_VIDRIO_ESTADO(vidrio_estado_id) ON DELETE SET NULL,
+    CONSTRAINT fk_estado_conservacion_inicial_acetato_estado_id FOREIGN KEY (acetato_estado_id) REFERENCES public.CAT_ACETATO_ESTADO(acetato_estado_id) ON DELETE SET NULL,
+    CONSTRAINT fk_estado_conservacion_inicial_marco_placa_estado_id FOREIGN KEY (marco_placa_estado_id) REFERENCES public.CAT_MARCO_PLACA_ESTADO(marco_placa_estado_id) ON DELETE SET NULL,
     CONSTRAINT fk_estado_conservacion_inicial_prioridad_intervencion_id FOREIGN KEY (prioridad_intervencion_id) REFERENCES public.CAT_PRIORIDAD_INTERVENCION(prioridad_intervencion_id) ON DELETE SET NULL,
     CONSTRAINT fk_estado_conservacion_inicial_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
     CONSTRAINT fk_estado_conservacion_inicial_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
@@ -1270,6 +1273,9 @@ CREATE TABLE public.ESTADO_CONSERVACION_INICIAL (
 COMMENT ON TABLE public.ESTADO_CONSERVACION_INICIAL IS 'Tabla generada desde el inventario de campos.';
 
 CREATE INDEX idx_estado_conservacion_inicial_placa_id ON public.ESTADO_CONSERVACION_INICIAL(placa_id);
+CREATE INDEX idx_estado_conservacion_inicial_vidrio_estado_id ON public.ESTADO_CONSERVACION_INICIAL(vidrio_estado_id);
+CREATE INDEX idx_estado_conservacion_inicial_acetato_estado_id ON public.ESTADO_CONSERVACION_INICIAL(acetato_estado_id);
+CREATE INDEX idx_estado_conservacion_inicial_marco_placa_estado_id ON public.ESTADO_CONSERVACION_INICIAL(marco_placa_estado_id);
 CREATE INDEX idx_estado_conservacion_inicial_prioridad_intervencion_id ON public.ESTADO_CONSERVACION_INICIAL(prioridad_intervencion_id);
 CREATE INDEX idx_estado_conservacion_inicial_estado_catalogacion_id ON public.ESTADO_CONSERVACION_INICIAL(estado_catalogacion_id);
 CREATE INDEX idx_estado_conservacion_inicial_revisor_id ON public.ESTADO_CONSERVACION_INICIAL(revisor_id);
