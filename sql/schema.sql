@@ -1572,7 +1572,8 @@ CREATE TABLE public.MUESTRA_SUPERFICIE (
     CONSTRAINT pk_muestra_superficie PRIMARY KEY (muestra_superficie_id),
     CONSTRAINT fk_muestra_superficie_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
     CONSTRAINT fk_muestra_superficie_colector_id FOREIGN KEY (colector_id) REFERENCES public.CAT_COLECTOR(colector_id) ON DELETE SET NULL,
-    CONSTRAINT fk_muestra_superficie_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL
+    CONSTRAINT fk_muestra_superficie_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL,
+    CONSTRAINT uq_muestra_superficie_muestra_id UNIQUE (muestra_id)
 );
 
 COMMENT ON TABLE public.MUESTRA_SUPERFICIE IS 'Tabla generada desde el inventario de campos.';
@@ -1597,7 +1598,8 @@ CREATE TABLE public.MUESTRA_LECHO_MARINO (
     localizacion_espacial_id bigint,
     CONSTRAINT pk_muestra_lecho_marino PRIMARY KEY (muestra_lecho_marino_id),
     CONSTRAINT fk_muestra_lecho_marino_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE SET NULL,
-    CONSTRAINT fk_muestra_lecho_marino_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL
+    CONSTRAINT fk_muestra_lecho_marino_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL,
+    CONSTRAINT uq_muestra_lecho_marino_muestra_id UNIQUE (muestra_id)
 );
 
 COMMENT ON TABLE public.MUESTRA_LECHO_MARINO IS 'Tabla generada desde el inventario de campos.';
@@ -1625,7 +1627,8 @@ CREATE TABLE public.MUESTRA_SUBSUELO (
     CONSTRAINT fk_muestra_subsuelo_tipo_muestra_subsuelo_id FOREIGN KEY (tipo_muestra_subsuelo_id) REFERENCES public.CAT_TIPO_MUESTRA_SUBSUELO(tipo_muestra_subsuelo_id) ON DELETE SET NULL,
     CONSTRAINT fk_muestra_subsuelo_pozo_id FOREIGN KEY (pozo_id) REFERENCES public.POZO(pozo_id) ON DELETE SET NULL,
     CONSTRAINT fk_muestra_subsuelo_tipo_intervalo_muestra_id FOREIGN KEY (tipo_intervalo_muestra_id) REFERENCES public.CAT_TIPO_INTERVALO_MUESTRA(tipo_intervalo_muestra_id) ON DELETE SET NULL,
-    CONSTRAINT fk_muestra_subsuelo_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL
+    CONSTRAINT fk_muestra_subsuelo_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL,
+    CONSTRAINT uq_muestra_subsuelo_muestra_id UNIQUE (muestra_id)
 );
 
 COMMENT ON TABLE public.MUESTRA_SUBSUELO IS 'Tabla generada desde el inventario de campos.';
