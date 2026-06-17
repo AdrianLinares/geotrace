@@ -2731,10 +2731,891 @@ CREATE INDEX idx_rel_muestra_uni_lito_norm_act_uni_lito_normalizada_id ON public
 CREATE INDEX idx_rel_muestra_uni_lito_norm_act_uni_lito_actualizada_id ON public.REL_MUESTRA_UNI_LITO_NORM_ACT(uni_lito_actualizada_id);
 
 -- ============================================================
+-- Fase 4: Documents + Relations + Localization
+-- ============================================================
+
+-- ============================================================
+-- CAT_IDIOMA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_IDIOMA CASCADE;
+
+CREATE TABLE public.CAT_IDIOMA (
+    idioma_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    codigo_iso varchar(10),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_idioma PRIMARY KEY (idioma_id),
+    CONSTRAINT uq_cat_idioma_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_IDIOMA IS 'Catálogo de idiomas para documentos asociados.';
+
+CREATE INDEX idx_cat_idioma_idioma_id ON public.CAT_IDIOMA(idioma_id);
+
+INSERT INTO public.CAT_IDIOMA (nombre, codigo_iso) VALUES
+    ('Español', 'es'),
+    ('Inglés', 'en'),
+    ('Francés', 'fr')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- ============================================================
+-- CAT_FORMATO_DOCUMENTO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_FORMATO_DOCUMENTO CASCADE;
+
+CREATE TABLE public.CAT_FORMATO_DOCUMENTO (
+    formato_documento_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_formato_documento PRIMARY KEY (formato_documento_id),
+    CONSTRAINT uq_cat_formato_documento_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_FORMATO_DOCUMENTO IS 'Formato físico o digital de un documento asociado.';
+
+CREATE INDEX idx_cat_formato_documento_formato_documento_id ON public.CAT_FORMATO_DOCUMENTO(formato_documento_id);
+
+INSERT INTO public.CAT_FORMATO_DOCUMENTO (nombre) VALUES
+    ('Original'),
+    ('Fotocopia'),
+    ('PDF'),
+    ('Manuscrito'),
+    ('Escaneado')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- ============================================================
+-- CAT_TIPO_DOCUMENTO_ASOCIADO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_DOCUMENTO_ASOCIADO CASCADE;
+
+CREATE TABLE public.CAT_TIPO_DOCUMENTO_ASOCIADO (
+    tipo_documento_asociado_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_documento varchar(255),
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_documento_asociado PRIMARY KEY (tipo_documento_asociado_id),
+    CONSTRAINT uq_cat_tipo_documento_asociado_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_DOCUMENTO_ASOCIADO IS 'Tipos de documentos vinculados a registros científicos.';
+
+CREATE INDEX idx_cat_tipo_documento_asociado_tipo_documento_asociado_id ON public.CAT_TIPO_DOCUMENTO_ASOCIADO(tipo_documento_asociado_id);
+
+INSERT INTO public.CAT_TIPO_DOCUMENTO_ASOCIADO (codigo_documento, nombre) VALUES
+    ('CARTA_DIST', 'Carta distribución'),
+    ('RES_ESTRAT', 'Resumen estratigráfico'),
+    ('INF_BIOEST', 'Informe bioestratigráfico'),
+    ('FOTOGRAFIA', 'Fotografía'),
+    ('NOTA_CAMPO', 'Nota de campo'),
+    ('MAPA_GEO', 'Mapa geológico')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- ============================================================
+-- CAT_DOCUMENTO_FAMILIA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_DOCUMENTO_FAMILIA CASCADE;
+
+CREATE TABLE public.CAT_DOCUMENTO_FAMILIA (
+    documento_familia_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    titulo_base varchar(255),
+    tipo_documento_asociado_id bigint,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_documento_familia PRIMARY KEY (documento_familia_id),
+    CONSTRAINT fk_cat_documento_familia_tipo_documento_asociado_id FOREIGN KEY (tipo_documento_asociado_id) REFERENCES public.CAT_TIPO_DOCUMENTO_ASOCIADO(tipo_documento_asociado_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.CAT_DOCUMENTO_FAMILIA IS 'Agrupación lógica de documentos por título base y tipo.';
+
+CREATE INDEX idx_cat_documento_familia_documento_familia_id ON public.CAT_DOCUMENTO_FAMILIA(documento_familia_id);
+CREATE INDEX idx_cat_documento_familia_tipo_documento_asociado_id ON public.CAT_DOCUMENTO_FAMILIA(tipo_documento_asociado_id);
+
+-- ============================================================
+-- CAT_TIPO_RELACION_DOCUMENTO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_RELACION_DOCUMENTO CASCADE;
+
+CREATE TABLE public.CAT_TIPO_RELACION_DOCUMENTO (
+    tipo_relacion_documento_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_relacion_documento PRIMARY KEY (tipo_relacion_documento_id),
+    CONSTRAINT uq_cat_tipo_relacion_documento_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_RELACION_DOCUMENTO IS 'Tipos de relación entre documentos (jerárquica, derivativa, etc.).';
+
+CREATE INDEX idx_cat_tipo_relacion_documento_tipo_relacion_documento_id ON public.CAT_TIPO_RELACION_DOCUMENTO(tipo_relacion_documento_id);
+
+INSERT INTO public.CAT_TIPO_RELACION_DOCUMENTO (nombre, descripcion) VALUES
+    ('Anexo de', 'Documento que se anexa a otro'),
+    ('Versión de', 'Versión alternativa del mismo documento'),
+    ('Digitalización de', 'Versión digital de un documento físico'),
+    ('Derivado de', 'Documento derivado de otro')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- ============================================================
+-- DOCUMENTO_ASOCIADO
+-- ============================================================
+DROP TABLE IF EXISTS public.DOCUMENTO_ASOCIADO CASCADE;
+
+CREATE TABLE public.DOCUMENTO_ASOCIADO (
+    documento_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_familia_id bigint,
+    version_documento varchar(255),
+    titulo_documento varchar(255),
+    tipo_documento_asociado_id bigint,
+    fecha_documento timestamptz,
+    resumen text,
+    entidad_id bigint,
+    idioma_id bigint,
+    formato_documento_id bigint,
+    numero_paginas bigint,
+    documento_digitalizado boolean,
+    nombre_archivo varchar(255),
+    ruta_archivo varchar(255),
+    fecha_digitalizacion timestamptz,
+    estado_catalogacion_id bigint,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_documento_asociado PRIMARY KEY (documento_id),
+    CONSTRAINT fk_documento_asociado_documento_familia_id FOREIGN KEY (documento_familia_id) REFERENCES public.CAT_DOCUMENTO_FAMILIA(documento_familia_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_asociado_tipo_documento_asociado_id FOREIGN KEY (tipo_documento_asociado_id) REFERENCES public.CAT_TIPO_DOCUMENTO_ASOCIADO(tipo_documento_asociado_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_asociado_entidad_id FOREIGN KEY (entidad_id) REFERENCES public.CAT_ENTIDAD(entidad_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_asociado_idioma_id FOREIGN KEY (idioma_id) REFERENCES public.CAT_IDIOMA(idioma_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_asociado_formato_documento_id FOREIGN KEY (formato_documento_id) REFERENCES public.CAT_FORMATO_DOCUMENTO(formato_documento_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_asociado_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_asociado_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_asociado_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DOCUMENTO_ASOCIADO IS 'Documentos vinculados a placas, muestras, pozos y secciones estratigráficas.';
+
+CREATE INDEX idx_documento_asociado_documento_id ON public.DOCUMENTO_ASOCIADO(documento_id);
+CREATE INDEX idx_documento_asociado_documento_familia_id ON public.DOCUMENTO_ASOCIADO(documento_familia_id);
+CREATE INDEX idx_documento_asociado_tipo_documento_asociado_id ON public.DOCUMENTO_ASOCIADO(tipo_documento_asociado_id);
+CREATE INDEX idx_documento_asociado_entidad_id ON public.DOCUMENTO_ASOCIADO(entidad_id);
+CREATE INDEX idx_documento_asociado_idioma_id ON public.DOCUMENTO_ASOCIADO(idioma_id);
+CREATE INDEX idx_documento_asociado_formato_documento_id ON public.DOCUMENTO_ASOCIADO(formato_documento_id);
+CREATE INDEX idx_documento_asociado_estado_catalogacion_id ON public.DOCUMENTO_ASOCIADO(estado_catalogacion_id);
+CREATE INDEX idx_documento_asociado_catalogador_id ON public.DOCUMENTO_ASOCIADO(catalogador_id);
+CREATE INDEX idx_documento_asociado_revisor_id ON public.DOCUMENTO_ASOCIADO(revisor_id);
+
+-- ============================================================
+-- DOCUMENTO_SECCION
+-- ============================================================
+DROP TABLE IF EXISTS public.DOCUMENTO_SECCION CASCADE;
+
+CREATE TABLE public.DOCUMENTO_SECCION (
+    documento_seccion_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_id bigint,
+    pagina_inicial varchar(255),
+    pagina_final varchar(255),
+    titulo_seccion varchar(255),
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    estado_catalogacion_id bigint,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_documento_seccion PRIMARY KEY (documento_seccion_id),
+    CONSTRAINT fk_documento_seccion_documento_id FOREIGN KEY (documento_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_documento_seccion_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_seccion_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_documento_seccion_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.DOCUMENTO_SECCION IS 'Secciones internas de un documento asociado (artículos, capítulos, etc.).';
+
+CREATE INDEX idx_documento_seccion_documento_seccion_id ON public.DOCUMENTO_SECCION(documento_seccion_id);
+CREATE INDEX idx_documento_seccion_documento_id ON public.DOCUMENTO_SECCION(documento_id);
+CREATE INDEX idx_documento_seccion_catalogador_id ON public.DOCUMENTO_SECCION(catalogador_id);
+CREATE INDEX idx_documento_seccion_estado_catalogacion_id ON public.DOCUMENTO_SECCION(estado_catalogacion_id);
+CREATE INDEX idx_documento_seccion_revisor_id ON public.DOCUMENTO_SECCION(revisor_id);
+
+-- ============================================================
+-- REL_DOCUMENTO_DOCUMENTO
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_DOCUMENTO_DOCUMENTO CASCADE;
+
+CREATE TABLE public.REL_DOCUMENTO_DOCUMENTO (
+    rel_documento_documento_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_padre_id bigint,
+    documento_hijo_id bigint,
+    tipo_relacion_documento_id bigint,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_rel_documento_documento PRIMARY KEY (rel_documento_documento_id),
+    CONSTRAINT fk_rel_documento_documento_documento_padre_id FOREIGN KEY (documento_padre_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rel_documento_documento_documento_hijo_id FOREIGN KEY (documento_hijo_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rel_documento_documento_tipo_relacion_documento_id FOREIGN KEY (tipo_relacion_documento_id) REFERENCES public.CAT_TIPO_RELACION_DOCUMENTO(tipo_relacion_documento_id) ON DELETE SET NULL,
+    CONSTRAINT chk_rel_documento_documento_no_self CHECK (documento_padre_id <> documento_hijo_id)
+);
+
+COMMENT ON TABLE public.REL_DOCUMENTO_DOCUMENTO IS 'Relaciones jerárquicas o derivativas entre documentos asociados.';
+
+CREATE INDEX idx_rel_documento_documento_rel_documento_documento_id ON public.REL_DOCUMENTO_DOCUMENTO(rel_documento_documento_id);
+CREATE INDEX idx_rel_documento_documento_documento_padre_id ON public.REL_DOCUMENTO_DOCUMENTO(documento_padre_id);
+CREATE INDEX idx_rel_documento_documento_documento_hijo_id ON public.REL_DOCUMENTO_DOCUMENTO(documento_hijo_id);
+CREATE INDEX idx_rel_documento_documento_tipo_relacion_documento_id ON public.REL_DOCUMENTO_DOCUMENTO(tipo_relacion_documento_id);
+
+-- ============================================================
+-- REL_DOCUMENTO_MUESTRA
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_DOCUMENTO_MUESTRA CASCADE;
+
+CREATE TABLE public.REL_DOCUMENTO_MUESTRA (
+    rel_documento_muestra_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_id bigint,
+    muestra_id bigint,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_rel_documento_muestra PRIMARY KEY (rel_documento_muestra_id),
+    CONSTRAINT fk_rel_documento_muestra_documento_id FOREIGN KEY (documento_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rel_documento_muestra_muestra_id FOREIGN KEY (muestra_id) REFERENCES public.MUESTRA(muestra_id) ON DELETE CASCADE
+);
+
+COMMENT ON TABLE public.REL_DOCUMENTO_MUESTRA IS 'Vínculo entre documentos y muestras.';
+
+CREATE INDEX idx_rel_documento_muestra_rel_documento_muestra_id ON public.REL_DOCUMENTO_MUESTRA(rel_documento_muestra_id);
+CREATE INDEX idx_rel_documento_muestra_documento_id ON public.REL_DOCUMENTO_MUESTRA(documento_id);
+CREATE INDEX idx_rel_documento_muestra_muestra_id ON public.REL_DOCUMENTO_MUESTRA(muestra_id);
+
+-- ============================================================
+-- REL_DOCUMENTO_PLACA
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_DOCUMENTO_PLACA CASCADE;
+
+CREATE TABLE public.REL_DOCUMENTO_PLACA (
+    rel_documento_placa_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_id bigint,
+    placa_id bigint,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_rel_documento_placa PRIMARY KEY (rel_documento_placa_id),
+    CONSTRAINT fk_rel_documento_placa_documento_id FOREIGN KEY (documento_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rel_documento_placa_placa_id FOREIGN KEY (placa_id) REFERENCES public.PLACA(placa_id) ON DELETE CASCADE
+);
+
+COMMENT ON TABLE public.REL_DOCUMENTO_PLACA IS 'Vínculo entre documentos y placas.';
+
+CREATE INDEX idx_rel_documento_placa_rel_documento_placa_id ON public.REL_DOCUMENTO_PLACA(rel_documento_placa_id);
+CREATE INDEX idx_rel_documento_placa_documento_id ON public.REL_DOCUMENTO_PLACA(documento_id);
+CREATE INDEX idx_rel_documento_placa_placa_id ON public.REL_DOCUMENTO_PLACA(placa_id);
+
+-- ============================================================
+-- REL_DOCUMENTO_POZO
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_DOCUMENTO_POZO CASCADE;
+
+CREATE TABLE public.REL_DOCUMENTO_POZO (
+    rel_documento_pozo_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_id bigint,
+    pozo_id bigint,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_rel_documento_pozo PRIMARY KEY (rel_documento_pozo_id),
+    CONSTRAINT fk_rel_documento_pozo_documento_id FOREIGN KEY (documento_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rel_documento_pozo_pozo_id FOREIGN KEY (pozo_id) REFERENCES public.POZO(pozo_id) ON DELETE CASCADE
+);
+
+COMMENT ON TABLE public.REL_DOCUMENTO_POZO IS 'Vínculo entre documentos y pozos.';
+
+CREATE INDEX idx_rel_documento_pozo_rel_documento_pozo_id ON public.REL_DOCUMENTO_POZO(rel_documento_pozo_id);
+CREATE INDEX idx_rel_documento_pozo_documento_id ON public.REL_DOCUMENTO_POZO(documento_id);
+CREATE INDEX idx_rel_documento_pozo_pozo_id ON public.REL_DOCUMENTO_POZO(pozo_id);
+
+-- ============================================================
+-- REL_DOCUMENTO_PROYECTO
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_DOCUMENTO_PROYECTO CASCADE;
+
+CREATE TABLE public.REL_DOCUMENTO_PROYECTO (
+    rel_documento_proyecto_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_id bigint,
+    proyecto_id bigint,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_rel_documento_proyecto PRIMARY KEY (rel_documento_proyecto_id),
+    CONSTRAINT fk_rel_documento_proyecto_documento_id FOREIGN KEY (documento_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rel_documento_proyecto_proyecto_id FOREIGN KEY (proyecto_id) REFERENCES public.CAT_PROYECTO(proyecto_id) ON DELETE CASCADE
+);
+
+COMMENT ON TABLE public.REL_DOCUMENTO_PROYECTO IS 'Vínculo entre documentos y proyectos.';
+
+CREATE INDEX idx_rel_documento_proyecto_rel_documento_proyecto_id ON public.REL_DOCUMENTO_PROYECTO(rel_documento_proyecto_id);
+CREATE INDEX idx_rel_documento_proyecto_documento_id ON public.REL_DOCUMENTO_PROYECTO(documento_id);
+CREATE INDEX idx_rel_documento_proyecto_proyecto_id ON public.REL_DOCUMENTO_PROYECTO(proyecto_id);
+
+-- ============================================================
+-- Fase 4 (continuación): Localization + Spatial + Stratigraphic
+-- ============================================================
+
+-- ============================================================
+-- CAT_PAIS
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_PAIS CASCADE;
+
+CREATE TABLE public.CAT_PAIS (
+    pais_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_pais varchar(255),
+    codigo_iso varchar(10),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_pais PRIMARY KEY (pais_id),
+    CONSTRAINT uq_cat_pais_nombre_pais UNIQUE (nombre_pais)
+);
+
+COMMENT ON TABLE public.CAT_PAIS IS 'Catálogo de países para localización geográfica.';
+
+CREATE INDEX idx_cat_pais_pais_id ON public.CAT_PAIS(pais_id);
+
+INSERT INTO public.CAT_PAIS (nombre_pais, codigo_iso) VALUES ('Colombia', 'CO') ON CONFLICT (nombre_pais) DO NOTHING;
+
+-- ============================================================
+-- CAT_DEPARTAMENTO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_DEPARTAMENTO CASCADE;
+
+CREATE TABLE public.CAT_DEPARTAMENTO (
+    departamento_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    pais_id bigint,
+    nombre_departamento varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_departamento PRIMARY KEY (departamento_id),
+    CONSTRAINT fk_cat_departamento_pais_id FOREIGN KEY (pais_id) REFERENCES public.CAT_PAIS(pais_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.CAT_DEPARTAMENTO IS 'División administrativa primaria (departamento/estado/provincia).';
+
+CREATE INDEX idx_cat_departamento_departamento_id ON public.CAT_DEPARTAMENTO(departamento_id);
+CREATE INDEX idx_cat_departamento_pais_id ON public.CAT_DEPARTAMENTO(pais_id);
+
+-- ============================================================
+-- CAT_MUNICIPIO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_MUNICIPIO CASCADE;
+
+CREATE TABLE public.CAT_MUNICIPIO (
+    municipio_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    departamento_id bigint,
+    nombre_municipio varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_municipio PRIMARY KEY (municipio_id),
+    CONSTRAINT fk_cat_municipio_departamento_id FOREIGN KEY (departamento_id) REFERENCES public.CAT_DEPARTAMENTO(departamento_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.CAT_MUNICIPIO IS 'División administrativa secundaria (municipio/ciudad).';
+
+CREATE INDEX idx_cat_municipio_municipio_id ON public.CAT_MUNICIPIO(municipio_id);
+CREATE INDEX idx_cat_municipio_departamento_id ON public.CAT_MUNICIPIO(departamento_id);
+
+-- ============================================================
+-- CAT_VIA_NORM
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_VIA_NORM CASCADE;
+
+CREATE TABLE public.CAT_VIA_NORM (
+    via_norm_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_normalizado varchar(255),
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_via_norm PRIMARY KEY (via_norm_id)
+);
+
+COMMENT ON TABLE public.CAT_VIA_NORM IS 'Nombres normalizados de vías para localización geográfica.';
+
+CREATE INDEX idx_cat_via_norm_via_norm_id ON public.CAT_VIA_NORM(via_norm_id);
+
+-- ============================================================
+-- CAT_ACCIDENTE_GEOGRAFICO_NORM
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_ACCIDENTE_GEOGRAFICO_NORM CASCADE;
+
+CREATE TABLE public.CAT_ACCIDENTE_GEOGRAFICO_NORM (
+    accidente_geografico_norm_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    tipo varchar(255),
+    nombre_normalizado varchar(255),
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_accidente_geografico_norm PRIMARY KEY (accidente_geografico_norm_id)
+);
+
+COMMENT ON TABLE public.CAT_ACCIDENTE_GEOGRAFICO_NORM IS 'Nombres normalizados de accidentes geográficos (quebradas, ríos, cerros, etc.).';
+
+CREATE INDEX idx_cat_accidente_geografico_norm_accidente_geografico_norm_id ON public.CAT_ACCIDENTE_GEOGRAFICO_NORM(accidente_geografico_norm_id);
+
+-- ============================================================
+-- CAT_NIVEL_DETALLE_LOCALIDAD
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_NIVEL_DETALLE_LOCALIDAD CASCADE;
+
+CREATE TABLE public.CAT_NIVEL_DETALLE_LOCALIDAD (
+    nivel_detalle_localidad_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    orden bigint,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_nivel_detalle_localidad PRIMARY KEY (nivel_detalle_localidad_id),
+    CONSTRAINT uq_cat_nivel_detalle_localidad_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_NIVEL_DETALLE_LOCALIDAD IS 'Nivel de granularidad de una descripción de localidad.';
+
+CREATE INDEX idx_cat_nivel_detalle_localidad_nivel_detalle_localidad_id ON public.CAT_NIVEL_DETALLE_LOCALIDAD(nivel_detalle_localidad_id);
+
+INSERT INTO public.CAT_NIVEL_DETALLE_LOCALIDAD (nombre, orden) VALUES
+    ('País', 1),
+    ('Departamento', 2),
+    ('Municipio', 3),
+    ('Corregimiento', 4),
+    ('Localidad', 5)
+ON CONFLICT (nombre) DO NOTHING;
+
+-- ============================================================
+-- LOCALIZACION_GEOGRAFICA
+-- ============================================================
+DROP TABLE IF EXISTS public.LOCALIZACION_GEOGRAFICA CASCADE;
+
+CREATE TABLE public.LOCALIZACION_GEOGRAFICA (
+    localizacion_geografica_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    pais_id bigint,
+    departamento_id bigint,
+    municipio_id bigint,
+    cuenca_id bigint,
+    via_reportada varchar(255),
+    via_norm_id bigint,
+    accidente_geografico_reportado varchar(255),
+    accidente_geografico_norm_id bigint,
+    km_referencia bigint,
+    descripcion_localidad text,
+    nivel_detalle_localidad_id bigint,
+    anotacion_id bigint,
+    estado_catalogacion_id bigint,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_localizacion_geografica PRIMARY KEY (localizacion_geografica_id),
+    CONSTRAINT fk_localizacion_geografica_pais_id FOREIGN KEY (pais_id) REFERENCES public.CAT_PAIS(pais_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_geografica_departamento_id FOREIGN KEY (departamento_id) REFERENCES public.CAT_DEPARTAMENTO(departamento_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_geografica_municipio_id FOREIGN KEY (municipio_id) REFERENCES public.CAT_MUNICIPIO(municipio_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_geografica_cuenca_id FOREIGN KEY (cuenca_id) REFERENCES public.CAT_CUENCA(cuenca_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_geografica_via_norm_id FOREIGN KEY (via_norm_id) REFERENCES public.CAT_VIA_NORM(via_norm_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_geografica_accidente_geografico_norm_id FOREIGN KEY (accidente_geografico_norm_id) REFERENCES public.CAT_ACCIDENTE_GEOGRAFICO_NORM(accidente_geografico_norm_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_geografica_nivel_detalle_localidad_id FOREIGN KEY (nivel_detalle_localidad_id) REFERENCES public.CAT_NIVEL_DETALLE_LOCALIDAD(nivel_detalle_localidad_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_geografica_anotacion_id FOREIGN KEY (anotacion_id) REFERENCES public.ANOTACION_PLACA(anotacion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_geografica_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_geografica_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_geografica_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.LOCALIZACION_GEOGRAFICA IS 'Localización administrativa y textual de una muestra, pozo o sección.';
+
+CREATE INDEX idx_localizacion_geografica_localizacion_geografica_id ON public.LOCALIZACION_GEOGRAFICA(localizacion_geografica_id);
+CREATE INDEX idx_localizacion_geografica_pais_id ON public.LOCALIZACION_GEOGRAFICA(pais_id);
+CREATE INDEX idx_localizacion_geografica_departamento_id ON public.LOCALIZACION_GEOGRAFICA(departamento_id);
+CREATE INDEX idx_localizacion_geografica_municipio_id ON public.LOCALIZACION_GEOGRAFICA(municipio_id);
+CREATE INDEX idx_localizacion_geografica_cuenca_id ON public.LOCALIZACION_GEOGRAFICA(cuenca_id);
+CREATE INDEX idx_localizacion_geografica_via_norm_id ON public.LOCALIZACION_GEOGRAFICA(via_norm_id);
+CREATE INDEX idx_localizacion_geografica_accidente_geografico_norm_id ON public.LOCALIZACION_GEOGRAFICA(accidente_geografico_norm_id);
+CREATE INDEX idx_localizacion_geografica_nivel_detalle_localidad_id ON public.LOCALIZACION_GEOGRAFICA(nivel_detalle_localidad_id);
+CREATE INDEX idx_localizacion_geografica_anotacion_id ON public.LOCALIZACION_GEOGRAFICA(anotacion_id);
+CREATE INDEX idx_localizacion_geografica_estado_catalogacion_id ON public.LOCALIZACION_GEOGRAFICA(estado_catalogacion_id);
+CREATE INDEX idx_localizacion_geografica_catalogador_id ON public.LOCALIZACION_GEOGRAFICA(catalogador_id);
+CREATE INDEX idx_localizacion_geografica_revisor_id ON public.LOCALIZACION_GEOGRAFICA(revisor_id);
+
+-- ============================================================
+-- CAT_SISTEMA_COORD
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_SISTEMA_COORD CASCADE;
+
+CREATE TABLE public.CAT_SISTEMA_COORD (
+    sistema_coord_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    tipo varchar(255),
+    tipo_coordenada varchar(255),
+    epsg integer,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_sistema_coord PRIMARY KEY (sistema_coord_id),
+    CONSTRAINT uq_cat_sistema_coord_nombre_tipo_coordenada UNIQUE (nombre, tipo_coordenada)
+);
+
+COMMENT ON TABLE public.CAT_SISTEMA_COORD IS 'Sistemas de coordenadas geoespaciales con código EPSG.';
+
+CREATE INDEX idx_cat_sistema_coord_sistema_coord_id ON public.CAT_SISTEMA_COORD(sistema_coord_id);
+
+INSERT INTO public.CAT_SISTEMA_COORD (nombre, tipo, tipo_coordenada, epsg) VALUES
+    ('WGS84', 'Geodésico', 'Lat/Long', 4326),
+    ('MAGNA-SIRGAS', 'Geodésico', 'Lat/Long', 4686),
+    ('MAGNA-SIRGAS', 'Proyectado', 'Este/Norte', 3116),
+    ('Bogotá', 'Proyectado', 'Este/Norte', 21897)
+ON CONFLICT (nombre, tipo_coordenada) DO NOTHING;
+
+-- ============================================================
+-- CAT_METODO_ESPACIAL
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_METODO_ESPACIAL CASCADE;
+
+CREATE TABLE public.CAT_METODO_ESPACIAL (
+    metodo_espacial_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_metodo_espacial varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_metodo_espacial PRIMARY KEY (metodo_espacial_id),
+    CONSTRAINT uq_cat_metodo_espacial_nombre_metodo_espacial UNIQUE (nombre_metodo_espacial)
+);
+
+COMMENT ON TABLE public.CAT_METODO_ESPACIAL IS 'Método utilizado para obtener o transformar coordenadas.';
+
+CREATE INDEX idx_cat_metodo_espacial_metodo_espacial_id ON public.CAT_METODO_ESPACIAL(metodo_espacial_id);
+
+INSERT INTO public.CAT_METODO_ESPACIAL (nombre_metodo_espacial, descripcion) VALUES
+    ('GPS', 'Coordenadas obtenidas con receptor GPS'),
+    ('Conversión datum', 'Conversión entre sistemas de coordenadas'),
+    ('Georreferenciación mapa', 'Coordenadas estimadas desde mapa'),
+    ('Estimación', 'Coordenadas aproximadas sin fuente precisa')
+ON CONFLICT (nombre_metodo_espacial) DO NOTHING;
+
+-- ============================================================
+-- CAT_FUENTE_ESPACIAL
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_FUENTE_ESPACIAL CASCADE;
+
+CREATE TABLE public.CAT_FUENTE_ESPACIAL (
+    fuente_espacial_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_fuente_espacial PRIMARY KEY (fuente_espacial_id),
+    CONSTRAINT uq_cat_fuente_espacial_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_FUENTE_ESPACIAL IS 'Fuente de donde provienen las coordenadas espaciales.';
+
+CREATE INDEX idx_cat_fuente_espacial_fuente_espacial_id ON public.CAT_FUENTE_ESPACIAL(fuente_espacial_id);
+
+INSERT INTO public.CAT_FUENTE_ESPACIAL (nombre, descripcion) VALUES
+    ('Anotación placa', 'Coordenadas anotadas en la placa o muestra'),
+    ('Informe técnico', 'Coordenadas reportadas en informe técnico'),
+    ('Publicación', 'Coordenadas obtenidas de publicación científica'),
+    ('Base de datos', 'Coordenadas tomadas de otra base de datos')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- ============================================================
+-- CAT_PRECISION_ESPACIAL
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_PRECISION_ESPACIAL CASCADE;
+
+CREATE TABLE public.CAT_PRECISION_ESPACIAL (
+    precision_espacial_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre_precision_espacial varchar(255),
+    interpretacion_aproximada varchar(255),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_precision_espacial PRIMARY KEY (precision_espacial_id),
+    CONSTRAINT uq_cat_precision_espacial_nombre_precision_espacial UNIQUE (nombre_precision_espacial)
+);
+
+COMMENT ON TABLE public.CAT_PRECISION_ESPACIAL IS 'Nivel de precisión asociado a una localización espacial.';
+
+CREATE INDEX idx_cat_precision_espacial_precision_espacial_id ON public.CAT_PRECISION_ESPACIAL(precision_espacial_id);
+
+INSERT INTO public.CAT_PRECISION_ESPACIAL (nombre_precision_espacial, interpretacion_aproximada) VALUES
+    ('Exacta', '< 5 m'),
+    ('Alta', '5 - 25 m'),
+    ('Media', '25 - 100 m'),
+    ('Baja', '> 100 m')
+ON CONFLICT (nombre_precision_espacial) DO NOTHING;
+
+-- ============================================================
+-- CAT_PLANCHA_TOPOGRAFICA
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_PLANCHA_TOPOGRAFICA CASCADE;
+
+CREATE TABLE public.CAT_PLANCHA_TOPOGRAFICA (
+    plancha_topografica_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    codigo_plancha varchar(255),
+    nombre varchar(255),
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_plancha_topografica PRIMARY KEY (plancha_topografica_id),
+    CONSTRAINT uq_cat_plancha_topografica_codigo_plancha UNIQUE (codigo_plancha)
+);
+
+COMMENT ON TABLE public.CAT_PLANCHA_TOPOGRAFICA IS 'Catálogo de planchas cartográficas topográficas.';
+
+CREATE INDEX idx_cat_plancha_topografica_plancha_topografica_id ON public.CAT_PLANCHA_TOPOGRAFICA(plancha_topografica_id);
+
+-- ============================================================
+-- CAT_POLIGONAL
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_POLIGONAL CASCADE;
+
+CREATE TABLE public.CAT_POLIGONAL (
+    poligonal_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_poligonal PRIMARY KEY (poligonal_id),
+    CONSTRAINT uq_cat_poligonal_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_POLIGONAL IS 'Catálogo de poligonales o líneas de referencia geográfica.';
+
+CREATE INDEX idx_cat_poligonal_poligonal_id ON public.CAT_POLIGONAL(poligonal_id);
+
+-- ============================================================
+-- LOCALIZACION_ESPACIAL
+-- ============================================================
+DROP TABLE IF EXISTS public.LOCALIZACION_ESPACIAL CASCADE;
+
+CREATE TABLE public.LOCALIZACION_ESPACIAL (
+    localizacion_espacial_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    localizacion_geografica_id bigint,
+    sistema_coord_id bigint,
+    latitud_original_texto varchar(255),
+    longitud_original_texto varchar(255),
+    latitud_decimal varchar(255),
+    longitud_decimal varchar(255),
+    norte varchar(255),
+    este varchar(255),
+    metodo_espacial_id bigint,
+    fuente_espacial_id bigint,
+    precision_espacial_id bigint,
+    es_principal boolean,
+    es_original boolean,
+    es_verificada boolean,
+    precision_m bigint,
+    estado_catalogacion_id bigint,
+    catalogador_id bigint,
+    fecha_ingreso timestamptz,
+    revisor_id bigint,
+    fecha_revision timestamptz,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_localizacion_espacial PRIMARY KEY (localizacion_espacial_id),
+    CONSTRAINT fk_localizacion_espacial_localizacion_geografica_id FOREIGN KEY (localizacion_geografica_id) REFERENCES public.LOCALIZACION_GEOGRAFICA(localizacion_geografica_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_espacial_sistema_coord_id FOREIGN KEY (sistema_coord_id) REFERENCES public.CAT_SISTEMA_COORD(sistema_coord_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_espacial_metodo_espacial_id FOREIGN KEY (metodo_espacial_id) REFERENCES public.CAT_METODO_ESPACIAL(metodo_espacial_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_espacial_fuente_espacial_id FOREIGN KEY (fuente_espacial_id) REFERENCES public.CAT_FUENTE_ESPACIAL(fuente_espacial_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_espacial_precision_espacial_id FOREIGN KEY (precision_espacial_id) REFERENCES public.CAT_PRECISION_ESPACIAL(precision_espacial_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_espacial_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_espacial_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_espacial_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.LOCALIZACION_ESPACIAL IS 'Coordenadas geoespaciales de una localización geográfica.';
+
+CREATE INDEX idx_localizacion_espacial_localizacion_espacial_id ON public.LOCALIZACION_ESPACIAL(localizacion_espacial_id);
+CREATE INDEX idx_localizacion_espacial_localizacion_geografica_id ON public.LOCALIZACION_ESPACIAL(localizacion_geografica_id);
+CREATE INDEX idx_localizacion_espacial_sistema_coord_id ON public.LOCALIZACION_ESPACIAL(sistema_coord_id);
+CREATE INDEX idx_localizacion_espacial_metodo_espacial_id ON public.LOCALIZACION_ESPACIAL(metodo_espacial_id);
+CREATE INDEX idx_localizacion_espacial_fuente_espacial_id ON public.LOCALIZACION_ESPACIAL(fuente_espacial_id);
+CREATE INDEX idx_localizacion_espacial_precision_espacial_id ON public.LOCALIZACION_ESPACIAL(precision_espacial_id);
+CREATE INDEX idx_localizacion_espacial_estado_catalogacion_id ON public.LOCALIZACION_ESPACIAL(estado_catalogacion_id);
+CREATE INDEX idx_localizacion_espacial_catalogador_id ON public.LOCALIZACION_ESPACIAL(catalogador_id);
+CREATE INDEX idx_localizacion_espacial_revisor_id ON public.LOCALIZACION_ESPACIAL(revisor_id);
+
+-- ============================================================
+-- LOCALIZACION_GEOREFERENCIAL
+-- ============================================================
+DROP TABLE IF EXISTS public.LOCALIZACION_GEOREFERENCIAL CASCADE;
+
+CREATE TABLE public.LOCALIZACION_GEOREFERENCIAL (
+    localizacion_georeferencial_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    poligonal_id bigint,
+    punto_referencia varchar(255),
+    distancia bigint,
+    unidad_medida_id bigint,
+    direccion varchar(255),
+    azimut bigint,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_localizacion_georeferencial PRIMARY KEY (localizacion_georeferencial_id),
+    CONSTRAINT fk_localizacion_georeferencial_poligonal_id FOREIGN KEY (poligonal_id) REFERENCES public.CAT_POLIGONAL(poligonal_id) ON DELETE SET NULL,
+    CONSTRAINT fk_localizacion_georeferencial_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.LOCALIZACION_GEOREFERENCIAL IS 'Localización relativa respecto a una poligonal o punto de referencia.';
+
+CREATE INDEX idx_localizacion_georeferencial_localizacion_georeferencial_id ON public.LOCALIZACION_GEOREFERENCIAL(localizacion_georeferencial_id);
+CREATE INDEX idx_localizacion_georeferencial_poligonal_id ON public.LOCALIZACION_GEOREFERENCIAL(poligonal_id);
+CREATE INDEX idx_localizacion_georeferencial_unidad_medida_id ON public.LOCALIZACION_GEOREFERENCIAL(unidad_medida_id);
+
+-- ============================================================
+-- CAT_TIPO_PUNTO_MUESTREO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_TIPO_PUNTO_MUESTREO CASCADE;
+
+CREATE TABLE public.CAT_TIPO_PUNTO_MUESTREO (
+    tipo_punto_muestreo_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    descripcion text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_tipo_punto_muestreo PRIMARY KEY (tipo_punto_muestreo_id),
+    CONSTRAINT uq_cat_tipo_punto_muestreo_nombre UNIQUE (nombre)
+);
+
+COMMENT ON TABLE public.CAT_TIPO_PUNTO_MUESTREO IS 'Tipos de punto o lugar donde se tomó una muestra superficial.';
+
+CREATE INDEX idx_cat_tipo_punto_muestreo_tipo_punto_muestreo_id ON public.CAT_TIPO_PUNTO_MUESTREO(tipo_punto_muestreo_id);
+
+INSERT INTO public.CAT_TIPO_PUNTO_MUESTREO (nombre, descripcion) VALUES
+    ('Afloramiento', 'Muestra tomada en afloramiento rocoso natural'),
+    ('Pozo somero', 'Muestra proveniente de pozo somero'),
+    ('Cantera', 'Muestra tomada en cantera o explotación'),
+    ('Quebrada', 'Muestra recolectada en cauce de quebrada'),
+    ('Carretera', 'Muestra tomada en corte de carretera')
+ON CONFLICT (nombre) DO NOTHING;
+
+-- ============================================================
+-- SECCION_ESTRATIGRAFICA
+-- ============================================================
+DROP TABLE IF EXISTS public.SECCION_ESTRATIGRAFICA CASCADE;
+
+CREATE TABLE public.SECCION_ESTRATIGRAFICA (
+    seccion_estratigrafica_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    nombre varchar(255),
+    localizacion_geografica_id bigint,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_seccion_estratigrafica PRIMARY KEY (seccion_estratigrafica_id),
+    CONSTRAINT fk_seccion_estratigrafica_localizacion_geografica_id FOREIGN KEY (localizacion_geografica_id) REFERENCES public.LOCALIZACION_GEOGRAFICA(localizacion_geografica_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.SECCION_ESTRATIGRAFICA IS 'Sección estratigráfica descrita en campo o laboratorio.';
+
+CREATE INDEX idx_seccion_estratigrafica_seccion_estratigrafica_id ON public.SECCION_ESTRATIGRAFICA(seccion_estratigrafica_id);
+CREATE INDEX idx_seccion_estratigrafica_localizacion_geografica_id ON public.SECCION_ESTRATIGRAFICA(localizacion_geografica_id);
+
+-- ============================================================
+-- REL_DOCUMENTO_SECCION_ESTRATIGR
+-- ============================================================
+DROP TABLE IF EXISTS public.REL_DOCUMENTO_SECCION_ESTRATIGR CASCADE;
+
+CREATE TABLE public.REL_DOCUMENTO_SECCION_ESTRATIGR (
+    rel_documento_seccion_estratigrafica_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    documento_id bigint,
+    seccion_estratigrafica_id bigint,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_rel_documento_seccion_estratigr PRIMARY KEY (rel_documento_seccion_estratigrafica_id),
+    CONSTRAINT fk_rel_documento_seccion_estratigr_documento_id FOREIGN KEY (documento_id) REFERENCES public.DOCUMENTO_ASOCIADO(documento_id) ON DELETE CASCADE,
+    CONSTRAINT fk_rel_documento_seccion_estratigr_seccion_estratigrafica_id FOREIGN KEY (seccion_estratigrafica_id) REFERENCES public.SECCION_ESTRATIGRAFICA(seccion_estratigrafica_id) ON DELETE CASCADE
+);
+
+COMMENT ON TABLE public.REL_DOCUMENTO_SECCION_ESTRATIGR IS 'Vínculo entre documentos y secciones estratigráficas.';
+
+CREATE INDEX idx_rel_documento_seccion_estratigr_rel_documento_seccion_estratigrafica_id ON public.REL_DOCUMENTO_SECCION_ESTRATIGR(rel_documento_seccion_estratigrafica_id);
+CREATE INDEX idx_rel_documento_seccion_estratigr_documento_id ON public.REL_DOCUMENTO_SECCION_ESTRATIGR(documento_id);
+CREATE INDEX idx_rel_documento_seccion_estratigr_seccion_estratigrafica_id ON public.REL_DOCUMENTO_SECCION_ESTRATIGR(seccion_estratigrafica_id);
+
+-- ============================================================
+-- POSICION_ESTRATIGRAFICA
+-- ============================================================
+DROP TABLE IF EXISTS public.POSICION_ESTRATIGRAFICA CASCADE;
+
+CREATE TABLE public.POSICION_ESTRATIGRAFICA (
+    posicion_estratigrafica_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    texto_original varchar(255),
+    valor bigint,
+    unidad_medida_id bigint,
+    tipo_referencia_estratigrafica_id bigint,
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_posicion_estratigrafica PRIMARY KEY (posicion_estratigrafica_id),
+    CONSTRAINT fk_posicion_estratigrafica_unidad_medida_id FOREIGN KEY (unidad_medida_id) REFERENCES public.CAT_UNIDAD_MEDIDA(unidad_medida_id) ON DELETE SET NULL,
+    CONSTRAINT fk_posicion_estratigrafica_tipo_referencia_estratigrafica_id FOREIGN KEY (tipo_referencia_estratigrafica_id) REFERENCES public.CAT_TIPO_REF_ESTRATIGRAFICA(tipo_ref_estratigrafica_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.POSICION_ESTRATIGRAFICA IS 'Posición de una muestra dentro de una sección estratigráfica.';
+
+CREATE INDEX idx_posicion_estratigrafica_posicion_estratigrafica_id ON public.POSICION_ESTRATIGRAFICA(posicion_estratigrafica_id);
+CREATE INDEX idx_posicion_estratigrafica_unidad_medida_id ON public.POSICION_ESTRATIGRAFICA(unidad_medida_id);
+CREATE INDEX idx_posicion_estratigrafica_tipo_referencia_estratigrafica_id ON public.POSICION_ESTRATIGRAFICA(tipo_referencia_estratigrafica_id);
+
+-- ============================================================
+-- Retroactivas: FK de tablas de la Fase 2 hacia tablas de la Fase 4
+-- ============================================================
+ALTER TABLE public.MUESTRA_SUPERFICIE
+    ADD CONSTRAINT fk_muestra_superficie_localizacion_georeferencial_id
+        FOREIGN KEY (localizacion_georeferencial_id) REFERENCES public.LOCALIZACION_GEOREFERENCIAL(localizacion_georeferencial_id) ON DELETE SET NULL;
+
+ALTER TABLE public.MUESTRA_SUPERFICIE
+    ADD CONSTRAINT fk_muestra_superficie_localizacion_geografica_id
+        FOREIGN KEY (localizacion_geografica_id) REFERENCES public.LOCALIZACION_GEOGRAFICA(localizacion_geografica_id) ON DELETE SET NULL;
+
+ALTER TABLE public.MUESTRA_SUPERFICIE
+    ADD CONSTRAINT fk_muestra_superficie_localizacion_espacial_id
+        FOREIGN KEY (localizacion_espacial_id) REFERENCES public.LOCALIZACION_ESPACIAL(localizacion_espacial_id) ON DELETE SET NULL;
+
+ALTER TABLE public.MUESTRA_SUPERFICIE
+    ADD CONSTRAINT fk_muestra_superficie_seccion_estratigrafica_id
+        FOREIGN KEY (seccion_estratigrafica_id) REFERENCES public.SECCION_ESTRATIGRAFICA(seccion_estratigrafica_id) ON DELETE SET NULL;
+
+ALTER TABLE public.MUESTRA_SUPERFICIE
+    ADD CONSTRAINT fk_muestra_superficie_posicion_estratigrafica_id
+        FOREIGN KEY (posicion_estratigrafica_id) REFERENCES public.POSICION_ESTRATIGRAFICA(posicion_estratigrafica_id) ON DELETE SET NULL;
+
+ALTER TABLE public.MUESTRA_SUPERFICIE
+    ADD CONSTRAINT fk_muestra_superficie_plancha_topografica_id
+        FOREIGN KEY (plancha_topografica_id) REFERENCES public.CAT_PLANCHA_TOPOGRAFICA(plancha_topografica_id) ON DELETE SET NULL;
+
+ALTER TABLE public.MUESTRA_LECHO_MARINO
+    ADD CONSTRAINT fk_muestra_lecho_marino_localizacion_geografica_id
+        FOREIGN KEY (localizacion_geografica_id) REFERENCES public.LOCALIZACION_GEOGRAFICA(localizacion_geografica_id) ON DELETE SET NULL;
+
+ALTER TABLE public.MUESTRA_LECHO_MARINO
+    ADD CONSTRAINT fk_muestra_lecho_marino_localizacion_espacial_id
+        FOREIGN KEY (localizacion_espacial_id) REFERENCES public.LOCALIZACION_ESPACIAL(localizacion_espacial_id) ON DELETE SET NULL;
+
+ALTER TABLE public.POZO
+    ADD CONSTRAINT fk_pozo_localizacion_geografica_id
+        FOREIGN KEY (localizacion_geografica_id) REFERENCES public.LOCALIZACION_GEOGRAFICA(localizacion_geografica_id) ON DELETE SET NULL;
+
+ALTER TABLE public.POZO
+    ADD CONSTRAINT fk_pozo_localizacion_espacial_id
+        FOREIGN KEY (localizacion_espacial_id) REFERENCES public.LOCALIZACION_ESPACIAL(localizacion_espacial_id) ON DELETE SET NULL;
+
+-- ============================================================
 -- Actualización de versión del esquema
 -- ============================================================
 INSERT INTO public.schema_version (version, applied_at)
-VALUES (3, now())
+VALUES (4, now())
 ON CONFLICT (version) DO UPDATE SET applied_at = EXCLUDED.applied_at;
 
 
