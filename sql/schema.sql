@@ -1116,8 +1116,8 @@ DROP TABLE IF EXISTS public.PLACA CASCADE;
 
 CREATE TABLE public.PLACA (
     placa_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-    codigo_ubicacion varchar(255),
-    codigo_coleccion varchar(255),
+    ubicacion_id bigint,
+    coleccion_id bigint,
     codigo_placa varchar(255),
     clase_placa_id bigint,
     etapa_uso_placa_id bigint,
@@ -1134,6 +1134,7 @@ CREATE TABLE public.PLACA (
     revisor_id bigint,
     fecha_revision timestamptz,
     CONSTRAINT pk_placa PRIMARY KEY (placa_id),
+    CONSTRAINT fk_placa_coleccion_id FOREIGN KEY (coleccion_id) REFERENCES public.CAT_COLECCION(coleccion_id) ON DELETE SET NULL,
     CONSTRAINT fk_placa_clase_placa_id FOREIGN KEY (clase_placa_id) REFERENCES public.CAT_CLASE_PLACA(clase_placa_id) ON DELETE SET NULL,
     CONSTRAINT fk_placa_etapa_uso_placa_id FOREIGN KEY (etapa_uso_placa_id) REFERENCES public.CAT_ETAPA_USO_PLACA(etapa_uso_placa_id) ON DELETE SET NULL,
     CONSTRAINT fk_placa_diseno_placa_id FOREIGN KEY (diseno_placa_id) REFERENCES public.CAT_DISENO_PLACA(diseno_placa_id) ON DELETE SET NULL,
@@ -1163,6 +1164,8 @@ CREATE INDEX idx_placa_catalogador_id ON public.PLACA(catalogador_id);
 CREATE INDEX idx_placa_estado_catalogacion_id ON public.PLACA(estado_catalogacion_id);
 CREATE INDEX idx_placa_revisor_id ON public.PLACA(revisor_id);
 CREATE INDEX idx_placa_codigo_placa ON public.PLACA(codigo_placa);
+CREATE INDEX idx_placa_ubicacion_id ON public.PLACA(ubicacion_id);
+CREATE INDEX idx_placa_coleccion_id ON public.PLACA(coleccion_id);
 
 -- ============================================================
 -- MARCADO_PLACA
@@ -3617,7 +3620,7 @@ ALTER TABLE public.POZO
 -- Actualización de versión del esquema
 -- ============================================================
 INSERT INTO public.schema_version (version, applied_at)
-VALUES (4, now())
+VALUES (5, now())
 ON CONFLICT (version) DO UPDATE SET applied_at = EXCLUDED.applied_at;
 
 
