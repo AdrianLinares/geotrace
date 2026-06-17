@@ -536,15 +536,17 @@ CREATE TABLE public.CAT_MUEBLE (
     color_mueble_id bigint,
     tiene_secciones varchar(255),
     tiene_zonas varchar(255),
-    capacidad_bandejas varchar(255),
-    capacidad_posiciones varchar(255),
+    capacidad_bandejas integer,
+    capacidad_posiciones integer,
     observaciones text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT pk_cat_mueble PRIMARY KEY (mueble_id),
     CONSTRAINT fk_cat_mueble_material_mueble_id FOREIGN KEY (material_mueble_id) REFERENCES public.CAT_MATERIAL_MUEBLE(material_mueble_id) ON DELETE SET NULL,
     CONSTRAINT fk_cat_mueble_color_mueble_id FOREIGN KEY (color_mueble_id) REFERENCES public.CAT_COLOR_MUEBLE(color_mueble_id) ON DELETE SET NULL,
-    CONSTRAINT uq_cat_mueble_codigo_mueble UNIQUE (codigo_mueble)
+    CONSTRAINT uq_cat_mueble_codigo_mueble UNIQUE (codigo_mueble),
+    CONSTRAINT chk_cat_mueble_capacidad_bandejas CHECK (capacidad_bandejas >= 0),
+    CONSTRAINT chk_cat_mueble_capacidad_posiciones CHECK (capacidad_posiciones >= 0)
 );
 
 COMMENT ON TABLE public.CAT_MUEBLE IS 'Tabla generada desde el inventario de campos.';
