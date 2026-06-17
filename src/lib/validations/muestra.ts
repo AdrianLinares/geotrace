@@ -51,9 +51,9 @@ export const muestraSchema = z.object({
     cantidad_cualitativa: z.enum(['Escaso', 'Moderado', 'Abundante']).optional(),
   })).optional(),
   conservacion: z.object({
-    vidrio_estado: z.string().optional(),
-    acetato_estado: z.string().optional(),
-    abrazadera_estado: z.string().optional(),
+    vidrio_estado_id: z.number().nullable().optional(),
+    acetato_estado_id: z.number().nullable().optional(),
+    marco_placa_estado_id: z.number().nullable().optional(),
     presencia_hongos: z.boolean().optional(),
     crecimiento_cristales: z.boolean().optional(),
     oxidacion: z.boolean().optional(),

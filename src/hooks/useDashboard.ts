@@ -107,40 +107,43 @@ export function useActividadReciente() {
   })
 }
 
+type PlacaProblema = {
+  placa_id: string
+  nivel: 'CRÍTICA' | 'ATENCIÓN' | 'LEVE'
+  vidrio_estado?: string | null
+  presencia_hongos?: boolean | null
+  riesgo_contaminacion?: boolean | null
+}
+
 // Placas con problemas de conservación (críticas / atención)
 export function usePlacasProblemas() {
-  return useQuery({
+  return useQuery<PlacaProblema[]>({
     queryKey: ['dashboard-placas-problemas'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('estado_conservacion')
+        .from('estado_conservacion_inicial')
         .select(`
-          estado_cons_id,
-          vidrio_estado,
+          estado_conservacion_inicial_id,
+          vidrio_estado_id,
+          cat_vidrio:vidrio_estado_id (vidrio_estado),
           presencia_hongos,
           riesgo_contaminacion,
           oxidacion,
           crecimiento_cristales,
           material_fuera_cavidad,
-          muestra:muestra_id (
-            muestra_id,
-            placa:placa_id (
-              placa_id,
-              estado_catalogacion
-            )
-          )
+          placa_id
         `)
-        .or('presencia_hongos.eq.true,riesgo_contaminacion.eq.true,vidrio_estado.eq.Roto,vidrio_estado.eq.Faltante,oxidacion.eq.true,crecimiento_cristales.eq.true,material_fuera_cavidad.eq.true')
+        .or('presencia_hongos.eq.true,riesgo_contaminacion.eq.true,vidrio_estado_id.eq.2,vidrio_estado_id.eq.3,oxidacion.eq.true,crecimiento_cristales.eq.true,material_fuera_cavidad.eq.true')
 
       if (error) throw error
 
       const problemas = (data as any[]).map(r => {
-        const critica = r.presencia_hongos || r.riesgo_contaminacion || r.vidrio_estado === 'Roto' || r.vidrio_estado === 'Faltante'
+        const critica = r.presencia_hongos || r.riesgo_contaminacion || r.vidrio_estado_id === 2 || r.vidrio_estado_id === 3
         const atencion = r.material_fuera_cavidad || r.oxidacion || r.crecimiento_cristales
         return {
-          placa_id: r.muestra?.placa?.placa_id,
+          placa_id: r.placa_id,
           nivel: critica ? 'CRÍTICA' : atencion ? 'ATENCIÓN' : 'LEVE',
-          vidrio_estado: r.vidrio_estado,
+          vidrio_estado: r.cat_vidrio?.vidrio_estado,
           presencia_hongos: r.presencia_hongos,
           riesgo_contaminacion: r.riesgo_contaminacion
         }
