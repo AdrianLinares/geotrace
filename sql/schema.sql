@@ -31,10 +31,13 @@ DROP TABLE IF EXISTS public.nota_manuscrita CASCADE;
 DROP TABLE IF EXISTS public.marcado_placa CASCADE;
 DROP TABLE IF EXISTS public.placa CASCADE;
 DROP TABLE IF EXISTS public.ubicacion_fisica CASCADE;
+DROP TABLE IF EXISTS public.BANDEJA CASCADE;
+DROP TABLE IF EXISTS public.ZONA_MUEBLE CASCADE;
 DROP TABLE IF EXISTS public.mueble CASCADE;
 DROP TABLE IF EXISTS public.empresa CASCADE;
 DROP TABLE IF EXISTS public.persona CASCADE;
 DROP TABLE IF EXISTS public.coleccion CASCADE;
+DROP TABLE IF EXISTS public.CAT_COLECCION CASCADE;
 
 -- ============================================================
 -- Control de versión del esquema
@@ -171,30 +174,25 @@ CREATE INDEX idx_rel_rol_permiso_rol_id ON public.REL_ROL_PERMISO(rol_id);
 CREATE INDEX idx_rel_rol_permiso_permiso_id ON public.REL_ROL_PERMISO(permiso_id);
 
 -- ============================================================
--- CAT_COLECCION: colecciones científicas
+-- COLECCION: Access collection records
 -- ============================================================
-DROP TABLE IF EXISTS public.CAT_COLECCION CASCADE;
+DROP TABLE IF EXISTS public.COLECCION CASCADE;
 
-CREATE TABLE public.CAT_COLECCION (
+CREATE TABLE public.COLECCION (
     coleccion_id        bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    codigo_coleccion    varchar(255) NOT NULL,
-    nombre_coleccion    varchar(255) NOT NULL,
+    codigo_coleccion    varchar(255),
+    nombre_coleccion    varchar(255),
     institucion         varchar(255),
     responsable_coleccion varchar(255),
     descripcion         text,
-    estado_coleccion    varchar(255) NOT NULL DEFAULT 'Activa',
+    estado_coleccion    varchar(255),
     created_at          timestamptz NOT NULL DEFAULT now(),
-    updated_at          timestamptz NOT NULL DEFAULT now(),
-
-    CONSTRAINT uq_cat_coleccion_codigo UNIQUE (codigo_coleccion),
-    CONSTRAINT uq_cat_coleccion_nombre UNIQUE (nombre_coleccion),
-    CONSTRAINT chk_cat_coleccion_estado
-        CHECK (estado_coleccion IN ('Activa', 'Cerrada'))
+    updated_at          timestamptz NOT NULL DEFAULT now()
 );
 
-COMMENT ON TABLE public.CAT_COLECCION IS 'Colecciones disponibles para catalogación.';
+COMMENT ON TABLE public.COLECCION IS 'Access COLECCION: collection records and their source vocabulary.';
 
-CREATE INDEX idx_cat_coleccion_estado ON public.CAT_COLECCION(estado_coleccion);
+CREATE INDEX idx_coleccion_estado ON public.COLECCION(estado_coleccion);
 
 -- ============================================================
 -- CAT_ESTADO_CATALOGACION: estados del flujo de catalogación
@@ -525,35 +523,73 @@ COMMENT ON TABLE public.CAT_CODIGO_CAVIDAD IS 'Tabla generada desde el inventari
 CREATE INDEX idx_cat_codigo_cavidad_codigo_cavidad_id ON public.CAT_CODIGO_CAVIDAD(codigo_cavidad_id);
 
 -- ============================================================
--- CAT_MUEBLE
+-- MUEBLE: Access physical cabinet records
 -- ============================================================
-DROP TABLE IF EXISTS public.CAT_MUEBLE CASCADE;
+DROP TABLE IF EXISTS public.MUEBLE CASCADE;
 
-CREATE TABLE public.CAT_MUEBLE (
+CREATE TABLE public.MUEBLE (
     mueble_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
     codigo_mueble varchar(255),
     material_mueble_id bigint,
     color_mueble_id bigint,
-    tiene_secciones varchar(255),
-    tiene_zonas varchar(255),
-    capacidad_bandejas integer,
-    capacidad_posiciones integer,
+    tiene_secciones boolean,
+    tiene_zonas boolean,
     observaciones text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT pk_cat_mueble PRIMARY KEY (mueble_id),
     CONSTRAINT fk_cat_mueble_material_mueble_id FOREIGN KEY (material_mueble_id) REFERENCES public.CAT_MATERIAL_MUEBLE(material_mueble_id) ON DELETE SET NULL,
-    CONSTRAINT fk_cat_mueble_color_mueble_id FOREIGN KEY (color_mueble_id) REFERENCES public.CAT_COLOR_MUEBLE(color_mueble_id) ON DELETE SET NULL,
-    CONSTRAINT uq_cat_mueble_codigo_mueble UNIQUE (codigo_mueble),
-    CONSTRAINT chk_cat_mueble_capacidad_bandejas CHECK (capacidad_bandejas >= 0),
-    CONSTRAINT chk_cat_mueble_capacidad_posiciones CHECK (capacidad_posiciones >= 0)
+    CONSTRAINT fk_cat_mueble_color_mueble_id FOREIGN KEY (color_mueble_id) REFERENCES public.CAT_COLOR_MUEBLE(color_mueble_id) ON DELETE SET NULL
 );
 
-COMMENT ON TABLE public.CAT_MUEBLE IS 'Tabla generada desde el inventario de campos.';
+COMMENT ON TABLE public.MUEBLE IS 'Access MUEBLE: physical cabinet records.';
 
-CREATE INDEX idx_cat_mueble_material_mueble_id ON public.CAT_MUEBLE(material_mueble_id);
-CREATE INDEX idx_cat_mueble_color_mueble_id ON public.CAT_MUEBLE(color_mueble_id);
-CREATE INDEX idx_cat_mueble_mueble_id ON public.CAT_MUEBLE(mueble_id);
+CREATE INDEX idx_mueble_material_mueble_id ON public.MUEBLE(material_mueble_id);
+CREATE INDEX idx_mueble_color_mueble_id ON public.MUEBLE(color_mueble_id);
+CREATE INDEX idx_mueble_mueble_id ON public.MUEBLE(mueble_id);
+
+-- ============================================================
+-- ZONA_MUEBLE: zones within a physical cabinet section
+-- ============================================================
+DROP TABLE IF EXISTS public.ZONA_MUEBLE CASCADE;
+
+CREATE TABLE public.ZONA_MUEBLE (
+    zona_mueble_id   bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    seccion_mueble_id bigint,
+    nombre_zona      varchar(255),
+    orden_zona       bigint,
+    observaciones    text,
+    CONSTRAINT fk_zona_mueble_seccion_mueble_id
+        FOREIGN KEY (seccion_mueble_id) REFERENCES public.CAT_SECCION(seccion_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.ZONA_MUEBLE IS 'Access ZONA_MUEBLE: cabinet zones; SeccionMuebleID maps to CAT_SECCION.';
+
+CREATE INDEX idx_zona_mueble_seccion_mueble_id ON public.ZONA_MUEBLE(seccion_mueble_id);
+
+-- ============================================================
+-- BANDEJA: trays within a cabinet zone
+-- ============================================================
+DROP TABLE IF EXISTS public.BANDEJA CASCADE;
+
+CREATE TABLE public.BANDEJA (
+    bandeja_id                       bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    zona_mueble_id                   bigint,
+    numero_bandeja                   bigint,
+    material_bandeja_id              bigint,
+    capacidad_placas_bandeja         bigint,
+    bandeja_tiene_separadores_internos boolean,
+    observaciones                    varchar(50),
+    CONSTRAINT fk_bandeja_zona_mueble_id
+        FOREIGN KEY (zona_mueble_id) REFERENCES public.ZONA_MUEBLE(zona_mueble_id) ON DELETE SET NULL,
+    CONSTRAINT fk_bandeja_material_bandeja_id
+        FOREIGN KEY (material_bandeja_id) REFERENCES public.CAT_MATERIAL_BANDEJA(material_bandeja_id) ON DELETE SET NULL
+);
+
+COMMENT ON TABLE public.BANDEJA IS 'Access BANDEJA: trays assigned to cabinet zones.';
+
+CREATE INDEX idx_bandeja_zona_mueble_id ON public.BANDEJA(zona_mueble_id);
+CREATE INDEX idx_bandeja_material_bandeja_id ON public.BANDEJA(material_bandeja_id);
 
 -- ============================================================
 -- CAT_CUENCA
@@ -1116,7 +1152,7 @@ DROP TABLE IF EXISTS public.PLACA CASCADE;
 
 CREATE TABLE public.PLACA (
     placa_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-    ubicacion_id bigint,
+    codigo_ubicacion varchar(255),
     coleccion_id bigint,
     codigo_placa varchar(255),
     clase_placa_id bigint,
@@ -1133,8 +1169,11 @@ CREATE TABLE public.PLACA (
     estado_catalogacion_id bigint,
     revisor_id bigint,
     fecha_revision timestamptz,
+    estado_revision_id bigint,
+    comentarios text,
+    observaciones text,
     CONSTRAINT pk_placa PRIMARY KEY (placa_id),
-    CONSTRAINT fk_placa_coleccion_id FOREIGN KEY (coleccion_id) REFERENCES public.CAT_COLECCION(coleccion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_placa_coleccion_id FOREIGN KEY (coleccion_id) REFERENCES public.COLECCION(coleccion_id) ON DELETE SET NULL,
     CONSTRAINT fk_placa_clase_placa_id FOREIGN KEY (clase_placa_id) REFERENCES public.CAT_CLASE_PLACA(clase_placa_id) ON DELETE SET NULL,
     CONSTRAINT fk_placa_etapa_uso_placa_id FOREIGN KEY (etapa_uso_placa_id) REFERENCES public.CAT_ETAPA_USO_PLACA(etapa_uso_placa_id) ON DELETE SET NULL,
     CONSTRAINT fk_placa_diseno_placa_id FOREIGN KEY (diseno_placa_id) REFERENCES public.CAT_DISENO_PLACA(diseno_placa_id) ON DELETE SET NULL,
@@ -1146,7 +1185,9 @@ CREATE TABLE public.PLACA (
     CONSTRAINT fk_placa_sistema_ensamble_id FOREIGN KEY (sistema_ensamble_id) REFERENCES public.CAT_SISTEMA_ENSAMBLE(sistema_ensamble_id) ON DELETE SET NULL,
     CONSTRAINT fk_placa_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
     CONSTRAINT fk_placa_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
-    CONSTRAINT fk_placa_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL
+    CONSTRAINT fk_placa_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
+    CONSTRAINT fk_placa_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL,
+    CONSTRAINT uq_placa_codigo_placa UNIQUE (codigo_placa)
 );
 
 COMMENT ON TABLE public.PLACA IS 'Tabla generada desde el inventario de campos.';
@@ -1163,8 +1204,9 @@ CREATE INDEX idx_placa_sistema_ensamble_id ON public.PLACA(sistema_ensamble_id);
 CREATE INDEX idx_placa_catalogador_id ON public.PLACA(catalogador_id);
 CREATE INDEX idx_placa_estado_catalogacion_id ON public.PLACA(estado_catalogacion_id);
 CREATE INDEX idx_placa_revisor_id ON public.PLACA(revisor_id);
+CREATE INDEX idx_placa_estado_revision_id ON public.PLACA(estado_revision_id);
 CREATE INDEX idx_placa_codigo_placa ON public.PLACA(codigo_placa);
-CREATE INDEX idx_placa_ubicacion_id ON public.PLACA(ubicacion_id);
+CREATE INDEX idx_placa_codigo_ubicacion ON public.PLACA(codigo_ubicacion);
 CREATE INDEX idx_placa_coleccion_id ON public.PLACA(coleccion_id);
 
 -- ============================================================
@@ -1357,47 +1399,39 @@ CREATE TABLE public.UBICACION_FISICA (
     ubicacion_fisica_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
     codigo_ubicacion varchar(255),
     placa_id bigint,
-    mueble_id bigint,
-    seccion_id bigint,
-    zona_id bigint,
-    numero_bandeja varchar(255),
-    material_bandeja_id bigint,
+    bandeja_id bigint,
     columna_bandeja_id bigint,
-    posicion_placa varchar(255),
+    posicion_bandeja bigint,
+    fecha_ubicacion timestamptz,
     catalogador_id bigint,
     fecha_ingreso timestamptz,
     estado_catalogacion_id bigint,
     revisor_id bigint,
     fecha_revision timestamptz,
+    estado_revision_id bigint,
     observaciones text,
     CONSTRAINT pk_ubicacion_fisica PRIMARY KEY (ubicacion_fisica_id),
     CONSTRAINT fk_ubicacion_fisica_placa_id FOREIGN KEY (placa_id) REFERENCES public.PLACA(placa_id) ON DELETE SET NULL,
-    CONSTRAINT fk_ubicacion_fisica_mueble_id FOREIGN KEY (mueble_id) REFERENCES public.CAT_MUEBLE(mueble_id) ON DELETE SET NULL,
-    CONSTRAINT fk_ubicacion_fisica_seccion_id FOREIGN KEY (seccion_id) REFERENCES public.CAT_SECCION(seccion_id) ON DELETE SET NULL,
-    CONSTRAINT fk_ubicacion_fisica_zona_id FOREIGN KEY (zona_id) REFERENCES public.CAT_ZONA(zona_id) ON DELETE SET NULL,
-    CONSTRAINT fk_ubicacion_fisica_material_bandeja_id FOREIGN KEY (material_bandeja_id) REFERENCES public.CAT_MATERIAL_BANDEJA(material_bandeja_id) ON DELETE SET NULL,
+    CONSTRAINT fk_ubicacion_fisica_bandeja_id FOREIGN KEY (bandeja_id) REFERENCES public.BANDEJA(bandeja_id) ON DELETE SET NULL,
     CONSTRAINT fk_ubicacion_fisica_columna_bandeja_id FOREIGN KEY (columna_bandeja_id) REFERENCES public.CAT_COLUMNA_BANDEJA(columna_bandeja_id) ON DELETE SET NULL,
     CONSTRAINT fk_ubicacion_fisica_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
     CONSTRAINT fk_ubicacion_fisica_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
     CONSTRAINT fk_ubicacion_fisica_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
-    CONSTRAINT uq_ubicacion_fisica_ubicacion UNIQUE (mueble_id, seccion_id, zona_id, numero_bandeja, columna_bandeja_id, posicion_placa)
+    CONSTRAINT fk_ubicacion_fisica_estado_revision_id FOREIGN KEY (estado_revision_id) REFERENCES public.CAT_ESTADO_REVISION(estado_revision_id) ON DELETE SET NULL,
+    CONSTRAINT chk_ubicacion_fisica_posicion_bandeja CHECK (posicion_bandeja IS NULL OR posicion_bandeja BETWEEN 1 AND 22),
+    CONSTRAINT uq_ubicacion_fisica_placa UNIQUE (placa_id),
+    CONSTRAINT uq_ubicacion_fisica_posicion UNIQUE (bandeja_id, columna_bandeja_id, posicion_bandeja)
 );
 
-COMMENT ON TABLE public.UBICACION_FISICA IS 'Tabla generada desde el inventario de campos.';
+COMMENT ON TABLE public.UBICACION_FISICA IS 'Access UBICACION_FISICA: a plate position in a tray; PlacaID is the source one-to-zero-or-one relation.';
 
 CREATE INDEX idx_ubicacion_fisica_placa_id ON public.UBICACION_FISICA(placa_id);
-CREATE INDEX idx_ubicacion_fisica_mueble_id ON public.UBICACION_FISICA(mueble_id);
-CREATE INDEX idx_ubicacion_fisica_seccion_id ON public.UBICACION_FISICA(seccion_id);
-CREATE INDEX idx_ubicacion_fisica_zona_id ON public.UBICACION_FISICA(zona_id);
-CREATE INDEX idx_ubicacion_fisica_material_bandeja_id ON public.UBICACION_FISICA(material_bandeja_id);
+CREATE INDEX idx_ubicacion_fisica_bandeja_id ON public.UBICACION_FISICA(bandeja_id);
 CREATE INDEX idx_ubicacion_fisica_columna_bandeja_id ON public.UBICACION_FISICA(columna_bandeja_id);
+CREATE INDEX idx_ubicacion_fisica_estado_revision_id ON public.UBICACION_FISICA(estado_revision_id);
 CREATE INDEX idx_ubicacion_fisica_catalogador_id ON public.UBICACION_FISICA(catalogador_id);
 CREATE INDEX idx_ubicacion_fisica_estado_catalogacion_id ON public.UBICACION_FISICA(estado_catalogacion_id);
 CREATE INDEX idx_ubicacion_fisica_revisor_id ON public.UBICACION_FISICA(revisor_id);
-
-ALTER TABLE public.PLACA
-    ADD CONSTRAINT fk_placa_ubicacion_id
-        FOREIGN KEY (ubicacion_id) REFERENCES public.UBICACION_FISICA(ubicacion_fisica_id) ON DELETE SET NULL;
 
 -- ============================================================
 -- POZO
