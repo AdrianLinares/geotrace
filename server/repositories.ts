@@ -1,5 +1,5 @@
 import type { Pool } from 'pg'
-import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto } from './types'
+import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, PhysicalLocationDto } from './types'
 
 export function createRoleRepository(pool: Pool): RoleRepository {
   return {
@@ -72,7 +72,15 @@ const sampleColumns = `m.muestra_id::text AS muestra_id, m.nombre_muestra_origin
   m.fecha_revision, m.estado_catalogacion_id::text AS estado_catalogacion_id, ec.estado AS estado_catalogacion,
   m.observaciones, ms.tipo_muestra_subsuelo_id::text AS tipo_muestra_subsuelo_id,
   ms.pozo_id::text AS pozo_id, ms.tipo_intervalo_muestra_id::text AS tipo_intervalo_muestra_id,
-  ms.profundidad_tope, ms.profundidad_base, ms.unidad_medida_id::text AS unidad_medida_id`
+   ms.profundidad_tope, ms.profundidad_base, ms.unidad_medida_id::text AS unidad_medida_id`
+const physicalLocationColumns = `uf.ubicacion_fisica_id::text AS ubicacion_fisica_id, uf.codigo_ubicacion,
+  uf.placa_id::text AS placa_id, uf.bandeja_id::text AS bandeja_id, b.numero_bandeja,
+  zm.zona_mueble_id::text AS zona_mueble_id, zm.seccion_mueble_id::text AS seccion_mueble_id,
+  cs.codigo_seccion AS seccion_codigo, cs.nombre AS seccion_nombre,
+  uf.columna_bandeja_id::text AS columna_bandeja_id, ccb.codigo_columna AS columna_codigo,
+  ccb.nombre AS columna_nombre, uf.posicion_bandeja,
+  b.material_bandeja_id::text AS material_bandeja_id, cmb.nombre AS material_bandeja,
+  uf.fecha_ubicacion, uf.observaciones`
 
 const collectionInputValues = (input: CollectionInput) => [
   input.codigo_coleccion,
@@ -177,6 +185,36 @@ export function createReadRepository(pool: Pool): CollectionRepository {
          LEFT JOIN public.cat_estado_catalogacion ec ON ec.estado_catalogacion_id = m.estado_catalogacion_id
          LEFT JOIN public.muestra_subsuelo ms ON ms.muestra_id = m.muestra_id
         WHERE m.muestra_id = $1`, [id])
+      return result.rows[0] ?? null
+    },
+    async listPhysicalLocations(page, pageSize, filters) {
+      const offset = page * pageSize
+      const from = `FROM public.ubicacion_fisica uf
+        LEFT JOIN public.bandeja b ON b.bandeja_id = uf.bandeja_id
+        LEFT JOIN public.zona_mueble zm ON zm.zona_mueble_id = b.zona_mueble_id
+        LEFT JOIN public.cat_seccion cs ON cs.seccion_id = zm.seccion_mueble_id
+        LEFT JOIN public.cat_columna_bandeja ccb ON ccb.columna_bandeja_id = uf.columna_bandeja_id
+        LEFT JOIN public.cat_material_bandeja cmb ON cmb.material_bandeja_id = b.material_bandeja_id`
+      const where = [
+        `($1::text IS NULL OR uf.codigo_ubicacion ILIKE '%' || $1 || '%' OR cs.codigo_seccion ILIKE '%' || $1 || '%' OR cs.nombre ILIKE '%' || $1 || '%' OR ccb.codigo_columna ILIKE '%' || $1 || '%')`,
+        `($2::boolean IS NULL OR (uf.placa_id IS NOT NULL) = $2)`,
+        `($3::bigint IS NULL OR zm.seccion_mueble_id = $3)`,
+      ].join(' AND ')
+      const params = [filters.search || null, filters.occupied ?? null, filters.sectionId || null]
+      const [result, count] = await Promise.all([
+        pool.query<PhysicalLocationDto>(`SELECT ${physicalLocationColumns} ${from} WHERE ${where} ORDER BY uf.ubicacion_fisica_id LIMIT $4 OFFSET $5`, [...params, pageSize, offset]),
+        pool.query<{ total: string }>(`SELECT count(*)::text AS total ${from} WHERE ${where}`, params),
+      ])
+      return { data: result.rows, total: Number(count.rows[0]?.total ?? 0) }
+    },
+    async getPhysicalLocation(id) {
+      const result = await pool.query<PhysicalLocationDto>(`SELECT ${physicalLocationColumns} FROM public.ubicacion_fisica uf
+        LEFT JOIN public.bandeja b ON b.bandeja_id = uf.bandeja_id
+        LEFT JOIN public.zona_mueble zm ON zm.zona_mueble_id = b.zona_mueble_id
+        LEFT JOIN public.cat_seccion cs ON cs.seccion_id = zm.seccion_mueble_id
+        LEFT JOIN public.cat_columna_bandeja ccb ON ccb.columna_bandeja_id = uf.columna_bandeja_id
+        LEFT JOIN public.cat_material_bandeja cmb ON cmb.material_bandeja_id = b.material_bandeja_id
+        WHERE uf.ubicacion_fisica_id = $1`, [id])
       return result.rows[0] ?? null
     },
     async createCollection(input) {

@@ -1,31 +1,29 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import supabase from '../lib/supabase'
+import { useQuery } from '@tanstack/react-query'
 import { UbicacionFisica } from '../types/database'
+import { apiRequest } from '../lib/api'
 
 const PAGE_SIZE = 50
 
 type UbicacionFilters = {
-  mueble_cod?: string
-  ocupada?: boolean
+  search?: string
+  occupied?: boolean
+  sectionId?: string
 }
 
 /**
  * useUbicaciones
- * - Paginación de ubicaciones físicas (muebles/estantes)
- * - `ocupada` es un booleano opcional que filtra por ocupación
+ * - Lectura paginada de la ubicación física normalizada mediante el API local.
+ * - `occupied` se deriva de la relación normalizada `ubicacion_fisica.placa_id`.
  */
 export function useUbicaciones(page = 0, filters?: UbicacionFilters) {
   return useQuery({
     queryKey: ['ubicaciones', page, filters],
     queryFn: async () => {
-      const from = page * PAGE_SIZE
-      const to = from + PAGE_SIZE - 1
-      let query = supabase.from('ubicacion_fisica').select('*', { count: 'exact' }).range(from, to)
-      if (filters?.mueble_cod) query = query.eq('mueble_cod', filters.mueble_cod)
-      if (typeof filters?.ocupada === 'boolean') query = query.eq('ocupada', filters.ocupada)
-      const { data, error, count } = await query
-      if (error) throw error
-      return { data: (data as UbicacionFisica[]) ?? [], total: count }
+      const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) })
+      if (filters?.search) params.set('search', filters.search)
+      if (typeof filters?.occupied === 'boolean') params.set('occupied', String(filters.occupied))
+      if (filters?.sectionId) params.set('sectionId', filters.sectionId)
+      return apiRequest<{ data: UbicacionFisica[]; total: number }>(`/api/physical-locations?${params}`)
     }
   })
 }
@@ -36,21 +34,7 @@ export function useUbicacion(id?: string) {
     enabled: !!id,
     queryFn: async () => {
       if (!id) return null
-      const { data, error } = await supabase.from('ubicacion_fisica').select('*').eq('ubicacion_id', id).single()
-      if (error) throw error
-      return data as UbicacionFisica
+      return apiRequest<UbicacionFisica>(`/api/physical-locations/${encodeURIComponent(id)}`)
     }
-  })
-}
-
-export function useUpdateUbicacion() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (payload: Partial<UbicacionFisica> & { ubicacion_id: string }) => {
-      const { data, error } = await supabase.from('ubicacion_fisica').update(payload).eq('ubicacion_id', payload.ubicacion_id).select().single()
-      if (error) throw error
-      return data as UbicacionFisica
-    },
-    onSuccess() { qc.invalidateQueries({ queryKey: ['ubicaciones'] }) }
   })
 }

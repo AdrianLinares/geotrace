@@ -4,7 +4,7 @@ import { ZodError } from 'zod'
 import type { AppConfig } from './config'
 import { AuthService, AuthenticationInfrastructureError, InvalidCredentialsError, MissingApplicationRoleError } from './auth'
 import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput } from './types'
-import { basinQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, normalizedIdSchema, plateQuerySchema, sampleQuerySchema, wellQuerySchema } from './validation'
+import { basinQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, normalizedIdSchema, physicalLocationQuerySchema, plateQuerySchema, sampleQuerySchema, wellQuerySchema } from './validation'
 
 type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: CollectionRepository }
 
@@ -142,6 +142,17 @@ export async function createApp({ auth, config, databaseHealth, reads }: Depende
       const id = normalizedIdSchema.parse(request.params.id)
       const result = await reads.getSample(id)
       return result ?? reply.code(404).send({ error: 'Sample not found' })
+    })
+    app.get<{ Querystring: { page?: string; pageSize?: string; search?: string; occupied?: string; sectionId?: string } }>('/api/physical-locations', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      const query = physicalLocationQuerySchema.parse(request.query)
+      return reads.listPhysicalLocations(query.page, query.pageSize, { search: query.search, occupied: query.occupied, sectionId: query.sectionId })
+    })
+    app.get<{ Params: { id: string } }>('/api/physical-locations/:id', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      const id = normalizedIdSchema.parse(request.params.id)
+      const result = await reads.getPhysicalLocation(id)
+      return result ?? reply.code(404).send({ error: 'Physical location not found' })
     })
   }
   return app

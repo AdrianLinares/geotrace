@@ -38,6 +38,11 @@ export const plateQuerySchema = paginationSchema.extend({
   states: z.preprocess(value => typeof value === 'string' ? value.split(',').filter(Boolean) : value, z.array(z.string().trim().min(1)).max(20).optional()),
 }).strict()
 export const sampleQuerySchema = paginationSchema.extend({ placaId: normalizedIdSchema.optional() }).strict()
+const optionalBooleanQuery = z.preprocess(value => value === undefined || value === true || value === false ? value : value === 'true' ? true : value === 'false' ? false : value, z.boolean().optional())
+export const physicalLocationQuerySchema = paginationSchema.extend({
+  occupied: optionalBooleanQuery,
+  sectionId: normalizedIdSchema.optional(),
+}).strict()
 
 export function completeCollectionInput(input: z.infer<typeof collectionBodySchema>) {
   return {

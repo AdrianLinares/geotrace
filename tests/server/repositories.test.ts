@@ -68,6 +68,18 @@ describe('createReadRepository', () => {
     expect(query).toHaveBeenCalledWith(expect.stringContaining('public.muestra_subsuelo'), [10, 10])
   })
 
+  it('reads physical locations through normalized tray, section and column relations', async () => {
+    const query = vi.fn()
+      .mockResolvedValueOnce({ rows: [{ ubicacion_fisica_id: '9' }] })
+      .mockResolvedValueOnce({ rows: [{ total: '2' }] })
+    const repository = createReadRepository({ query } as never)
+    await expect(repository.listPhysicalLocations(1, 10, { search: 'A', occupied: false, sectionId: '3' })).resolves.toEqual({ data: [{ ubicacion_fisica_id: '9' }], total: 2 })
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('public.ubicacion_fisica'), ['A', false, '3', 10, 10])
+    expect(query.mock.calls[0][0]).toContain('public.zona_mueble')
+    expect(query.mock.calls[0][0]).toContain('public.cat_seccion')
+    expect(query.mock.calls[0][0]).not.toMatch(/mueble_cod|ocupada|no_bandeja/)
+  })
+
   it('never emits quoted identifiers for tables created unquoted in schema.sql', async () => {
     const query = vi.fn()
       .mockResolvedValue({ rows: [] })
@@ -84,6 +96,8 @@ describe('createReadRepository', () => {
     await repository.getWell('1')
     await repository.getPlate('1')
     await repository.getSample('1')
+    await repository.listPhysicalLocations(0, 20, {})
+    await repository.getPhysicalLocation('1')
     await repository.createCollection({
       codigo_coleccion: null,
       nombre_coleccion: 'Test',

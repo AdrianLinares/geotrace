@@ -37,19 +37,27 @@ export type Mueble = {
 }
 
 export type UbicacionFisica = {
-  ubicacion_id: string
-  mueble_cod?: string | null
-  seccion?: string | null
-  zona?: string | null
-  no_bandeja: number
-  columna?: string | null
-  posicion_placa: number
-  tipo_mueble?: string | null
-  color_mueble?: string | null
-  material_bandeja?: string | null
-  ocupada?: boolean | null
-  created_at?: string | null
+  ubicacion_fisica_id: string
+  codigo_ubicacion: string | null
+  placa_id: string | null
+  bandeja_id: string | null
+  numero_bandeja: number | null
+  zona_mueble_id: string | null
+  seccion_mueble_id: string | null
+  seccion_codigo: string | null
+  seccion_nombre: string | null
+  columna_bandeja_id: string | null
+  columna_codigo: string | null
+  columna_nombre: string | null
+  posicion_bandeja: number | null
+  material_bandeja_id: string | null
+  material_bandeja: string | null
+  fecha_ubicacion: string | null
+  observaciones: string | null
 }
+
+/** Legacy import shape; physical-location reads must use the normalized DTO above. */
+export type LegacyUbicacionFisica = Record<string, unknown>
 
 export type Placa = {
   placa_id: string

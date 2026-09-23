@@ -96,6 +96,26 @@ export type SampleDto = {
   unidad_medida_id: string | null
 }
 
+export type PhysicalLocationDto = {
+  ubicacion_fisica_id: string
+  codigo_ubicacion: string | null
+  placa_id: string | null
+  bandeja_id: string | null
+  numero_bandeja: number | null
+  zona_mueble_id: string | null
+  seccion_mueble_id: string | null
+  seccion_codigo: string | null
+  seccion_nombre: string | null
+  columna_bandeja_id: string | null
+  columna_codigo: string | null
+  columna_nombre: string | null
+  posicion_bandeja: number | null
+  material_bandeja_id: string | null
+  material_bandeja: string | null
+  fecha_ubicacion: string | null
+  observaciones: string | null
+}
+
 export type ReadRepository = {
   listCollections(page: number, pageSize: number, search?: string): Promise<Paginated<CollectionDto>>
   getCollection(id: string): Promise<CollectionDto | null>
@@ -106,6 +126,8 @@ export type ReadRepository = {
   getPlate(id: string): Promise<PlateDto | null>
   listSamples(page: number, pageSize: number): Promise<Paginated<SampleDto>>
   getSample(id: string): Promise<SampleDto | null>
+  listPhysicalLocations(page: number, pageSize: number, filters: { search?: string; occupied?: boolean; sectionId?: string }): Promise<Paginated<PhysicalLocationDto>>
+  getPhysicalLocation(id: string): Promise<PhysicalLocationDto | null>
 }
 
 export type CollectionRepository = ReadRepository & {

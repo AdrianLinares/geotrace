@@ -24,6 +24,8 @@ const reads: ReadRepository = {
   getPlate: vi.fn().mockResolvedValue(null),
   listSamples: vi.fn().mockResolvedValue({ data: [], total: 0 }),
   getSample: vi.fn().mockResolvedValue(null),
+  listPhysicalLocations: vi.fn().mockResolvedValue({ data: [], total: 0 }),
+  getPhysicalLocation: vi.fn().mockResolvedValue(null),
 }
 
 afterEach(() => vi.clearAllMocks())
@@ -71,6 +73,16 @@ describe('authenticated read routes', () => {
     expect(invalid.statusCode).toBe(400)
     expect(unsupported.statusCode).toBe(400)
     expect(reads.listSamples).not.toHaveBeenCalled()
+    await app.close()
+  })
+
+  it('protects, validates and routes physical-location reads', async () => {
+    const app = await createApp({ auth: { restore: vi.fn().mockResolvedValue(user) } as never, config, reads })
+    const response = await app.inject({ method: 'GET', url: '/api/physical-locations?page=2&occupied=false&search=SE-1' })
+    expect(response.statusCode).toBe(200)
+    expect(reads.listPhysicalLocations).toHaveBeenCalledWith(2, 20, { search: 'SE-1', occupied: false, sectionId: undefined })
+    expect((await app.inject({ method: 'GET', url: '/api/physical-locations/0' })).statusCode).toBe(400)
+    expect((await app.inject({ method: 'GET', url: '/api/physical-locations?occupied=invalid' })).statusCode).toBe(400)
     await app.close()
   })
 

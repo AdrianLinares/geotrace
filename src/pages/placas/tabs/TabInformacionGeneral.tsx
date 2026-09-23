@@ -46,7 +46,7 @@ export default function TabInformacionGeneral({ control, errors }: Props) {
         >
           <option value="">Seleccione...</option>
           {ubicaciones?.data?.map(u => (
-            <option key={u.ubicacion_id} value={u.ubicacion_id}>{u.ubicacion_id}</option>
+            <option key={u.ubicacion_fisica_id} value={u.ubicacion_fisica_id}>{u.codigo_ubicacion || u.ubicacion_fisica_id}</option>
           ))}
         </select>
         {errors.ubicacion_id && <p className="text-sm text-red-500">{errors.ubicacion_id.message}</p>}
