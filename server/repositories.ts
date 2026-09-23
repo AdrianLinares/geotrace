@@ -1,5 +1,5 @@
 import type { Pool } from 'pg'
-import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto, AdminRepository, ManagedPerson, ApplicationRole, PersonUpdateInput } from './types'
+import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto, AdminRepository, ManagedPerson, ApplicationRole, PersonUpdateInput, ConservationRepository, ConservationReferenceDto } from './types'
 
 export class LastAdministratorError extends Error {}
 export class UnknownRoleError extends Error {}
@@ -120,6 +120,24 @@ export function createSessionRepository(pool: Pool): SessionRepository {
     },
     async remove(tokenHash) {
       await pool.query('DELETE FROM app_auth_sessions WHERE token_hash = $1', [tokenHash])
+    },
+  }
+}
+
+export function createConservationRepository(pool: Pool): ConservationRepository {
+  const list = async <T extends ConservationReferenceDto[keyof ConservationReferenceDto]>(table: string, idColumn: string, nameColumn: string): Promise<T> => {
+    const result = await pool.query(`SELECT ${idColumn}::text AS id, ${nameColumn} AS name FROM public.${table} ORDER BY ${idColumn}`)
+    return result.rows as T
+  }
+
+  return {
+    async listStates() {
+      const [vidrio, acetato, marcoPlaca] = await Promise.all([
+        list<ConservationReferenceDto['vidrio']>('cat_vidrio_estado', 'vidrio_estado_id', 'vidrio_estado'),
+        list<ConservationReferenceDto['acetato']>('cat_acetato_estado', 'acetato_estado_id', 'acetato_estado'),
+        list<ConservationReferenceDto['marcoPlaca']>('cat_marco_placa_estado', 'marco_placa_estado_id', 'marco_placa_estado'),
+      ])
+      return { vidrio, acetato, marcoPlaca }
     },
   }
 }

@@ -4,12 +4,12 @@ import { ZodError } from 'zod'
 import type { AppConfig } from './config'
 import { AuthService, AuthenticationInfrastructureError, InvalidCredentialsError, MissingApplicationRoleError, requireRole } from './auth'
 import { LastAdministratorError, UnknownRoleError } from './repositories'
-import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput, AdminRepository } from './types'
+import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput, AdminRepository, ConservationRepository } from './types'
 import { basinQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, normalizedIdSchema, personIdSchema, personUpdateSchema, physicalLocationQuerySchema, plateQuerySchema, sampleQuerySchema, wellQuerySchema } from './validation'
 
-type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: CollectionRepository; admin?: AdminRepository }
+type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: CollectionRepository; admin?: AdminRepository; conservation?: ConservationRepository }
 
-export async function createApp({ auth, config, databaseHealth, reads, admin }: Dependencies): Promise<FastifyInstance> {
+export async function createApp({ auth, config, databaseHealth, reads, admin, conservation }: Dependencies): Promise<FastifyInstance> {
   const app = Fastify({ logger: config.NODE_ENV !== 'test' })
   await app.register(cookie)
   const cookieOptions = {
@@ -187,6 +187,12 @@ export async function createApp({ auth, config, databaseHealth, reads, admin }: 
     app.get('/api/dashboard', async (request, reply) => {
       if (!(await requireSession(request, reply))) return
       return reads.getDashboard()
+    })
+  }
+  if (conservation) {
+    app.get('/api/reference/conservation', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      return { data: await conservation.listStates() }
     })
   }
   return app

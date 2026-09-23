@@ -1,7 +1,24 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createAdminRepository, createReadRepository, createRoleRepository, LastAdministratorError } from '../../server/repositories'
+import { createAdminRepository, createConservationRepository, createReadRepository, createRoleRepository, LastAdministratorError } from '../../server/repositories'
 
 describe('createReadRepository', () => {
+  it('lists conservation catalogs with lowercase schema names and stable ordering', async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [] })
+    const repository = createConservationRepository({ query } as never)
+
+    await repository.listStates()
+
+    expect(query).toHaveBeenCalledTimes(3)
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('public.cat_vidrio_estado'))
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('public.cat_acetato_estado'))
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('public.cat_marco_placa_estado'))
+    for (const [sql, params] of query.mock.calls) {
+      expect(params).toBeUndefined()
+      expect(sql).toMatch(/ORDER BY [a-z_]+_id/)
+      expect(sql).not.toMatch(/public\."[A-Z_]+"/)
+    }
+  })
+
   it('uses official collection names and parameterized pagination', async () => {
     const query = vi.fn()
       .mockResolvedValueOnce({ rows: [{ coleccion_id: '7' }] })

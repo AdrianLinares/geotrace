@@ -74,6 +74,21 @@ export type WellDto = {
 
 export type BasinDto = { cuenca_id: string; nombre_cuenca: string | null }
 
+export type ConservationStateDto = {
+  id: string
+  name: string | null
+}
+
+export type ConservationReferenceDto = {
+  vidrio: ConservationStateDto[]
+  acetato: ConservationStateDto[]
+  marcoPlaca: ConservationStateDto[]
+}
+
+export type ConservationRepository = {
+  listStates(): Promise<ConservationReferenceDto>
+}
+
 export type PlateDto = {
   placa_id: string
   codigo_ubicacion: string | null

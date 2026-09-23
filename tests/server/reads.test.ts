@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from '../../server/app'
 import { LastAdministratorError } from '../../server/repositories'
 import type { AppConfig } from '../../server/config'
-import type { AdminRepository, ReadRepository } from '../../server/types'
+import type { AdminRepository, ConservationRepository, ReadRepository } from '../../server/types'
 
 const config: AppConfig = {
   NODE_ENV: 'test', SERVER_HOST: '127.0.0.1', SERVER_PORT: 3000, DATABASE_URL: 'postgres://test',
@@ -34,10 +34,26 @@ const admin: AdminRepository = {
   listRoles: vi.fn().mockResolvedValue([{ rol_id: '1', nombre: 'Administrador', jerarquia: 4 }]),
   updatePerson: vi.fn().mockResolvedValue({ persona_id: '1' }),
 }
+const conservation: ConservationRepository = {
+  listStates: vi.fn().mockResolvedValue({ vidrio: [], acetato: [], marcoPlaca: [] }),
+}
 
 afterEach(() => vi.clearAllMocks())
 
 describe('authenticated read routes', () => {
+  it('protects and returns grouped conservation references', async () => {
+    const unauthenticated = await createApp({ auth: { restore: vi.fn().mockResolvedValue(null) } as never, config, reads, conservation })
+    expect((await unauthenticated.inject({ method: 'GET', url: '/api/reference/conservation' })).statusCode).toBe(401)
+    expect(conservation.listStates).not.toHaveBeenCalled()
+    await unauthenticated.close()
+
+    const app = await createApp({ auth: { restore: vi.fn().mockResolvedValue(user) } as never, config, reads, conservation })
+    const response = await app.inject({ method: 'GET', url: '/api/reference/conservation' })
+    expect(response.statusCode).toBe(200)
+    expect(conservation.listStates).toHaveBeenCalledOnce()
+    await app.close()
+  })
+
   it('rejects unauthenticated reads', async () => {
     const app = await createApp({ auth: { restore: vi.fn().mockResolvedValue(null) } as never, config, reads })
     const response = await app.inject({ method: 'GET', url: '/api/collections' })
