@@ -2,14 +2,14 @@ import { Pool } from 'pg'
 import { loadConfig } from './config'
 import { createApp } from './app'
 import { createLdapAuthenticator } from './ldap'
-import { createReadRepository, createRoleRepository, createSessionRepository } from './repositories'
+import { createAdminRepository, createReadRepository, createRoleRepository, createSessionRepository } from './repositories'
 import { AuthService } from './auth'
 
 const config = loadConfig()
 const pool = new Pool({ connectionString: config.DATABASE_URL })
 const directory = createLdapAuthenticator(config)
 const auth = new AuthService(directory, createRoleRepository(pool), createSessionRepository(pool), config.SESSION_TTL_SECONDS)
-  const app = await createApp({ auth, config, reads: createReadRepository(pool), databaseHealth: () => pool.query('SELECT 1').then(() => undefined) })
+  const app = await createApp({ auth, config, reads: createReadRepository(pool), admin: createAdminRepository(pool), databaseHealth: () => pool.query('SELECT 1').then(() => undefined) })
 
 const close = async () => {
   await app.close()

@@ -82,6 +82,7 @@ Repository-local source, tests, SQL migration files, deployment configuration, a
 - ODD-005 progress: normalized physical-location reads were added with schema-confirmed joins, filters, pagination, and an explicit legacy limitation. Dashboard aggregation and bulk import still require separate normalized work units.
 - ODD-007 progress: added Ubuntu 24.04 deployment assets for systemd, Nginx HTTPS/SPA routing, local-session migration, smoke checks, and VM operations documentation. Nginx syntax still requires validation on the target VM.
 - ODD-005 progress: normalized dashboard metrics and conservation/occupancy reads were migrated behind `/api/dashboard`; local audit activity remains intentionally empty until an administrator-scoped local audit model is implemented.
+- ODD-005 progress: administrative user and role management now uses local PostgreSQL `persona`, `cat_rol`, and `rel_persona_rol`, with Administrator-only authorization, transactional assignment, last-admin protection, and frontend session reconciliation after revocation.
 - Engram mirror: pending because Engram tools were unavailable in this session.
 
 ## Next step

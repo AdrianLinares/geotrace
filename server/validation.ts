@@ -24,6 +24,16 @@ export const collectionCreateBodySchema = z.object({
 export const collectionIdSchema = z.string().trim().min(1)
 export const normalizedIdSchema = z.string().trim().regex(/^[1-9]\d*$/, 'Invalid identifier')
 
+const personText = z.string().trim().min(1).max(255)
+export const personIdSchema = normalizedIdSchema
+export const personUpdateSchema = z.object({
+  nombre: personText.optional(),
+  apellidos: personText.optional(),
+  correo: z.string().trim().email().max(255).optional(),
+  activo: z.boolean().optional(),
+  role_ids: z.array(normalizedIdSchema).max(20).refine(ids => new Set(ids).size === ids.length, 'Duplicate roles are not allowed').optional(),
+}).strict().refine(input => Object.keys(input).length > 0, 'At least one person field is required')
+
 const paginationSchema = z.object({
   page: z.coerce.number().int().min(0).default(0),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),

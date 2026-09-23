@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from '../../server/app'
+import { LastAdministratorError } from '../../server/repositories'
 import type { AppConfig } from '../../server/config'
-import type { ReadRepository } from '../../server/types'
+import type { AdminRepository, ReadRepository } from '../../server/types'
 
 const config: AppConfig = {
   NODE_ENV: 'test', SERVER_HOST: '127.0.0.1', SERVER_PORT: 3000, DATABASE_URL: 'postgres://test',
@@ -27,6 +28,11 @@ const reads: ReadRepository = {
   listPhysicalLocations: vi.fn().mockResolvedValue({ data: [], total: 0 }),
   getPhysicalLocation: vi.fn().mockResolvedValue(null),
   getDashboard: vi.fn().mockResolvedValue({ kpis: {}, estadoCatalogacion: [], ocupacion: [], actividadReciente: [], problemasConservacion: [] }),
+}
+const admin: AdminRepository = {
+  listPeople: vi.fn().mockResolvedValue([{ persona_id: '1', codigo_persona: 'A-1', nombre: 'Test', apellidos: 'User', correo: 'user@test', activo: true, roles: [] }]),
+  listRoles: vi.fn().mockResolvedValue([{ rol_id: '1', nombre: 'Administrador', jerarquia: 4 }]),
+  updatePerson: vi.fn().mockResolvedValue({ persona_id: '1' }),
 }
 
 afterEach(() => vi.clearAllMocks())
@@ -159,6 +165,40 @@ describe('authenticated read routes', () => {
     expect(invalidPagination.statusCode).toBe(400)
     expect(invalidBasinQuery.statusCode).toBe(400)
     expect(reads.updateCollection).not.toHaveBeenCalled()
+    await app.close()
+  })
+})
+
+describe('administrator user management routes', () => {
+  it('requires a session and the Administrador role', async () => {
+    const unauthenticated = await createApp({ auth: { restore: vi.fn().mockResolvedValue(null) } as never, config, admin })
+    expect((await unauthenticated.inject({ method: 'GET', url: '/api/admin/personas' })).statusCode).toBe(401)
+    await unauthenticated.close()
+
+    const forbidden = await createApp({ auth: { restore: vi.fn().mockResolvedValue(user) } as never, config, admin })
+    expect((await forbidden.inject({ method: 'GET', url: '/api/admin/personas' })).statusCode).toBe(403)
+    expect(admin.listPeople).not.toHaveBeenCalled()
+    await forbidden.close()
+  })
+
+  it('lists people and roles and updates a person only for administrators', async () => {
+    const administrator = { ...user, roles: ['Administrador'] }
+    const testAdmin = { ...admin, updatePerson: vi.fn().mockResolvedValue({ persona_id: '1' }) }
+    const app = await createApp({ auth: { restore: vi.fn().mockResolvedValue(administrator) } as never, config, admin: testAdmin })
+    expect((await app.inject({ method: 'GET', url: '/api/admin/personas' })).statusCode).toBe(200)
+    expect((await app.inject({ method: 'GET', url: '/api/admin/roles' })).statusCode).toBe(200)
+    const response = await app.inject({ method: 'PUT', url: '/api/admin/personas/1', payload: { nombre: 'Updated', role_ids: ['1'] } })
+    expect(response.statusCode).toBe(200)
+    expect(testAdmin.updatePerson).toHaveBeenCalledWith('1', { nombre: 'Updated', role_ids: ['1'] })
+    await app.close()
+  })
+
+  it('returns a safe conflict when the repository protects the last administrator', async () => {
+    vi.mocked(admin.updatePerson).mockRejectedValueOnce(new LastAdministratorError('internal rule details'))
+    const app = await createApp({ auth: { restore: vi.fn().mockResolvedValue({ ...user, roles: ['Administrador'] }) } as never, config, admin })
+    // The repository exposes a domain conflict; route errors never expose its details.
+    const response = await app.inject({ method: 'PUT', url: '/api/admin/personas/1', payload: { activo: false } })
+    expect(response.statusCode).toBe(409)
     await app.close()
   })
 })

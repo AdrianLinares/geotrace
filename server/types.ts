@@ -9,6 +9,31 @@ export type RoleRepository = {
   findActiveUserByUsername(username: string): Promise<AuthenticatedUser | null>
 }
 
+export type ManagedPerson = {
+  persona_id: string
+  codigo_persona: string
+  nombre: string
+  apellidos: string
+  correo: string
+  activo: boolean
+  roles: Array<{ rol_id: string; nombre: string }>
+}
+
+export type ApplicationRole = { rol_id: string; nombre: string; jerarquia: number }
+export type PersonUpdateInput = {
+  nombre?: string
+  apellidos?: string
+  correo?: string
+  activo?: boolean
+  role_ids?: string[]
+}
+
+export type AdminRepository = {
+  listPeople(): Promise<ManagedPerson[]>
+  listRoles(): Promise<ApplicationRole[]>
+  updatePerson(personaId: string, input: PersonUpdateInput): Promise<ManagedPerson | null>
+}
+
 export type SessionRepository = {
   create(tokenHash: string, user: AuthenticatedUser, expiresAt: Date): Promise<void>
   find(tokenHash: string): Promise<AuthenticatedUser | null>

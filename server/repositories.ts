@@ -1,5 +1,8 @@
 import type { Pool } from 'pg'
-import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto } from './types'
+import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto, AdminRepository, ManagedPerson, ApplicationRole, PersonUpdateInput } from './types'
+
+export class LastAdministratorError extends Error {}
+export class UnknownRoleError extends Error {}
 
 export function createRoleRepository(pool: Pool): RoleRepository {
   return {
@@ -20,6 +23,79 @@ export function createRoleRepository(pool: Pool): RoleRepository {
         [username],
       )
       return result.rows[0] ?? null
+    },
+  }
+}
+
+const managedPersonColumns = `p.persona_id::text AS persona_id, p.codigo_persona, p.nombre, p.apellidos,
+  p.correo, p.activo, coalesce(json_agg(json_build_object('rol_id', cr.rol_id::text, 'nombre', cr.nombre)
+  ORDER BY cr.jerarquia DESC) FILTER (WHERE cr.rol_id IS NOT NULL), '[]') AS roles`
+
+export function createAdminRepository(pool: Pool): AdminRepository {
+  const listPeople = async (client: Pick<Pool, 'query'> = pool): Promise<ManagedPerson[]> => {
+    const result = await client.query<ManagedPerson>(`SELECT ${managedPersonColumns}
+      FROM public.persona p
+      LEFT JOIN public.rel_persona_rol rpr ON rpr.persona_id = p.persona_id
+        AND rpr.activo = true AND rpr.fecha_inicio <= now()
+        AND (rpr.fecha_fin IS NULL OR rpr.fecha_fin > now())
+      LEFT JOIN public.cat_rol cr ON cr.rol_id = rpr.rol_id
+      GROUP BY p.persona_id ORDER BY p.apellidos, p.nombre, p.persona_id`)
+    return result.rows
+  }
+
+  return {
+    listPeople,
+    async listRoles() {
+      const result = await pool.query<ApplicationRole>('SELECT rol_id::text AS rol_id, nombre, jerarquia FROM public.cat_rol ORDER BY jerarquia DESC, nombre')
+      return result.rows
+    },
+    async updatePerson(personaId: string, input: PersonUpdateInput) {
+      const client = await pool.connect()
+      try {
+        await client.query('BEGIN')
+        // Serialize administrator changes so two concurrent updates cannot both remove the last administrator.
+        await client.query('SELECT pg_advisory_xact_lock($1)', [19478231])
+        const person = await client.query<{ persona_id: string }>('SELECT persona_id::text FROM public.persona WHERE persona_id = $1 FOR UPDATE', [personaId])
+        if (!person.rows[0]) {
+          await client.query('ROLLBACK')
+          return null
+        }
+
+        if (input.role_ids) {
+          const roles = await client.query<{ rol_id: string }>('SELECT rol_id::text FROM public.cat_rol WHERE rol_id = ANY($1::bigint[])', [input.role_ids])
+          if (roles.rowCount !== input.role_ids.length) throw new UnknownRoleError('Unknown application role')
+        }
+
+        const fields = ['nombre', 'apellidos', 'correo', 'activo'] as const
+        const changes = fields.filter(field => input[field] !== undefined)
+        if (changes.length) {
+          const values = changes.map(field => input[field])
+          const assignments = changes.map((field, index) => `${field} = $${index + 1}`)
+          await client.query(`UPDATE public.persona SET ${assignments.join(', ')}, updated_at = now() WHERE persona_id = $${values.length + 1}`, [...values, personaId])
+        }
+        if (input.role_ids) {
+          await client.query('UPDATE public.rel_persona_rol SET activo = false, fecha_fin = now(), updated_at = now() WHERE persona_id = $1 AND activo = true', [personaId])
+          if (input.role_ids.length) {
+            await client.query(`INSERT INTO public.rel_persona_rol (persona_id, codigo_persona, rol_id, fecha_inicio, activo)
+              SELECT p.persona_id, p.codigo_persona, role_id, now(), true FROM public.persona p
+              CROSS JOIN unnest($1::bigint[]) AS role_id WHERE p.persona_id = $2`, [input.role_ids, personaId])
+          }
+        }
+        const admins = await client.query<{ count: string }>(`SELECT count(DISTINCT rpr.persona_id)::text AS count
+          FROM public.rel_persona_rol rpr JOIN public.cat_rol cr ON cr.rol_id = rpr.rol_id
+          JOIN public.persona p ON p.persona_id = rpr.persona_id
+          WHERE p.activo = true AND rpr.activo = true AND rpr.fecha_inicio <= now()
+            AND (rpr.fecha_fin IS NULL OR rpr.fecha_fin > now()) AND lower(cr.nombre) = 'administrador'`)
+        if (Number(admins.rows[0]?.count ?? 0) === 0) throw new LastAdministratorError('At least one administrator is required')
+        const updated = (await listPeople(client)).find(persona => persona.persona_id === personaId) ?? null
+        await client.query('COMMIT')
+        return updated
+      } catch (error) {
+        await client.query('ROLLBACK')
+        throw error
+      } finally {
+        client.release()
+      }
     },
   }
 }

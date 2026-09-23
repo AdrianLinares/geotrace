@@ -1,239 +1,60 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import AppLayout from '../../components/layout/AppLayout'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '../../lib/supabase'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { Button } from '../../components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
-import PersonaForm from '../../pages/catalogos/PersonaForm'
+import { Input } from '../../components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
+import { AdminApiError, listApplicationRoles, listManagedPeople, reconcileSessionAfterAdminMutation, updateManagedPerson } from '../../lib/adminApi'
+import type { ManagedPerson } from '../../../server/types'
 
 export default function GestionUsuarios() {
-  const qc = useQueryClient()
-  const [editing, setEditing] = useState<any>(null)
-  const [showForm, setShowForm] = useState(false)
-
-  const { data: personas, isLoading, error, refetch } = useQuery({
-    queryKey: ['personas-all'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('persona').select('*').order('rol', { ascending: true })
-      if (error) throw error
-      return data || []
-    }
-  })
-
-  const updateUser = useMutation({
-    mutationFn: async (payload: any) => {
-      const { persona_id, ...updateData } = payload
-      console.log('updateUser.mutationFn payload', { persona_id, updateData })
-      // Only allow these fields to be updated
-      const allowed = ['nombre', 'rol', 'email', 'activo']
-      const sanitized: Record<string, any> = {}
-      Object.entries(updateData).forEach(([k, v]) => {
-        if (allowed.includes(k)) sanitized[k] = v
-      })
-      // If nothing to update, throw
-      if (!Object.keys(sanitized).length) throw new Error('No valid fields to update')
-
-      // Perform update and return updated rows
-      const { data, error } = await supabase.from('persona').update(sanitized).eq('persona_id', persona_id).select()
-      console.log('updateUser.mutationFn response', { data, error })
-      if (error) throw error
-      if (!data || data.length === 0) throw new Error('No rows were updated')
-      return data
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const [editing, setEditing] = useState<ManagedPerson | null>(null)
+  const people = useQuery({ queryKey: ['admin-personas'], queryFn: listManagedPeople })
+  const roles = useQuery({ queryKey: ['admin-roles'], queryFn: listApplicationRoles })
+  const update = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Parameters<typeof updateManagedPerson>[1] }) => updateManagedPerson(id, input),
+    onSuccess: async () => {
+      await reconcileSessionAfterAdminMutation(navigate)
+      setEditing(null)
+      await queryClient.invalidateQueries({ queryKey: ['admin-personas'] })
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['personas-all'] }),
-    onError: (err: any) => {
-      console.error('updateUser error', err)
-      alert('Error actualizando usuario: ' + err.message)
-    }
   })
 
-  const handleToggleActive = async (persona: any) => {
-    try {
-      await updateUser.mutateAsync({
-        persona_id: persona.persona_id,
-        activo: !persona.activo
-      })
-    } catch (e: any) {
-      alert('Error: ' + e.message)
-    }
-  }
+  const errorMessage = (error: unknown) => error instanceof AdminApiError ? error.message : 'No se pudo cargar la gestión de usuarios.'
 
-  const handleChangeRole = async (personaId: string, newRole: string) => {
-    try {
-      await updateUser.mutateAsync({ persona_id: personaId, rol: newRole })
-      
-      // Check if we changed our own role
-      const { data: { user } } = await supabase.auth.getUser()
-      const targetPersona = personas?.find(p => p.persona_id === personaId)
-      if (targetPersona && user?.email === targetPersona.email) {
-        // Sync our own JWT metadata immediately
-        await supabase.auth.updateUser({ data: { role: newRole } })
-        alert('Tu rol fue actualizado. Refresca la página para aplicar los cambios.')
-      } else {
-        alert(`Rol actualizado. El usuario ${targetPersona?.nombre || personaId} deberá cerrar sesión y volver a iniciar para que los cambios surtan efecto.`)
-      }
-    } catch (e: any) {
-      alert('Error: ' + e.message)
-    }
-  }
+  return <AppLayout>
+    <h2 className="mb-6 text-xl font-semibold">Gestión de usuarios</h2>
+    <p className="mb-4 text-sm text-gray-600">AD gestiona las contraseñas. Los cambios de rol se verifican al restaurar la sesión actual.</p>
+    {(people.isError || roles.isError) && <div className="mb-4 rounded border border-red-200 bg-red-50 p-4 text-red-700">{errorMessage(people.error ?? roles.error)}</div>}
+    {update.isError && <div className="mb-4 rounded border border-red-200 bg-red-50 p-4 text-red-700">{errorMessage(update.error)}</div>}
+    {people.isLoading || roles.isLoading ? <p>Cargando usuarios...</p> : <div className="rounded border bg-white p-4">
+      <Table><TableHeader><TableRow><TableHead>Persona</TableHead><TableHead>Correo</TableHead><TableHead>Roles activos</TableHead><TableHead>Estado</TableHead><TableHead>Acciones</TableHead></TableRow></TableHeader>
+        <TableBody>{people.data?.data.map(person => <TableRow key={person.persona_id}>
+          <TableCell>{person.nombre} {person.apellidos}</TableCell><TableCell>{person.correo}</TableCell>
+          <TableCell>{person.roles.length ? person.roles.map(role => role.nombre).join(', ') : 'Sin asignación'}</TableCell>
+          <TableCell><span className={person.activo ? 'text-green-600' : 'text-red-600'}>{person.activo ? 'Activo' : 'Inactivo'}</span></TableCell>
+          <TableCell><Button variant="outline" size="sm" onClick={() => setEditing(person)}>Editar</Button></TableCell>
+        </TableRow>)}</TableBody>
+      </Table>
+    </div>}
+    {editing && <PersonEditor person={editing} roles={roles.data?.data ?? []} saving={update.isPending} onCancel={() => setEditing(null)} onSave={input => update.mutate({ id: editing.persona_id, input })} />}
+  </AppLayout>
+}
 
-  const sendMagicLink = async (email: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
-        }
-      })
-      if (error) throw error
-      alert('Link enviado a ' + email)
-    } catch (e: any) {
-      alert('Error enviando link: ' + e.message)
-    }
-  }
-
-  return (
-    <AppLayout>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">Gestión de Usuarios</h2>
-        <Button onClick={() => alert('Formulario de nuevo usuario pendiente')}>
-          Nuevo Usuario
-        </Button>
-      </div>
-
-      {isLoading ? (
-        <p>Cargando usuarios...</p>
-      ) : error ? (
-        <div className="bg-red-50 border border-red-200 rounded p-4">
-          <p className="text-red-700">Error cargando usuarios: {(error as Error).message}</p>
-          <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>
-            Reintentar
-          </Button>
-        </div>
-      ) : !personas?.length ? (
-        <p className="text-gray-500">No hay usuarios registrados.</p>
-      ) : (
-        <div className="bg-white border rounded p-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {personas.map(p => (
-                <TableRow key={p.persona_id}>
-                  <TableCell>{p.persona_id}</TableCell>
-                  <TableCell>{p.nombre}</TableCell>
-                  <TableCell>{p.email}</TableCell>
-                  <TableCell>
-                    <Select
-                      value={p.rol}
-                      onValueChange={(value) => handleChangeRole(p.persona_id, value)}
-                    >
-                      <SelectTrigger className="w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Catalogador">Catalogador</SelectItem>
-                        <SelectItem value="Revisor">Revisor</SelectItem>
-                        <SelectItem value="Curador">Curador</SelectItem>
-                        <SelectItem value="Administrador">Administrador</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <span className={p.activo ? 'text-green-600' : 'text-red-600'}>
-                      {p.activo ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </TableCell>
-                  <TableCell className="space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => { setEditing(p); setShowForm(true) }}>
-                      Editar
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleToggleActive(p)}>
-                      {p.activo ? 'Desactivar' : 'Activar'}
-                    </Button>
-                    {!p.activo && (
-                      <Button size="sm" onClick={() => sendMagicLink(p.email)}>
-                        Enviar Link
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-  <div className="bg-gray-100 p-6 rounded w-1/3 max-h-[80vh] overflow-y-auto">
-    <h3 className="text-lg font-semibold mb-4">Editar Usuario</h3>
-      <PersonaForm
-        defaultValues={editing}
-        onSubmit={async (v) => {
-          try {
-            // prefer persona_id from form (in case editing state is stale)
-            const personaId = (v?.persona_id || editing?.persona_id || '').toString().trim()
-            console.log('GestionUsuarios: enviando update', { persona_id_from_form: v?.persona_id, persona_id_from_editing: editing?.persona_id, personaId, payload: v })
-
-            if (!personaId) {
-              alert('ID de persona vacío. No se puede actualizar.')
-              return
-            }
-
-            // Pre-check: verify the persona exists (helps diagnose mismatched IDs or RLS)
-            try {
-              // Log current auth user/session to help diagnose RLS issues
-              try {
-                const authUser = await supabase.auth.getUser()
-                const authSession = await supabase.auth.getSession()
-                console.log('supabase auth.getUser()', authUser)
-                console.log('supabase auth.getSession()', authSession)
-              } catch (authErr) {
-                console.warn('Could not read supabase auth state', authErr)
-              }
-              const pre = await supabase.from('persona').select('persona_id, email').eq('persona_id', personaId).maybeSingle()
-              console.log('pre-check persona', pre)
-              if (!pre.data) {
-                alert('No se encontró la persona con persona_id=' + personaId)
-                return
-              }
-            } catch (preErr: any) {
-              console.warn('pre-check failed', preErr)
-            }
-
-            await updateUser.mutateAsync({ persona_id: personaId, ...v })
-            
-            // If we changed our own role, sync JWT metadata
-            if (v.rol && editing?.email) {
-              const { data: { user } } = await supabase.auth.getUser()
-              if (user?.email === editing.email) {
-                await supabase.auth.updateUser({ data: { role: v.rol } })
-                alert('Tu rol fue actualizado en el sistema. Refresca la página para aplicar los cambios.')
-              }
-            }
-            
-            setShowForm(false)
-            setEditing(null)
-          } catch (e: any) {
-            alert('Error: ' + e.message)
-          }
-        }}
-        onCancel={() => { setShowForm(false); setEditing(null) }}
-      />
-  </div>
-</div>
-      )}
-    </AppLayout>
-  )
+function PersonEditor({ person, roles, saving, onCancel, onSave }: { person: ManagedPerson; roles: Array<{ rol_id: string; nombre: string }>; saving: boolean; onCancel: () => void; onSave: (input: { nombre: string; apellidos: string; correo: string; activo: boolean; role_ids: string[] }) => void }) {
+  const [nombre, setNombre] = useState(person.nombre)
+  const [apellidos, setApellidos] = useState(person.apellidos)
+  const [correo, setCorreo] = useState(person.correo)
+  const [activo, setActivo] = useState(person.activo)
+  const [selectedRoles, setSelectedRoles] = useState(person.roles.map(role => role.rol_id))
+  const toggleRole = (id: string) => setSelectedRoles(current => current.includes(id) ? current.filter(roleId => roleId !== id) : [...current, id])
+  return <div className="fixed inset-0 flex items-center justify-center bg-black/40 p-4"><form className="w-full max-w-lg space-y-4 rounded bg-white p-6" onSubmit={event => { event.preventDefault(); onSave({ nombre, apellidos, correo, activo, role_ids: selectedRoles }) }}>
+    <h3 className="text-lg font-semibold">Editar persona</h3><Input value={nombre} onChange={event => setNombre(event.target.value)} placeholder="Nombre" required /><Input value={apellidos} onChange={event => setApellidos(event.target.value)} placeholder="Apellidos" required /><Input type="email" value={correo} onChange={event => setCorreo(event.target.value)} placeholder="Correo" required />
+    <label className="flex gap-2"><input type="checkbox" checked={activo} onChange={event => setActivo(event.target.checked)} /> Activo</label>
+    <fieldset><legend className="mb-2 font-medium">Roles activos</legend>{roles.map(role => <label className="mr-4 inline-flex gap-2" key={role.rol_id}><input type="checkbox" checked={selectedRoles.includes(role.rol_id)} onChange={() => toggleRole(role.rol_id)} />{role.nombre}</label>)}</fieldset>
+    <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button><Button type="submit" disabled={saving}>Guardar</Button></div>
+  </form></div>
 }

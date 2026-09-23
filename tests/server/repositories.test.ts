@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createReadRepository, createRoleRepository } from '../../server/repositories'
+import { createAdminRepository, createReadRepository, createRoleRepository, LastAdministratorError } from '../../server/repositories'
 
 describe('createReadRepository', () => {
   it('uses official collection names and parameterized pagination', async () => {
@@ -132,5 +132,44 @@ describe('createReadRepository', () => {
     expect(query.mock.calls.some(([sql]) => sql.includes('public.estado_conservacion_inicial'))).toBe(true)
     expect(query.mock.calls.some(([sql]) => sql.includes('public.auditoria'))).toBe(false)
     for (const [sql] of query.mock.calls) expect(sql).not.toMatch(/mueble_cod|auditoria_cambios/)
+  })
+})
+
+describe('createAdminRepository', () => {
+  it('rolls back an attempt to remove the last administrator', async () => {
+    const query = vi.fn()
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({}) // advisory lock
+      .mockResolvedValueOnce({ rows: [{ persona_id: '1' }] })
+      .mockResolvedValueOnce({}) // update persona
+      .mockResolvedValueOnce({ rows: [{ count: '0' }] })
+      .mockResolvedValueOnce({}) // ROLLBACK
+    const client = { query, release: vi.fn() }
+    const repository = createAdminRepository({ connect: vi.fn().mockResolvedValue(client) } as never)
+
+    await expect(repository.updatePerson('1', { activo: false })).rejects.toBeInstanceOf(LastAdministratorError)
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('pg_advisory_xact_lock'), [19478231])
+    expect(query).toHaveBeenCalledWith('ROLLBACK')
+    expect(client.release).toHaveBeenCalledOnce()
+  })
+
+  it('replaces active role assignments in one transaction with official lowercase tables', async () => {
+    const query = vi.fn()
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ persona_id: '1' }] })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ rol_id: '2' }] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+      .mockResolvedValueOnce({ rows: [{ persona_id: '1', roles: [{ rol_id: '2', nombre: 'Administrador' }] }] })
+      .mockResolvedValueOnce({})
+    const client = { query, release: vi.fn() }
+    const repository = createAdminRepository({ connect: vi.fn().mockResolvedValue(client) } as never)
+
+    await repository.updatePerson('1', { role_ids: ['2'] })
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE public.rel_persona_rol'), ['1'])
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO public.rel_persona_rol'), [['2'], '1'])
+    expect(query.mock.calls.every(([sql]) => !String(sql).match(/public\."[A-Z_]+"/))).toBe(true)
   })
 })

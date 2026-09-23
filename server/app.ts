@@ -2,13 +2,14 @@ import Fastify, { type FastifyInstance } from 'fastify'
 import cookie from '@fastify/cookie'
 import { ZodError } from 'zod'
 import type { AppConfig } from './config'
-import { AuthService, AuthenticationInfrastructureError, InvalidCredentialsError, MissingApplicationRoleError } from './auth'
-import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput } from './types'
-import { basinQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, normalizedIdSchema, physicalLocationQuerySchema, plateQuerySchema, sampleQuerySchema, wellQuerySchema } from './validation'
+import { AuthService, AuthenticationInfrastructureError, InvalidCredentialsError, MissingApplicationRoleError, requireRole } from './auth'
+import { LastAdministratorError, UnknownRoleError } from './repositories'
+import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput, AdminRepository } from './types'
+import { basinQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, normalizedIdSchema, personIdSchema, personUpdateSchema, physicalLocationQuerySchema, plateQuerySchema, sampleQuerySchema, wellQuerySchema } from './validation'
 
-type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: CollectionRepository }
+type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: CollectionRepository; admin?: AdminRepository }
 
-export async function createApp({ auth, config, databaseHealth, reads }: Dependencies): Promise<FastifyInstance> {
+export async function createApp({ auth, config, databaseHealth, reads, admin }: Dependencies): Promise<FastifyInstance> {
   const app = Fastify({ logger: config.NODE_ENV !== 'test' })
   await app.register(cookie)
   const cookieOptions = {
@@ -24,6 +25,9 @@ export async function createApp({ auth, config, databaseHealth, reads }: Depende
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof AuthenticationInfrastructureError) return reply.code(503).send({ error: 'Authentication service unavailable' })
+    if (error instanceof LastAdministratorError) return reply.code(409).send({ error: 'The last administrator cannot be removed' })
+    if (error instanceof UnknownRoleError) return reply.code(404).send({ error: 'Application role not found' })
+    if ((error as { code?: string }).code === '23505') return reply.code(409).send({ error: 'Person data conflicts with an existing record' })
     if (error instanceof ZodError) return reply.code(400).send({ error: 'Invalid request' })
     return reply.code(500).send({ error: 'Internal server error' })
   })
@@ -70,6 +74,32 @@ export async function createApp({ auth, config, databaseHealth, reads }: Depende
       return null
     }
     return user
+  }
+  const requireAdministrator = async (request: { cookies: Record<string, string | undefined> }, reply: Parameters<typeof requireSession>[1]) => {
+    const user = await requireSession(request, reply)
+    if (!user) return null
+    if (!requireRole('Administrador')(user)) {
+      reply.code(403).send({ error: 'Administrator role required' })
+      return null
+    }
+    return user
+  }
+  if (admin) {
+    app.get('/api/admin/personas', async (request, reply) => {
+      if (!(await requireAdministrator(request, reply))) return
+      return { data: await admin.listPeople() }
+    })
+    app.get('/api/admin/roles', async (request, reply) => {
+      if (!(await requireAdministrator(request, reply))) return
+      return { data: await admin.listRoles() }
+    })
+    app.put<{ Params: { id: string } }>('/api/admin/personas/:id', async (request, reply) => {
+      if (!(await requireAdministrator(request, reply))) return
+      const id = personIdSchema.parse(request.params.id)
+      const input = personUpdateSchema.parse(request.body)
+      const person = await admin.updatePerson(id, input)
+      return person ? person : reply.code(404).send({ error: 'Person not found' })
+    })
   }
   if (reads) {
     app.get<{ Querystring: { page?: string; pageSize?: string; search?: string } }>('/api/collections', async (request, reply) => {
