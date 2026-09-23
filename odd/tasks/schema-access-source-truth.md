@@ -107,5 +107,8 @@ alignment, frontend change, or module-file change was performed.
 
 - Branch: `feat/schema-access-source-truth`
 - Work-unit commit: `1aa0dce feat(db): align core schema with Access module`.
-- Current state: core/physical mapping and schema work unit implemented; module source files unchanged.
-- Next step: run the full PostgreSQL transaction validation with an authorized local database role, then continue with the next authorized work unit.
+- Remote migrations applied: `align_access_core_physical_entities`, `align_access_cataloging_subsurface_entities`, `add_role_based_rls_for_access_model`, and `enable_rls_on_access_catalogs`.
+- Remote verification: core Access entities, sample/subsurface entities, keys, FKs, uniqueness checks, and tray position validation are present; all public tables currently have RLS enabled.
+- Current state: local core/physical mapping and remote cataloging/subsurface work implemented; module source files unchanged.
+- Open security work: 35 catalog tables have RLS enabled without policies (closed by default); legacy policies still reference `auth.users.user_metadata`, and three legacy SECURITY DEFINER functions remain advisor findings.
+- Next step: complete catalog policy coverage and replace legacy authorization references with `auth.uid()`/application-role checks before functional API testing.
