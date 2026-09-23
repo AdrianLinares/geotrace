@@ -15,10 +15,10 @@ export default function InventarioColeccion() {
   // CSV export
   const exportCSV = () => {
     if (!placas?.data) return
-    const headers = ['placa_id', 'ubicacion_id', 'estado_catalogacion', 'clase_placa', 'diseno_placa']
+    const headers = ['placa_id', 'codigo_ubicacion', 'estado_catalogacion', 'clase_placa', 'diseno_placa']
     const rows = placas.data.map(p => [
       p.placa_id,
-      p.ubicacion_id,
+       p.codigo_ubicacion,
       p.estado_catalogacion,
       p.clase_placa,
       p.diseno_placa
@@ -56,7 +56,7 @@ export default function InventarioColeccion() {
           <TableHeader>
             <TableRow>
               <TableHead>Placa ID</TableHead>
-              <TableHead>Ubicación</TableHead>
+               <TableHead>Código ubicación</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Clase</TableHead>
               <TableHead>Diseño</TableHead>
@@ -66,7 +66,7 @@ export default function InventarioColeccion() {
             {placas?.data?.map(p => (
               <TableRow key={p.placa_id}>
                 <TableCell>{p.placa_id}</TableCell>
-                <TableCell>{p.ubicacion_id}</TableCell>
+                <TableCell>{p.codigo_ubicacion}</TableCell>
                 <TableCell>{p.estado_catalogacion}</TableCell>
                 <TableCell>{p.clase_placa}</TableCell>
                 <TableCell>{p.diseno_placa}</TableCell>

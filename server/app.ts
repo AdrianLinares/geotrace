@@ -4,7 +4,7 @@ import { ZodError } from 'zod'
 import type { AppConfig } from './config'
 import { AuthService, AuthenticationInfrastructureError, InvalidCredentialsError, MissingApplicationRoleError } from './auth'
 import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput } from './types'
-import { basinQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, wellQuerySchema } from './validation'
+import { basinQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, normalizedIdSchema, plateQuerySchema, sampleQuerySchema, wellQuerySchema } from './validation'
 
 type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: CollectionRepository }
 
@@ -119,6 +119,29 @@ export async function createApp({ auth, config, databaseHealth, reads }: Depende
       basinQuerySchema.parse(request.query)
       const result = { data: await reads.listBasins() }
       return result
+    })
+    app.get<{ Querystring: { page?: string; pageSize?: string; search?: string; collectionId?: string; states?: string } }>('/api/plates', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      const query = plateQuerySchema.parse(request.query)
+      return reads.listPlates(query.page, query.pageSize, { collectionId: query.collectionId, states: query.states, search: query.search })
+    })
+    app.get<{ Params: { id: string } }>('/api/plates/:id', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      const id = normalizedIdSchema.parse(request.params.id)
+      const result = await reads.getPlate(id)
+      return result ?? reply.code(404).send({ error: 'Plate not found' })
+    })
+    app.get<{ Querystring: { page?: string; pageSize?: string; placaId?: string } }>('/api/samples', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      const query = sampleQuerySchema.parse(request.query)
+      if (query.placaId) return reply.code(400).send({ error: 'The normalized schema has no MUESTRA-to-PLACA relationship' })
+      return reads.listSamples(query.page, query.pageSize)
+    })
+    app.get<{ Params: { id: string } }>('/api/samples/:id', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      const id = normalizedIdSchema.parse(request.params.id)
+      const result = await reads.getSample(id)
+      return result ?? reply.code(404).send({ error: 'Sample not found' })
     })
   }
   return app

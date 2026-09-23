@@ -22,6 +22,7 @@ export const collectionCreateBodySchema = z.object({
 }).strict()
 
 export const collectionIdSchema = z.string().trim().min(1)
+export const normalizedIdSchema = z.string().trim().regex(/^[1-9]\d*$/, 'Invalid identifier')
 
 const paginationSchema = z.object({
   page: z.coerce.number().int().min(0).default(0),
@@ -32,6 +33,11 @@ const paginationSchema = z.object({
 export const collectionQuerySchema = paginationSchema
 export const wellQuerySchema = paginationSchema
 export const basinQuerySchema = z.object({}).strict()
+export const plateQuerySchema = paginationSchema.extend({
+  collectionId: normalizedIdSchema.optional(),
+  states: z.preprocess(value => typeof value === 'string' ? value.split(',').filter(Boolean) : value, z.array(z.string().trim().min(1)).max(20).optional()),
+}).strict()
+export const sampleQuerySchema = paginationSchema.extend({ placaId: normalizedIdSchema.optional() }).strict()
 
 export function completeCollectionInput(input: z.infer<typeof collectionBodySchema>) {
   return {

@@ -78,6 +78,7 @@ Repository-local source, tests, SQL migration files, deployment configuration, a
 - Verification after ODD-004: `pnpm test` passes 29 tests; `pnpm run build` passes; `pnpm run typecheck` remains blocked by the same pre-existing dashboard/reporting errors.
 - Data-model decision confirmed: use the current normalized `sql/schema.sql` as the source of truth; adapt API DTOs and frontend mappings rather than adding legacy tables.
 - ODD-005 progress: normalized, authenticated collection and well reads; basin reference reads; collection CRUD; explicit DTO mapping; paginated totals; and runtime request validation. Remaining Supabase consumers include plates, samples, locations, dashboard, catalogs beyond basins, users, import, audit, and compound forms.
+- ODD-005 progress: normalized authenticated plate and sample reads were added with schema-confirmed DTOs and explicit handling for the missing normalized sample-to-plate relationship. Legacy mutations remain isolated until transactional write endpoints are designed.
 - Engram mirror: pending because Engram tools were unavailable in this session.
 
 ## Next step

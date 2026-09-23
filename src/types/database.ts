@@ -53,6 +53,12 @@ export type UbicacionFisica = {
 
 export type Placa = {
   placa_id: string
+  codigo_ubicacion?: string | null
+  codigo_placa?: string | null
+  clase_placa_id?: string | null
+  diseno_placa_id?: string | null
+  configuracion_cavidades_id?: string | null
+  estado_catalogacion_id?: string | null
   ubicacion_id?: string | null
   coleccion_id?: string | null
   clase_placa?: string | null
@@ -71,6 +77,15 @@ export type Placa = {
 
 export type Muestra = {
   muestra_id: string
+  nombre_muestra_original?: string | null
+  codigo_muestra_sistema?: string | null
+  origen_muestra_id?: string | null
+  metodo_adquisicion_id?: string | null
+  estado_catalogacion_id?: string | null
+  tipo_muestra_subsuelo_id?: string | null
+  tipo_intervalo_muestra_id?: string | null
+  unidad_medida_id?: string | null
+  observaciones?: string | null
   placa_id?: string | null
   procedencia_muestra?: 'Superficie' | 'Pozo' | null
   nombre_pozo?: string | null

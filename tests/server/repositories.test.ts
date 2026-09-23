@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createReadRepository } from '../../server/repositories'
+import { createReadRepository, createRoleRepository } from '../../server/repositories'
 
 describe('createReadRepository', () => {
   it('uses official collection names and parameterized pagination', async () => {
@@ -9,7 +9,7 @@ describe('createReadRepository', () => {
     const repository = createReadRepository({ query } as never)
     const result = await repository.listCollections(1, 20, 'Geo')
     expect(result).toEqual({ data: [{ coleccion_id: '7' }], total: 3 })
-    expect(query).toHaveBeenCalledWith(expect.stringContaining('public."COLECCION"'), ['Geo', 20, 20])
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('public.coleccion'), ['Geo', 20, 20])
     expect(query).toHaveBeenCalledWith(expect.stringContaining('count(*)'), ['Geo'])
   })
 
@@ -46,5 +46,57 @@ describe('createReadRepository', () => {
     )
     expect(query.mock.calls[0][0]).not.toContain('codigo_coleccion =')
     expect(query.mock.calls[0][0]).not.toContain('institucion =')
+  })
+
+  it('uses normalized plate columns, joins, and parameterized filters', async () => {
+    const query = vi.fn()
+      .mockResolvedValueOnce({ rows: [{ placa_id: '7' }] })
+      .mockResolvedValueOnce({ rows: [{ total: '1' }] })
+    const repository = createReadRepository({ query } as never)
+    await expect(repository.listPlates(0, 20, { collectionId: '2', states: ['Validado'], search: 'ABC' })).resolves.toEqual({ data: [{ placa_id: '7' }], total: 1 })
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('public.placa'), ['ABC', '2', ['Validado'], 20, 0])
+    expect(query.mock.calls[0][0]).toContain('cat_estado_catalogacion')
+    expect(query.mock.calls[0][0]).not.toContain('ubicacion_id')
+  })
+
+  it('reads samples from MUESTRA and its normalized subsurface relation', async () => {
+    const query = vi.fn()
+      .mockResolvedValueOnce({ rows: [{ muestra_id: '9' }] })
+      .mockResolvedValueOnce({ rows: [{ total: '1' }] })
+    const repository = createReadRepository({ query } as never)
+    await expect(repository.listSamples(1, 10)).resolves.toEqual({ data: [{ muestra_id: '9' }], total: 1 })
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('public.muestra_subsuelo'), [10, 10])
+  })
+
+  it('never emits quoted identifiers for tables created unquoted in schema.sql', async () => {
+    const query = vi.fn()
+      .mockResolvedValue({ rows: [] })
+    const repository = createReadRepository({ query } as never)
+    const roles = createRoleRepository({ query } as never)
+
+    await roles.findActiveUserByUsername('user@example.test')
+    await repository.listCollections(0, 20)
+    await repository.listWells(0, 20)
+    await repository.listBasins()
+    await repository.listPlates(0, 20, {})
+    await repository.listSamples(0, 20)
+    await repository.getCollection('1')
+    await repository.getWell('1')
+    await repository.getPlate('1')
+    await repository.getSample('1')
+    await repository.createCollection({
+      codigo_coleccion: null,
+      nombre_coleccion: 'Test',
+      institucion: null,
+      responsable_coleccion: null,
+      descripcion: null,
+      estado_coleccion: null,
+    })
+    await repository.updateCollection('1', { nombre_coleccion: 'Updated' })
+    await repository.deleteCollection('1')
+
+    for (const [sql] of query.mock.calls) {
+      expect(sql).not.toMatch(/public\."[A-Z_]+"/)
+    }
   })
 })

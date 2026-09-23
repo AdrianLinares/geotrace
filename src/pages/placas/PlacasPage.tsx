@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import AppLayout from '../../components/layout/AppLayout'
 import { usePlacas, useCreatePlaca, useUpdatePlaca } from '../../hooks/usePlacas'
 import { useColecciones } from '../../hooks/useColecciones'
-import { useUbicaciones } from '../../hooks/useUbicaciones'
 import PlacaModal from './PlacaModal'
 import MuestraModal from '@/pages/muestras/MuestraModal'
 import { Placa } from '@/types/database'
@@ -18,7 +17,6 @@ export default function PlacasPage() {
   const [search, setSearch] = useState('')
   const [selectedColeccion, setSelectedColeccion] = useState<string>()
   const [selectedEstados, setSelectedEstados] = useState<string[]>([])
-  const [selectedMueble, setSelectedMueble] = useState<string>()
   const [modalOpen, setModalOpen] = useState(false)
   const [placaToEdit, setPlacaToEdit] = useState<Placa | null>(null)
   const [estadoModalOpen, setEstadoModalOpen] = useState(false)
@@ -30,15 +28,9 @@ export default function PlacasPage() {
   const { data, isLoading } = usePlacas(page, {
     coleccion_id: selectedColeccion,
     estado_catalogacion: selectedEstados,
-    mueble_cod: selectedMueble,
     search,
   })
   const { data: colecciones } = useColecciones(0)
-  const { data: ubicaciones } = useUbicaciones(0)
-
-  // Get unique muebles from ubicaciones (flatMap: single pass)
-  const muebles = [...new Set(ubicaciones?.data?.flatMap(u => u.mueble_cod ? [u.mueble_cod] : []) ?? [])] as string[]
-
   const estados = ['En proceso', 'Incompleto', 'En revisión', 'Validado', 'Cerrado']
 
   return (
@@ -85,16 +77,7 @@ export default function PlacasPage() {
           ))}
         </div>
 
-        <select
-          value={selectedMueble || ''}
-          onChange={e => setSelectedMueble(e.target.value || undefined)}
-          className="border p-2 rounded"
-        >
-          <option value="">Todos los muebles</option>
-          {muebles.map(m => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
+        <p className="text-sm text-muted-foreground">El filtro de mueble no está disponible: el esquema normalizado no relaciona PLACA con MUEBLE.</p>
       </div>
 
       {/* Table */}
@@ -105,11 +88,10 @@ export default function PlacasPage() {
               <TableRow>
                 <TableHead>ID</TableHead>
                 <TableHead>Colección</TableHead>
-                <TableHead>Ubicación</TableHead>
+                <TableHead>Código ubicación</TableHead>
                 <TableHead>Clase</TableHead>
                 <TableHead>Diseño</TableHead>
-                <TableHead>Cavidades</TableHead>
-                <TableHead>Estado Placa</TableHead>
+                <TableHead>Configuración cavidades</TableHead>
                 <TableHead>Estado Cat.</TableHead>
                 <TableHead>Muestras</TableHead>
                 <TableHead>Acciones</TableHead>
@@ -120,11 +102,10 @@ export default function PlacasPage() {
                 <TableRow key={p.placa_id}>
                   <TableCell>{p.placa_id}</TableCell>
                   <TableCell>{p.coleccion_id}</TableCell>
-                  <TableCell>{p.ubicacion_id}</TableCell>
+                  <TableCell>{p.codigo_ubicacion}</TableCell>
                   <TableCell>{p.clase_placa}</TableCell>
                   <TableCell>{p.diseno_placa}</TableCell>
-                  <TableCell>{p.total_cavidades}</TableCell>
-                  <TableCell>{p.estado_placa}</TableCell>
+                  <TableCell>{p.configuracion_cavidades_id ?? '—'}</TableCell>
                   <TableCell>
                     <Badge variant={
                       p.estado_catalogacion === 'Validado' ? 'default' :

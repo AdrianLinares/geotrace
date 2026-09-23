@@ -20,6 +20,10 @@ const reads: ReadRepository = {
   createCollection: vi.fn(),
   updateCollection: vi.fn(),
   deleteCollection: vi.fn(),
+  listPlates: vi.fn().mockResolvedValue({ data: [], total: 0 }),
+  getPlate: vi.fn().mockResolvedValue(null),
+  listSamples: vi.fn().mockResolvedValue({ data: [], total: 0 }),
+  getSample: vi.fn().mockResolvedValue(null),
 }
 
 afterEach(() => vi.clearAllMocks())
@@ -46,6 +50,27 @@ describe('authenticated read routes', () => {
     const response = await app.inject({ method: 'GET', url: '/api/reference/basins' })
     expect(response.statusCode).toBe(200)
     expect(reads.listBasins).toHaveBeenCalledOnce()
+    await app.close()
+  })
+
+  it('protects and validates normalized plate and sample reads', async () => {
+    const app = await createApp({ auth: { restore: vi.fn().mockResolvedValue(user) } as never, config, reads })
+    vi.mocked(reads.getPlate).mockResolvedValue({ placa_id: '4' } as never)
+    vi.mocked(reads.getSample).mockResolvedValue({ muestra_id: '8' } as never)
+    const plates = await app.inject({ method: 'GET', url: '/api/plates?page=1&collectionId=4&states=Validado,En%20revision&search=ABC' })
+    expect(plates.statusCode).toBe(200)
+    expect(reads.listPlates).toHaveBeenCalledWith(1, 20, { collectionId: '4', states: ['Validado', 'En revision'], search: 'ABC' })
+
+    expect((await app.inject({ method: 'GET', url: '/api/plates/4' })).statusCode).toBe(200)
+    expect((await app.inject({ method: 'GET', url: '/api/samples/8' })).statusCode).toBe(200)
+    expect(reads.getPlate).toHaveBeenCalledWith('4')
+    expect(reads.getSample).toHaveBeenCalledWith('8')
+
+    const invalid = await app.inject({ method: 'GET', url: '/api/plates/0' })
+    const unsupported = await app.inject({ method: 'GET', url: '/api/samples?placaId=4' })
+    expect(invalid.statusCode).toBe(400)
+    expect(unsupported.statusCode).toBe(400)
+    expect(reads.listSamples).not.toHaveBeenCalled()
     await app.close()
   })
 

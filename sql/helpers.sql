@@ -14,9 +14,9 @@ SET search_path = public
 AS $$
     SELECT EXISTS (
         SELECT 1
-        FROM public.REL_PERSONA_ROL rpr
-        JOIN public.PERSONA p ON p.persona_id = rpr.persona_id
-        JOIN public.CAT_ROL cr ON cr.rol_id = rpr.rol_id
+        FROM public.rel_persona_rol rpr
+        JOIN public.persona p ON p.persona_id = rpr.persona_id
+        JOIN public.cat_rol cr ON cr.rol_id = rpr.rol_id
         WHERE p.auth_user_id = auth.uid()
           AND cr.nombre = role_name
           AND rpr.activo = true
