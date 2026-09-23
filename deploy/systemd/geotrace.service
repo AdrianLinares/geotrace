@@ -1,0 +1,23 @@
+[Unit]
+Description=GeoTrace Node application server
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=geotrace
+Group=geotrace
+WorkingDirectory=/opt/geotrace/current
+EnvironmentFile=/etc/geotrace/geotrace.env
+Environment=NODE_ENV=production
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/pnpm run start:server:production
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
