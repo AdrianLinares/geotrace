@@ -8,51 +8,66 @@ export default function AuthCallback() {
 
   useEffect(() => {
     let cancelled = false
-    const timeouts: ReturnType<typeof setTimeout>[] = []
-
-    const schedule = (fn: () => void, ms: number) => {
-      const id = setTimeout(() => { if (!cancelled) fn() }, ms)
-      timeouts.push(id)
-    }
 
     const handleCallback = async () => {
       try {
-        // Esperar un momento para que Supabase procese la URL
-        await new Promise(resolve => setTimeout(resolve, 500))
+        const queryParams = new URLSearchParams(window.location.search)
+        const hashParams = new URLSearchParams(window.location.hash.substring(1))
+        const oauthError = queryParams.get('error') || hashParams.get('error')
+        const oauthErrorDescription =
+          queryParams.get('error_description') || hashParams.get('error_description')
 
-        if (cancelled) return
-
-        // Forzar a Supabase a procesar la URL actual (importante para magic links)
-        const { data: urlData, error: urlError } = await supabase.auth.getSession()
-
-        if (cancelled) return
-
-        if (urlError) {
-          setError('Error al procesar la autenticación: ' + urlError.message)
-          schedule(() => navigate('/login', { replace: true }), 5000)
+        if (oauthError) {
+          setError(
+            `Error de autenticación (${oauthError}): ${oauthErrorDescription || 'solicitud rechazada'}`
+          )
           return
         }
 
-        if (urlData.session) {
-          navigate('/', { replace: true })
-        } else {
-          // Verificar si hay parámetros en la URL que Supabase debió procesar
-          const hashParams = new URLSearchParams(window.location.hash.substring(1))
-          const queryParams = new URLSearchParams(window.location.search)
-          const hasAuthParams = hashParams.has('access_token') || hashParams.has('token_hash') || queryParams.has('code') || queryParams.has('token_hash')
-
-          if (hasAuthParams) {
-            // Hay parámetros pero no se procesaron, reintentar
-            schedule(() => { handleCallback() }, 1500)
+        // PKCE callbacks must exchange the code before reading the session.
+        const code = queryParams.get('code')
+        if (code) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+          if (exchangeError) {
+            setError('Error al procesar la autenticación: ' + exchangeError.message)
             return
           }
-
-          setError('No se pudo establecer la sesión. El enlace puede haber expirado o ya fue usado.')
-          schedule(() => navigate('/login', { replace: true }), 5000)
+        } else {
+          // Custom email templates can deliver a token hash instead of a PKCE code.
+          const tokenHash = queryParams.get('token_hash') || hashParams.get('token_hash')
+          if (tokenHash) {
+            const { error: verifyError } = await supabase.auth.verifyOtp({
+              token_hash: tokenHash,
+              type: 'email'
+            })
+            if (verifyError) {
+              setError('Error al verificar el enlace: ' + verifyError.message)
+              return
+            }
+          }
         }
-      } catch (err: any) {
-        setError('Error inesperado: ' + err.message)
-        schedule(() => navigate('/login', { replace: true }), 5000)
+
+        if (cancelled) return
+
+        // For implicit-flow magic links, the client processes the hash before this
+        // component runs. Reading the session preserves compatibility with that flow.
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+
+        if (cancelled) return
+
+        if (sessionError) {
+          setError('Error al recuperar la sesión: ' + sessionError.message)
+          return
+        }
+
+        if (sessionData.session) {
+          navigate('/', { replace: true })
+        } else {
+          setError('No se pudo establecer la sesión. El enlace puede haber expirado o ya fue usado.')
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error desconocido'
+        setError('Error inesperado: ' + message)
       }
     }
 
@@ -60,7 +75,6 @@ export default function AuthCallback() {
 
     return () => {
       cancelled = true
-      timeouts.forEach(clearTimeout)
     }
   }, [navigate])
 

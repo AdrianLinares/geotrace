@@ -133,38 +133,29 @@ export default function AuthProvider({ children }: Props) {
       // One-time link: associate Supabase auth user with persona record
       if (p && !p.auth_user_id && userId) {
         try {
-          await supabase
+          const { error: linkError } = await supabase
             .from('PERSONA')
             .update({ auth_user_id: userId })
             .eq('persona_id', p.persona_id)
+
+          if (linkError) {
+            console.error('AuthProvider: Error vinculando auth_user_id', {
+              message: linkError.message,
+              code: linkError.code,
+              details: linkError.details,
+              hint: linkError.hint
+            })
+          }
         } catch (e) {
-          console.warn('AuthProvider: No se pudo vincular auth_user_id', e)
+          console.error('AuthProvider: Error inesperado vinculando auth_user_id', e)
         }
       }
-
-      // Sync role to JWT user_metadata so RLS policies can read it
-      await syncRoleToMetadata(rolAsignado)
 
       // Mapeo mínimo: persona_id, nombre y rol (usado por roleGuards)
       setUser({ persona_id: p.persona_id, nombre: p.nombre, rol: rolAsignado })
     } catch (e) {
       console.error('AuthProvider: Error inesperado', e)
       setUser(null)
-    }
-  }
-
-  async function syncRoleToMetadata(rol: string) {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        data: { role: rol }
-      })
-      if (error) {
-        console.warn('AuthProvider: No se pudo sincronizar rol al JWT', error.message)
-      } else {
-        console.log('AuthProvider: Rol sincronizado al JWT user_metadata')
-      }
-    } catch (e) {
-      console.warn('AuthProvider: Error sincronizando rol', e)
     }
   }
 
