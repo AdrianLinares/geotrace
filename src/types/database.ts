@@ -2,13 +2,12 @@
 
 export type Coleccion = {
   coleccion_id: string
-  nombre_coleccion: string
-  institucion?: string | null
-  responsable?: string | null
-  descripcion?: string | null
-  estado_coleccion: 'Activa' | 'Cerrada'
-  created_at?: string | null
-  updated_at?: string | null
+  codigo_coleccion: string | null
+  nombre_coleccion: string | null
+  institucion: string | null
+  responsable_coleccion: string | null
+  descripcion: string | null
+  estado_coleccion: string | null
 }
 
 export type Persona = {
@@ -107,48 +106,14 @@ export type AuditoriaCambio = {
 
 export type Pozo = {
   pozo_id: string
-  well_name: string
-  uwi?: string | null
-  well_alias?: string | null
+  codigo_pozo?: string | null
+  nombre_pozo?: string | null
   cuenca_id?: string | null
-  pais?: string | null
-  departamento?: string | null
-  municipio?: string | null
-  campo_id?: string | null
-  contrato_id?: string | null
-  longitud?: number | null
-  latitud?: number | null
-  coord_x?: number | null
-  coord_y?: number | null
-  coord_x_origen?: number | null
-  coord_y_origen?: number | null
-  coord_x_fondo?: number | null
-  coord_y_fondo?: number | null
-  datum?: string | null
-  calidad_coordenada?: string | null
-  tvd?: number | null
-  kb_elevacion?: number | null
-  rotary_elevacion?: number | null
-  profundidad_perforacion?: number | null
-  elevacion_terreno?: number | null
-  clasificacion?: string | null
-  estado_pozo?: string | null
-  tipo_pozo?: string | null
-  clas_final?: string | null
-  fecha_spud?: string | null
-  fecha_completamiento?: string | null
-  tipo_documento?: string | null
-  documento_referencia?: string | null
-  carga_sgc?: boolean | null
-  visible?: boolean | null
-  entitlement?: string | null
-  nota_sgc?: string | null
-  comentario?: string | null
-  formacion?: string | null
-  formacion_alt?: string | null
-  estructura?: string | null
-  created_at?: string | null
-  updated_at?: string | null
+  localizacion_geografica_id?: string | null
+  localizacion_espacial_id?: string | null
+  estado_catalogacion_id?: string | null
+  estado_revision_id?: string | null
+  observaciones?: string | null
 }
 
 export type PozoEmpresa = {

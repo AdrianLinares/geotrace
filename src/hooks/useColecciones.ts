@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import supabase from '../lib/supabase'
+import { apiRequest } from '../lib/api'
 import { Coleccion } from '../types/database'
 
 // Paginación simple: número de registros por página (ajustable)
@@ -19,15 +19,7 @@ export function useColecciones(page = 0, search?: string) {
   return useQuery({
     queryKey: ['colecciones', page, search],
     queryFn: async () => {
-      const from = page * PAGE_SIZE
-      const to = from + PAGE_SIZE - 1
-
-      let query = supabase.from('coleccion').select('*', { count: 'exact' }).range(from, to)
-      if (search) query = query.ilike('nombre_coleccion', `%${search}%`)
-
-      const { data, error, count } = await query
-      if (error) throw error
-      return { data: (data as Coleccion[]) ?? [], total: count }
+      return apiRequest<{ data: Coleccion[]; total: number }>(`/api/collections?page=${page}&pageSize=${PAGE_SIZE}${search ? `&search=${encodeURIComponent(search)}` : ''}`)
     }
   })
 }
@@ -43,9 +35,7 @@ export function useColeccion(id?: string) {
     enabled: !!id,
     queryFn: async () => {
       if (!id) return null
-      const { data, error } = await supabase.from('coleccion').select('*').eq('coleccion_id', id).single()
-      if (error) throw error
-      return data as Coleccion
+      return apiRequest<Coleccion>(`/api/collections/${encodeURIComponent(id)}`)
     }
   })
 }
@@ -59,9 +49,7 @@ export function useCreateColeccion() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (payload: Partial<Coleccion>) => {
-      const { data, error } = await supabase.from('coleccion').insert(payload).select().single()
-      if (error) throw error
-      return data as Coleccion
+      return apiRequest<Coleccion>('/api/collections', { method: 'POST', body: JSON.stringify(payload) })
     },
     onSuccess() { qc.invalidateQueries({ queryKey: ['colecciones'] }) }
   })
@@ -72,9 +60,7 @@ export function useUpdateColeccion() {
   return useMutation({
     mutationFn: async (payload: Partial<Coleccion> & { coleccion_id: string }) => {
       const { coleccion_id, ...rest } = payload
-      const { data, error } = await supabase.from('coleccion').update(rest).eq('coleccion_id', coleccion_id).select().single()
-      if (error) throw error
-      return data as Coleccion
+      return apiRequest<Coleccion>(`/api/collections/${encodeURIComponent(coleccion_id)}`, { method: 'PUT', body: JSON.stringify(rest) })
     },
     onSuccess() { qc.invalidateQueries({ queryKey: ['colecciones'] }) }
   })
@@ -84,8 +70,7 @@ export function useDeleteColeccion() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (coleccion_id: string) => {
-      const { error } = await supabase.from('coleccion').delete().eq('coleccion_id', coleccion_id)
-      if (error) throw error
+      await apiRequest(`/api/collections/${encodeURIComponent(coleccion_id)}`, { method: 'DELETE' })
     },
     onSuccess() { qc.invalidateQueries({ queryKey: ['colecciones'] }) }
   })

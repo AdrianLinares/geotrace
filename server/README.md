@@ -1,6 +1,6 @@
 # Local authentication server
 
-This work unit adds the server-side authentication boundary only. Existing frontend Supabase data access is intentionally unchanged.
+The server owns the authenticated read boundary for the resources already present in `sql/schema.sql`. Legacy writes and legacy-only catalog screens remain on Supabase until their schema mapping is specified.
 
 ## Configuration
 
@@ -29,8 +29,10 @@ psql "$DATABASE_URL" -f sql/migrations/001_app_auth_sessions.sql
 pnpm run dev:server
 ```
 
-Endpoints are `GET /health`, `POST /auth/login` (`{ "username", "password" }`), `GET /auth/me`, and `POST /auth/logout`.
+Endpoints are `GET /health`, `POST /auth/login` (`{ "username", "password" }`), `GET /auth/me`, `POST /auth/logout`, and authenticated reads: `GET /api/collections`, `GET /api/collections/:id`, `GET /api/wells`, `GET /api/wells/:id`, and `GET /api/reference/basins`. Collection and well lists accept `page`, `pageSize`, and `search`, and return `{ data, total }`.
 
 Authentication first binds the supplied AD user, then requires an active `PERSONA` row and at least one active, currently valid `REL_PERSONA_ROL` assignment. No default role is granted. Session cookies contain an opaque random token; PostgreSQL stores only its hash.
 
 Each login creates and unbinds its own LDAP client. `CAT_ROL` in the current schema has no active/inactive column, so validation can enforce `PERSONA.activo`, `REL_PERSONA_ROL.activo`, and assignment dates, but cannot independently disable a role catalog row.
+
+All operational reads currently allow any authenticated application user. Administrative reads (people, roles, permissions, and audit data) are not exposed by this work unit and must receive explicit role authorization before being added. `UBICACION_FISICA` is intentionally blocked: the official schema stores normalized tray/cabinet relations, while the current UI requires legacy `mueble_cod`, `seccion`, `zona`, `no_bandeja`, and `ocupada` columns; no compatibility DTO is invented here. `DIC_CAMPO`, `DIC_CONTRATO`, `EMPRESA`, and the old catalog tables have no confirmed equivalents in the official schema, so those legacy hooks remain isolated and are not part of this migration.

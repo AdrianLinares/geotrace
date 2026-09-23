@@ -11,7 +11,7 @@ const TABLE_CONFIG = {
   coleccion: {
     label: 'Colecciones',
     columns: ['coleccion_id', 'nombre_coleccion', 'institucion', 'responsable', 'descripcion', 'estado_coleccion'],
-    sample: { coleccion_id: 'COL-005', nombre_coleccion: 'Nueva Colección', institucion: 'SGC', responsable: 'Nombre', descripcion: '', estado_coleccion: 'Activa' } as Coleccion,
+    sample: { coleccion_id: 'COL-005', nombre_coleccion: 'Nueva Colección', institucion: 'SGC', responsable_coleccion: 'Nombre', descripcion: '', estado_coleccion: 'Activa' } as Coleccion,
   },
   persona: {
     label: 'Personas',

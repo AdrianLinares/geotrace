@@ -8,11 +8,12 @@ import { z } from 'zod'
  */
 export const coleccionSchema = z.object({
   coleccion_id: z.string().optional(),
+  codigo_coleccion: z.string().nullable().optional(),
   nombre_coleccion: z.string().min(3, 'Nombre demasiado corto'),
   institucion: z.string().nullable().optional(),
-  responsable: z.string().nullable().optional(),
+  responsable_coleccion: z.string().nullable().optional(),
   descripcion: z.string().nullable().optional(),
-  estado_coleccion: z.enum(['Activa', 'Cerrada']).default('Activa')
+  estado_coleccion: z.string().nullable().default('Activa')
 })
 
 export type ColeccionForm = z.infer<typeof coleccionSchema>

@@ -26,6 +26,11 @@ export default function ColeccionForm({ defaultValues, onSubmit, onCancel }: Pro
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div>
+        <label className="block text-sm">Código</label>
+        <Input {...register('codigo_coleccion')} />
+      </div>
+
+      <div>
         <label className="block text-sm">Nombre de colección</label>
         <Input {...register('nombre_coleccion')} />
         {errors.nombre_coleccion && <p className="text-sm text-red-500">{errors.nombre_coleccion.message}</p>}
@@ -38,12 +43,17 @@ export default function ColeccionForm({ defaultValues, onSubmit, onCancel }: Pro
 
       <div>
         <label className="block text-sm">Responsable</label>
-        <Input {...register('responsable')} />
+        <Input {...register('responsable_coleccion')} />
       </div>
 
       <div>
         <label className="block text-sm">Descripción</label>
         <textarea {...register('descripcion')} className="w-full border p-2 rounded" />
+      </div>
+
+      <div>
+        <label className="block text-sm">Estado</label>
+        <Input {...register('estado_coleccion')} />
       </div>
 
       <div className="flex gap-2 justify-end">

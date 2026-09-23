@@ -1,12 +1,14 @@
 import Fastify, { type FastifyInstance } from 'fastify'
 import cookie from '@fastify/cookie'
+import { ZodError } from 'zod'
 import type { AppConfig } from './config'
 import { AuthService, AuthenticationInfrastructureError, InvalidCredentialsError, MissingApplicationRoleError } from './auth'
-import type { AuthenticatedUser } from './types'
+import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput } from './types'
+import { basinQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, wellQuerySchema } from './validation'
 
-type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void> }
+type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: CollectionRepository }
 
-export async function createApp({ auth, config, databaseHealth }: Dependencies): Promise<FastifyInstance> {
+export async function createApp({ auth, config, databaseHealth, reads }: Dependencies): Promise<FastifyInstance> {
   const app = Fastify({ logger: config.NODE_ENV !== 'test' })
   await app.register(cookie)
   const cookieOptions = {
@@ -22,6 +24,7 @@ export async function createApp({ auth, config, databaseHealth }: Dependencies):
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof AuthenticationInfrastructureError) return reply.code(503).send({ error: 'Authentication service unavailable' })
+    if (error instanceof ZodError) return reply.code(400).send({ error: 'Invalid request' })
     return reply.code(500).send({ error: 'Internal server error' })
   })
 
@@ -59,6 +62,65 @@ export async function createApp({ auth, config, databaseHealth }: Dependencies):
     reply.clearCookie(config.SESSION_COOKIE_NAME, cookieOptions)
     return { ok: true }
   })
+  const requireSession = async (request: { cookies: Record<string, string | undefined> }, reply: { code: (status: number) => { send: (body: unknown) => unknown }; clearCookie: (name: string, options: typeof cookieOptions) => unknown }) => {
+    const user = await readUser(request)
+    if (!user) {
+      clearSessionCookie(reply)
+      reply.code(401).send({ error: 'Authentication required' })
+      return null
+    }
+    return user
+  }
+  if (reads) {
+    app.get<{ Querystring: { page?: string; pageSize?: string; search?: string } }>('/api/collections', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      const query = collectionQuerySchema.parse(request.query)
+      const result = await reads.listCollections(query.page, query.pageSize, query.search)
+      return result
+    })
+    app.post<{ Body: CollectionInput }>('/api/collections', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      const body = collectionCreateBodySchema.parse(request.body)
+      return reply.code(201).send(await reads.createCollection(completeCollectionInput(body)))
+    })
+    app.put<{ Params: { id: string }; Body: CollectionUpdateInput }>('/api/collections/:id', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      const id = collectionIdSchema.parse(request.params.id)
+      const body = collectionBodySchema.parse(request.body)
+      const result = await reads.updateCollection(id, body)
+      return result ?? reply.code(404).send({ error: 'Collection not found' })
+    })
+    app.delete<{ Params: { id: string } }>('/api/collections/:id', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      const id = collectionIdSchema.parse(request.params.id)
+      const deleted = await reads.deleteCollection(id)
+      return deleted ? { ok: true } : reply.code(404).send({ error: 'Collection not found' })
+    })
+    app.get<{ Params: { id: string } }>('/api/collections/:id', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      const id = collectionIdSchema.parse(request.params.id)
+      const result = await reads.getCollection(id)
+      return result ?? reply.code(404).send({ error: 'Collection not found' })
+    })
+    app.get<{ Querystring: { page?: string; pageSize?: string; search?: string } }>('/api/wells', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      const query = wellQuerySchema.parse(request.query)
+      const result = await reads.listWells(query.page, query.pageSize, query.search)
+      return result
+    })
+    app.get<{ Params: { id: string } }>('/api/wells/:id', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      const id = collectionIdSchema.parse(request.params.id)
+      const result = await reads.getWell(id)
+      return result ?? reply.code(404).send({ error: 'Well not found' })
+    })
+    app.get('/api/reference/basins', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      basinQuerySchema.parse(request.query)
+      const result = { data: await reads.listBasins() }
+      return result
+    })
+  }
   return app
 }
 

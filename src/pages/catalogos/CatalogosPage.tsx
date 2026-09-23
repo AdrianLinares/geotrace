@@ -14,7 +14,8 @@ import PersonaForm from './PersonaForm'
 import CuencaForm from './CuencaForm'
 import CampoForm from './CampoForm'
 import ContratoForm from './ContratoForm'
-import { useCuencas, useCampos, useContratos } from '../../hooks/useCatalogos'
+import { useCuencas } from '../../hooks/useCatalogos'
+import { useLegacyCampo, useLegacyContrato } from '../../hooks/useLegacyCatalogos'
 
 export default function CatalogosPage() {
   const qc = useQueryClient()
@@ -52,8 +53,8 @@ export default function CatalogosPage() {
     }
   })
   const { data: cuencas } = useCuencas()
-  const { data: campos } = useCampos()
-  const { data: contratos } = useContratos()
+  const { data: campos } = useLegacyCampo()
+  const { data: contratos } = useLegacyContrato()
   const { data: personas } = useQuery({
     queryKey: ['persona'],
     queryFn: async () => {

@@ -32,6 +32,7 @@ The current browser application uses `@supabase/supabase-js` for authentication 
 - PostgreSQL must not be exposed publicly unless infrastructure explicitly requires it.
 - A user authenticated by AD but without an active application role must be rejected before an application session is issued.
 - Technical artifacts remain in English; user-facing chat remains Spanish.
+- `sql/schema.sql` is the authoritative local data model. The API and frontend must adapt to its normalized tables and relationships instead of recreating the legacy Supabase-shaped contract.
 
 ## Tasks
 
@@ -75,8 +76,10 @@ Repository-local source, tests, SQL migration files, deployment configuration, a
 - Verification: `pnpm test` passes 23 tests; `pnpm run build` passes; `pnpm run typecheck` remains blocked by pre-existing frontend errors in dashboard/reporting files.
 - ODD-004 implemented in the frontend work unit: local API login/me/logout, HttpOnly-cookie session restoration, role-safe state mapping, and logout state cleanup. Temporary Supabase data access remains for later migration.
 - Verification after ODD-004: `pnpm test` passes 29 tests; `pnpm run build` passes; `pnpm run typecheck` remains blocked by the same pre-existing dashboard/reporting errors.
+- Data-model decision confirmed: use the current normalized `sql/schema.sql` as the source of truth; adapt API DTOs and frontend mappings rather than adding legacy tables.
+- ODD-005 progress: normalized, authenticated collection and well reads; basin reference reads; collection CRUD; explicit DTO mapping; paginated totals; and runtime request validation. Remaining Supabase consumers include plates, samples, locations, dashboard, catalogs beyond basins, users, import, audit, and compound forms.
 - Engram mirror: pending because Engram tools were unavailable in this session.
 
 ## Next step
 
-Complete ODD-005 by migrating frontend data access from Supabase to authenticated local API endpoints.
+Continue ODD-005 with normalized plates, samples, and physical-storage API contracts; preserve transactional boundaries for compound forms.

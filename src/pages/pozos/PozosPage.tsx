@@ -4,19 +4,15 @@ import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { usePozos } from '../../hooks/usePozos'
-import { useCuencas, useCampos, useContratos } from '../../hooks/useCatalogos'
+import { useCuencas } from '../../hooks/useCatalogos'
 
 export default function PozosPage() {
   const [page, setPage] = useState(0)
   const [q, setQ] = useState('')
   const { data: pozoData, isLoading: loadingPozos } = usePozos(page, q)
   const { data: cuencas } = useCuencas()
-  const { data: campos } = useCampos()
-  const { data: contratos } = useContratos()
 
   const cuencaMap = new Map(cuencas?.map(c => [c.cuenca_id, c.nombre_cuenca]) ?? [])
-  const campoMap = new Map(campos?.map(c => [c.campo_id, c.nombre_campo]) ?? [])
-  const contratoMap = new Map(contratos?.map(c => [c.contrato_id, c.nombre_contrato]) ?? [])
 
   return (
     <AppLayout>
@@ -33,29 +29,27 @@ export default function PozosPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Pozo</TableHead>
-                  <TableHead>UWI</TableHead>
+                  <TableHead>Código</TableHead>
+                  <TableHead>Nombre</TableHead>
                   <TableHead>Cuenca</TableHead>
-                  <TableHead>Departamento</TableHead>
-                  <TableHead>Municipio</TableHead>
-                  <TableHead>Campo</TableHead>
-                  <TableHead>Longitud</TableHead>
-                  <TableHead>Latitud</TableHead>
-                  <TableHead>Datum</TableHead>
+                  <TableHead>Localización geográfica</TableHead>
+                  <TableHead>Localización espacial</TableHead>
+                  <TableHead>Estado catalogación</TableHead>
+                  <TableHead>Estado revisión</TableHead>
+                  <TableHead>Observaciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {pozoData?.data.map(p => (
                   <TableRow key={p.pozo_id}>
-                    <TableCell className="font-medium">{p.well_name}</TableCell>
-                    <TableCell>{p.uwi ?? '-'}</TableCell>
+                    <TableCell className="font-medium">{p.codigo_pozo ?? '-'}</TableCell>
+                    <TableCell>{p.nombre_pozo ?? '-'}</TableCell>
                     <TableCell>{cuencaMap.get(p.cuenca_id ?? '') ?? '-'}</TableCell>
-                    <TableCell>{p.departamento ?? '-'}</TableCell>
-                    <TableCell>{p.municipio ?? '-'}</TableCell>
-                    <TableCell>{campoMap.get(p.campo_id ?? '') ?? '-'}</TableCell>
-                    <TableCell>{p.longitud?.toLocaleString() ?? '-'}</TableCell>
-                    <TableCell>{p.latitud?.toLocaleString() ?? '-'}</TableCell>
-                    <TableCell>{p.datum ?? '-'}</TableCell>
+                    <TableCell>{p.localizacion_geografica_id ?? '-'}</TableCell>
+                    <TableCell>{p.localizacion_espacial_id ?? '-'}</TableCell>
+                    <TableCell>{p.estado_catalogacion_id ?? '-'}</TableCell>
+                    <TableCell>{p.estado_revision_id ?? '-'}</TableCell>
+                    <TableCell>{p.observaciones ?? '-'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
