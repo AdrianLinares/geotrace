@@ -1,5 +1,5 @@
 import type { Pool } from 'pg'
-import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, PhysicalLocationDto } from './types'
+import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto } from './types'
 
 export function createRoleRepository(pool: Pool): RoleRepository {
   return {
@@ -216,6 +216,54 @@ export function createReadRepository(pool: Pool): CollectionRepository {
         LEFT JOIN public.cat_material_bandeja cmb ON cmb.material_bandeja_id = b.material_bandeja_id
         WHERE uf.ubicacion_fisica_id = $1`, [id])
       return result.rows[0] ?? null
+    },
+    async getDashboard() {
+      const [kpis, estados, ocupacion, problemas] = await Promise.all([
+        pool.query<DashboardKpisDto>(`SELECT
+          count(*) FILTER (WHERE true)::int AS "totalPlacas",
+          (SELECT count(*)::int FROM public.muestra) AS "totalMuestras",
+          count(*) FILTER (WHERE ec.estado = 'Validado')::int AS "placasValidadas",
+          (SELECT count(*)::int FROM public.ubicacion_fisica WHERE placa_id IS NULL) AS "ubicacionesDisponibles"
+        FROM public.placa p
+        LEFT JOIN public.cat_estado_catalogacion ec ON ec.estado_catalogacion_id = p.estado_catalogacion_id`),
+        pool.query<DashboardEstadoDto>(`SELECT coalesce(ec.estado, 'Sin estado') AS name, count(*)::int AS value
+          FROM public.placa p
+          LEFT JOIN public.cat_estado_catalogacion ec ON ec.estado_catalogacion_id = p.estado_catalogacion_id
+          GROUP BY ec.estado
+          ORDER BY value DESC, name`),
+        pool.query<DashboardOcupacionDto>(`SELECT coalesce(cs.nombre, cs.codigo_seccion, 'Sin sección') AS name,
+          count(*)::int AS total,
+          count(*) FILTER (WHERE uf.placa_id IS NOT NULL)::int AS ocupadas,
+          coalesce(round(100.0 * count(*) FILTER (WHERE uf.placa_id IS NOT NULL) / nullif(count(*), 0)), 0)::int AS ocupacion
+          FROM public.ubicacion_fisica uf
+          LEFT JOIN public.bandeja b ON b.bandeja_id = uf.bandeja_id
+          LEFT JOIN public.zona_mueble zm ON zm.zona_mueble_id = b.zona_mueble_id
+          LEFT JOIN public.cat_seccion cs ON cs.seccion_id = zm.seccion_mueble_id
+          GROUP BY cs.nombre, cs.codigo_seccion
+          ORDER BY name`),
+        pool.query<DashboardProblemaDto>(`SELECT eci.placa_id::text AS placa_id,
+          CASE WHEN eci.presencia_hongos OR eci.riesgo_contaminacion OR eci.vidrio_estado_id IN (2, 3)
+            THEN 'CRÍTICA'
+            WHEN eci.material_fuera_cavidad OR eci.oxidacion OR eci.crecimiento_cristales THEN 'ATENCIÓN'
+            ELSE 'LEVE' END AS nivel,
+          cv.vidrio_estado, eci.presencia_hongos, eci.riesgo_contaminacion
+          FROM public.estado_conservacion_inicial eci
+          LEFT JOIN public.cat_vidrio_estado cv ON cv.vidrio_estado_id = eci.vidrio_estado_id
+          WHERE eci.placa_id IS NOT NULL
+            AND (eci.presencia_hongos OR eci.riesgo_contaminacion OR eci.vidrio_estado_id IN (2, 3)
+              OR eci.material_fuera_cavidad OR eci.oxidacion OR eci.crecimiento_cristales)
+          ORDER BY CASE WHEN eci.presencia_hongos OR eci.riesgo_contaminacion OR eci.vidrio_estado_id IN (2, 3) THEN 0 ELSE 1 END,
+            eci.placa_id`),
+      ])
+      const totals = kpis.rows[0] ?? { totalPlacas: 0, totalMuestras: 0, placasValidadas: 0, ubicacionesDisponibles: 0 }
+      return {
+        kpis: { ...totals, placasValidadas: totals.totalPlacas ? Math.round((totals.placasValidadas / totals.totalPlacas) * 100) : 0 },
+        estadoCatalogacion: estados.rows,
+        ocupacion: ocupacion.rows,
+        // Local schema does not create public.auditoria yet; administrative audit is pending.
+        actividadReciente: [],
+        problemasConservacion: problemas.rows,
+      }
     },
     async createCollection(input) {
       const result = await pool.query<CollectionDto>(

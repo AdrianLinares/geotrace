@@ -113,4 +113,24 @@ describe('createReadRepository', () => {
       expect(sql).not.toMatch(/public\."[A-Z_]+"/)
     }
   })
+
+  it('aggregates dashboard reads from normalized tables with parameters', async () => {
+    const query = vi.fn()
+      .mockResolvedValueOnce({ rows: [{ totalPlacas: 2, totalMuestras: 3, placasValidadas: 1, ubicacionesDisponibles: 4 }] })
+      .mockResolvedValueOnce({ rows: [{ name: 'Validado', value: 2 }] })
+      .mockResolvedValueOnce({ rows: [{ name: 'Sección A', total: 2, ocupadas: 1, ocupacion: 50 }] })
+      .mockResolvedValueOnce({ rows: [{ placa_id: '8', nivel: 'CRÍTICA' }] })
+    const repository = createReadRepository({ query } as never)
+
+    await expect(repository.getDashboard()).resolves.toEqual({
+      kpis: { totalPlacas: 2, totalMuestras: 3, placasValidadas: 50, ubicacionesDisponibles: 4 },
+      estadoCatalogacion: [{ name: 'Validado', value: 2 }],
+      ocupacion: [{ name: 'Sección A', total: 2, ocupadas: 1, ocupacion: 50 }],
+      actividadReciente: [],
+      problemasConservacion: [{ placa_id: '8', nivel: 'CRÍTICA' }],
+    })
+    expect(query.mock.calls.some(([sql]) => sql.includes('public.estado_conservacion_inicial'))).toBe(true)
+    expect(query.mock.calls.some(([sql]) => sql.includes('public.auditoria'))).toBe(false)
+    for (const [sql] of query.mock.calls) expect(sql).not.toMatch(/mueble_cod|auditoria_cambios/)
+  })
 })

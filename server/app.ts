@@ -154,6 +154,10 @@ export async function createApp({ auth, config, databaseHealth, reads }: Depende
       const result = await reads.getPhysicalLocation(id)
       return result ?? reply.code(404).send({ error: 'Physical location not found' })
     })
+    app.get('/api/dashboard', async (request, reply) => {
+      if (!(await requireSession(request, reply))) return
+      return reads.getDashboard()
+    })
   }
   return app
 }

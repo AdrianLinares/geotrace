@@ -8,8 +8,8 @@ export default function OcupacionMuebles() {
   return (
     <AppLayout>
       <div className="mb-4">
-        <h3 className="text-lg font-semibold">Ocupación de Muebles</h3>
-        <p className="text-sm text-muted-foreground">Porcentaje de ocupación por mueble</p>
+        <h3 className="text-lg font-semibold">Ocupación normalizada</h3>
+        <p className="text-sm text-muted-foreground">Porcentaje normalizado de ocupación por sección</p>
       </div>
 
       {isLoading ? <p>Cargando...</p> : (

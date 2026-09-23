@@ -116,6 +116,37 @@ export type PhysicalLocationDto = {
   observaciones: string | null
 }
 
+export type DashboardKpisDto = {
+  totalPlacas: number
+  totalMuestras: number
+  placasValidadas: number
+  ubicacionesDisponibles: number
+}
+
+export type DashboardEstadoDto = { name: string; value: number }
+export type DashboardOcupacionDto = { name: string; ocupacion: number; total: number; ocupadas: number }
+export type DashboardActividadDto = {
+  auditoria_id: string
+  tabla: string
+  operacion: 'INSERT' | 'UPDATE' | 'DELETE'
+  registro_id: string
+  created_at: string | null
+}
+export type DashboardProblemaDto = {
+  placa_id: string
+  nivel: 'CRÍTICA' | 'ATENCIÓN' | 'LEVE'
+  vidrio_estado: string | null
+  presencia_hongos: boolean | null
+  riesgo_contaminacion: boolean | null
+}
+export type DashboardDto = {
+  kpis: DashboardKpisDto
+  estadoCatalogacion: DashboardEstadoDto[]
+  ocupacion: DashboardOcupacionDto[]
+  actividadReciente: DashboardActividadDto[]
+  problemasConservacion: DashboardProblemaDto[]
+}
+
 export type ReadRepository = {
   listCollections(page: number, pageSize: number, search?: string): Promise<Paginated<CollectionDto>>
   getCollection(id: string): Promise<CollectionDto | null>
@@ -128,6 +159,7 @@ export type ReadRepository = {
   getSample(id: string): Promise<SampleDto | null>
   listPhysicalLocations(page: number, pageSize: number, filters: { search?: string; occupied?: boolean; sectionId?: string }): Promise<Paginated<PhysicalLocationDto>>
   getPhysicalLocation(id: string): Promise<PhysicalLocationDto | null>
+  getDashboard(): Promise<DashboardDto>
 }
 
 export type CollectionRepository = ReadRepository & {

@@ -26,6 +26,7 @@ const reads: ReadRepository = {
   getSample: vi.fn().mockResolvedValue(null),
   listPhysicalLocations: vi.fn().mockResolvedValue({ data: [], total: 0 }),
   getPhysicalLocation: vi.fn().mockResolvedValue(null),
+  getDashboard: vi.fn().mockResolvedValue({ kpis: {}, estadoCatalogacion: [], ocupacion: [], actividadReciente: [], problemasConservacion: [] }),
 }
 
 afterEach(() => vi.clearAllMocks())
@@ -73,6 +74,22 @@ describe('authenticated read routes', () => {
     expect(invalid.statusCode).toBe(400)
     expect(unsupported.statusCode).toBe(400)
     expect(reads.listSamples).not.toHaveBeenCalled()
+    await app.close()
+  })
+
+  it('protects and returns the aggregated dashboard read', async () => {
+    const app = await createApp({ auth: { restore: vi.fn().mockResolvedValue(user) } as never, config, reads })
+    const response = await app.inject({ method: 'GET', url: '/api/dashboard' })
+    expect(response.statusCode).toBe(200)
+    expect(reads.getDashboard).toHaveBeenCalledOnce()
+    await app.close()
+  })
+
+  it('returns 401 for the dashboard without a session', async () => {
+    const app = await createApp({ auth: { restore: vi.fn().mockResolvedValue(null) } as never, config, reads })
+    const response = await app.inject({ method: 'GET', url: '/api/dashboard' })
+    expect(response.statusCode).toBe(401)
+    expect(reads.getDashboard).not.toHaveBeenCalled()
     await app.close()
   })
 

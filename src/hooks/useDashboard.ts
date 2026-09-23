@@ -1,155 +1,57 @@
 import { useQuery } from '@tanstack/react-query'
-import supabase from '../lib/supabase'
-import { AuditoriaCambio } from '../types/database'
+import { apiRequest } from '../lib/api'
 
-/**
- * Hooks de dashboard
- * - Pequeños helpers que agregan lógica de agregación para las vistas
- * - Usan llamadas directas a Supabase; si los queries crecen, considerar mover
- *   lógica agregada al backend (views o RPC) para rendimiento.
- */
-
-// KPIs
-export function useDashboardKPIs() {
-  return useQuery({
-    queryKey: ['dashboard-kpis'],
-    queryFn: async () => {
-      const [
-        { count: totalPlacas },
-        { count: totalMuestras },
-        { count: validadas },
-        { count: ubicacionesDisponibles }
-      ] = await Promise.all([
-        supabase.from('placa').select('*', { count: 'exact', head: true }),
-        supabase.from('muestra').select('*', { count: 'exact', head: true }),
-        supabase.from('placa').select('*', { count: 'exact', head: true }).eq('estado_catalogacion', 'Validado'),
-        supabase.from('ubicacion_fisica').select('*', { count: 'exact', head: true }).eq('ocupada', false)
-      ])
-
-      const porcentajeValidadas = totalPlacas ? ((validadas || 0) / totalPlacas) * 100 : 0
-
-      return {
-        totalPlacas: totalPlacas || 0,
-        totalMuestras: totalMuestras || 0,
-        placasValidadas: Math.round(porcentajeValidadas),
-        ubicacionesDisponibles: ubicacionesDisponibles || 0
-      }
-    }
-  })
+export type DashboardKpis = {
+  totalPlacas: number
+  totalMuestras: number
+  placasValidadas: number
+  ubicacionesDisponibles: number
 }
-
-// Distribución por estado de catalogación (para gráfico de dona)
-export function useEstadoCatalogacionDist() {
-  return useQuery({
-    queryKey: ['dashboard-estado-dist'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('placa')
-        .select('estado_catalogacion')
-        .not('estado_catalogacion', 'is', null)
-
-      if (error) throw error
-
-      const counts: Record<string, number> = {}
-        ; (data as any[]).forEach(r => {
-          const e = r.estado_catalogacion || 'Sin estado'
-          counts[e] = (counts[e] || 0) + 1
-        })
-
-      return Object.entries(counts).map(([name, value]) => ({ name, value }))
-    }
-  })
+export type DashboardEstado = { name: string; value: number }
+export type DashboardOcupacion = { name: string; ocupacion: number; total: number; ocupadas: number }
+export type DashboardActividad = {
+  auditoria_id: string
+  tabla: string
+  operacion: 'INSERT' | 'UPDATE' | 'DELETE'
+  registro_id: string
+  created_at: string | null
 }
-
-// % ocupación por mueble (para gráfico de barras)
-export function useOcupacionMuebles() {
-  return useQuery({
-    queryKey: ['dashboard-ocupacion-muebles'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ubicacion_fisica')
-        .select('mueble_cod, ocupada')
-
-      if (error) throw error
-
-      const stats: Record<string, { total: number, ocupadas: number }> = {}
-        ; (data as any[]).forEach(r => {
-          const m = r.mueble_cod || 'Sin mueble'
-          if (!stats[m]) stats[m] = { total: 0, ocupadas: 0 }
-          stats[m].total++
-          if (r.ocupada) stats[m].ocupadas++
-        })
-
-      return Object.entries(stats).map(([name, s]) => ({
-        name,
-        ocupacion: s.total ? Math.round((s.ocupadas / s.total) * 100) : 0,
-        total: s.total,
-        ocupadas: s.ocupadas
-      }))
-    }
-  })
-}
-
-// Actividad reciente (auditoría)
-export function useActividadReciente() {
-  return useQuery({
-    queryKey: ['dashboard-actividad'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('auditoria_cambios')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20)
-
-      if (error) throw error
-      return (data || []) as AuditoriaCambio[]
-    }
-  })
-}
-
-type PlacaProblema = {
+export type PlacaProblema = {
   placa_id: string
   nivel: 'CRÍTICA' | 'ATENCIÓN' | 'LEVE'
-  vidrio_estado?: string | null
-  presencia_hongos?: boolean | null
-  riesgo_contaminacion?: boolean | null
+  vidrio_estado: string | null
+  presencia_hongos: boolean | null
+  riesgo_contaminacion: boolean | null
+}
+export type DashboardData = {
+  kpis: DashboardKpis
+  estadoCatalogacion: DashboardEstado[]
+  ocupacion: DashboardOcupacion[]
+  actividadReciente: DashboardActividad[]
+  problemasConservacion: PlacaProblema[]
 }
 
-// Placas con problemas de conservación (críticas / atención)
+const dashboardQuery = {
+  queryKey: ['dashboard'],
+  queryFn: () => apiRequest<DashboardData>('/api/dashboard'),
+}
+
+export function useDashboardKPIs() {
+  return useQuery({ ...dashboardQuery, select: (dashboard: DashboardData) => dashboard.kpis })
+}
+
+export function useEstadoCatalogacionDist() {
+  return useQuery({ ...dashboardQuery, select: (dashboard: DashboardData) => dashboard.estadoCatalogacion })
+}
+
+export function useOcupacionMuebles() {
+  return useQuery({ ...dashboardQuery, select: (dashboard: DashboardData) => dashboard.ocupacion })
+}
+
+export function useActividadReciente() {
+  return useQuery({ ...dashboardQuery, select: (dashboard: DashboardData) => dashboard.actividadReciente })
+}
+
 export function usePlacasProblemas() {
-  return useQuery<PlacaProblema[]>({
-    queryKey: ['dashboard-placas-problemas'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('estado_conservacion_inicial')
-        .select(`
-          estado_conservacion_inicial_id,
-          vidrio_estado_id,
-          cat_vidrio:vidrio_estado_id (vidrio_estado),
-          presencia_hongos,
-          riesgo_contaminacion,
-          oxidacion,
-          crecimiento_cristales,
-          material_fuera_cavidad,
-          placa_id
-        `)
-        .or('presencia_hongos.eq.true,riesgo_contaminacion.eq.true,vidrio_estado_id.eq.2,vidrio_estado_id.eq.3,oxidacion.eq.true,crecimiento_cristales.eq.true,material_fuera_cavidad.eq.true')
-
-      if (error) throw error
-
-      const problemas = (data as any[]).map(r => {
-        const critica = r.presencia_hongos || r.riesgo_contaminacion || r.vidrio_estado_id === 2 || r.vidrio_estado_id === 3
-        const atencion = r.material_fuera_cavidad || r.oxidacion || r.crecimiento_cristales
-        return {
-          placa_id: r.placa_id,
-          nivel: critica ? 'CRÍTICA' : atencion ? 'ATENCIÓN' : 'LEVE',
-          vidrio_estado: r.cat_vidrio?.vidrio_estado,
-          presencia_hongos: r.presencia_hongos,
-          riesgo_contaminacion: r.riesgo_contaminacion
-        }
-      }).filter(p => p.placa_id)
-
-      return problemas
-    }
-  })
+  return useQuery({ ...dashboardQuery, select: (dashboard: DashboardData) => dashboard.problemasConservacion })
 }

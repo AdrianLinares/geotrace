@@ -81,6 +81,7 @@ Repository-local source, tests, SQL migration files, deployment configuration, a
 - ODD-005 progress: normalized authenticated plate and sample reads were added with schema-confirmed DTOs and explicit handling for the missing normalized sample-to-plate relationship. Legacy mutations remain isolated until transactional write endpoints are designed.
 - ODD-005 progress: normalized physical-location reads were added with schema-confirmed joins, filters, pagination, and an explicit legacy limitation. Dashboard aggregation and bulk import still require separate normalized work units.
 - ODD-007 progress: added Ubuntu 24.04 deployment assets for systemd, Nginx HTTPS/SPA routing, local-session migration, smoke checks, and VM operations documentation. Nginx syntax still requires validation on the target VM.
+- ODD-005 progress: normalized dashboard metrics and conservation/occupancy reads were migrated behind `/api/dashboard`; local audit activity remains intentionally empty until an administrator-scoped local audit model is implemented.
 - Engram mirror: pending because Engram tools were unavailable in this session.
 
 ## Next step
