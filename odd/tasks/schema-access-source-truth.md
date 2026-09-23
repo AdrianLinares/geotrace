@@ -106,5 +106,6 @@ alignment, frontend change, or module-file change was performed.
 ## Progress
 
 - Branch: `feat/schema-access-source-truth`
+- Work-unit commit: `1aa0dce feat(db): align core schema with Access module`.
 - Current state: core/physical mapping and schema work unit implemented; module source files unchanged.
 - Next step: run the full PostgreSQL transaction validation with an authorized local database role, then continue with the next authorized work unit.
