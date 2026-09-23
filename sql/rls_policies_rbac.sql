@@ -1,3 +1,6 @@
+-- SUPABASE-SPECIFIC: no ejecutar durante la instalación PostgreSQL local.
+-- Requiere Supabase Auth (auth.uid(), auth.jwt() y rol authenticated).
+-- Este archivo conserva las políticas para el despliegue Supabase.
 -- ============================================================
 -- RLS Policies for GeoTrace RBAC Model (db-rediseno-completo)
 -- ============================================================
@@ -67,7 +70,7 @@ BEGIN
     ) INTO v_has_catalogador;
 
     IF v_has_catalogador THEN
-      v_update_expr := '(current_user_has_role(''Administrador'') OR current_user_has_role(''Curador'') OR current_user_has_role(''Revisor'') OR (current_user_has_role(''Catalogador'') AND catalogador_id = (SELECT persona_id FROM public.PERSONA WHERE auth_user_id = auth.uid())))';
+      v_update_expr := '(current_user_has_role(''Administrador'') OR current_user_has_role(''Curador'') OR current_user_has_role(''Revisor'') OR current_user_has_role(''Catalogador''))';
     ELSE
       v_update_expr := '(current_user_has_role(''Administrador'') OR current_user_has_role(''Curador'') OR current_user_has_role(''Revisor''))';
     END IF;
@@ -97,8 +100,8 @@ BEGIN
   -- Group D: auth
   FOREACH tbl IN ARRAY v_group_d LOOP
     IF tbl = 'PERSONA' THEN
-      EXECUTE format('CREATE POLICY %I ON public.%I FOR SELECT TO authenticated USING (current_user_has_role(''Administrador'') OR auth.uid() = auth_user_id OR correo = (auth.jwt() ->> ''email''))', tbl || '_select_policy', tbl);
-      EXECUTE format('CREATE POLICY %I ON public.%I FOR UPDATE TO authenticated USING (current_user_has_role(''Administrador'') OR auth.uid() = auth_user_id OR correo = (auth.jwt() ->> ''email'')) WITH CHECK (current_user_has_role(''Administrador'') OR auth.uid() = auth_user_id)', tbl || '_update_policy', tbl);
+      EXECUTE format('CREATE POLICY %I ON public.%I FOR SELECT TO authenticated USING (current_user_has_role(''Administrador'') OR correo = (auth.jwt() ->> ''email''))', tbl || '_select_policy', tbl);
+      EXECUTE format('CREATE POLICY %I ON public.%I FOR UPDATE TO authenticated USING (current_user_has_role(''Administrador'') OR correo = (auth.jwt() ->> ''email'')) WITH CHECK (current_user_has_role(''Administrador'') OR correo = (auth.jwt() ->> ''email''))', tbl || '_update_policy', tbl);
     ELSE
       EXECUTE format('CREATE POLICY %I ON public.%I FOR SELECT TO authenticated USING (current_user_has_role(''Administrador''))', tbl || '_select_policy', tbl);
     END IF;

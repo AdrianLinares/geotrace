@@ -1,4 +1,6 @@
--- Script de diagnóstico para verificar configuración de usuarios y roles
+-- LEGACY / HISTORICAL: this diagnostic targets the former Supabase-shaped
+-- PERSONA contract (`email`, `rol`) and must not be used for the local schema.
+-- Use the AD-backed API and the normalized `correo` plus REL_PERSONA_ROL data.
 
 -- 1. Ver todos los usuarios en la tabla persona
 SELECT persona_id, nombre, email, rol, activo, created_at 

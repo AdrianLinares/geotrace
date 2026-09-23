@@ -6,7 +6,7 @@ Esta guía explica cómo configurar y ejecutar el proyecto Catálogo de Placas l
 
 - Node.js 20 o superior
 - pnpm
-- Cuenta de Supabase
+- PostgreSQL standalone
 
 ## Pasos de Instalación
 
@@ -21,21 +21,30 @@ Esta guía explica cómo configurar y ejecutar el proyecto Catálogo de Placas l
    pnpm install
    ```
 
-3. **Configurar variables de entorno**:
-   Copie el archivo `.env.example` a `.env` y complete las variables necesarias:
+3. **Configurar variables de entorno de la aplicación**:
+   Configure las variables del servidor local según `server/README.md`. No es
+   necesario configurar Supabase para instalar el esquema standalone.
    ```
-   VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=public-anon-key
+   DATABASE_URL=postgresql://...
    ```
-   Reemplace los valores con las credenciales reales de su proyecto Supabase.
+   No versionar secretos ni modificar `.env` como parte de esta instalación.
 
 4. **Aplicar el esquema de base de datos**:
-   Use la interfaz SQL de Supabase o psql para ejecutar los archivos en `/sql/`:
-   - `sql/schema.sql`
-   - `sql/triggers.sql`
-   - `sql/audit.sql`
+   Ejecute primero el esquema oficial y después la migración de sesiones:
+   ```bash
+   psql "$DATABASE_URL" -f sql/schema.sql
+   pnpm run db:migrate:local-sessions
+   ```
+   No ejecute `sql/helpers.sql`, `sql/rls_policies_rbac.sql`,
+   `sql/triggers.sql` ni `sql/audit.sql`: están marcados como
+   Supabase-specific y todavía no tienen equivalente local.
 
-5. **Levantar el servidor de desarrollo**:
+5. **Verificar el esquema sin PostgreSQL**:
+   ```bash
+   pnpm run check:local-schema
+   ```
+
+6. **Levantar el servidor de desarrollo**:
    ```bash
    pnpm run dev
    ```

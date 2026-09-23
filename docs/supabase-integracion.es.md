@@ -19,19 +19,19 @@ export default supabase
 
 ## Esquema de Base de Datos
 
-El esquema se define en `sql/schema.sql`. Incluye tablas para:
+El esquema oficial local se define en `sql/schema.sql`. Incluye tablas para:
 - Usuarios y roles
 - Placas micropaleontológicas
 - Ubicaciones geográficas
-- Registros de auditoría
+- La auditoría local todavía está pendiente; `sql/audit.sql` es un artefacto histórico específico de Supabase y no forma parte de la instalación VM.
 
 ## Tipos de TypeScript
 
-Los tipos de base de datos se generan automáticamente y se almacenan en `src/types/database.ts`.
+Los tipos de base de datos están definidos en `src/types/database.ts` (mantenidos a mano, solo el subset de tablas usado por el frontend).
 
 ## Autenticación
 
-Supabase maneja la autenticación de usuarios. Los roles se verifican en `src/components/shared/roleGuards.tsx`.
+La aplicación usa Active Directory/LDAP para autenticar y PostgreSQL local para resolver las asignaciones de roles. Los roles se verifican en backend y se reflejan adicionalmente en `src/components/shared/roleGuards.tsx`.
 
 ## Notas para Colombia
 

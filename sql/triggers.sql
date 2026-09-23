@@ -1,3 +1,5 @@
+-- SUPABASE-SPECIFIC: no ejecutar durante la instalación PostgreSQL local.
+-- Requiere sql/audit.sql en una base Supabase y auth.uid().
 -- ============================================================
 -- Triggers de auditoría para tablas del esquema GeoTrace
 -- ============================================================

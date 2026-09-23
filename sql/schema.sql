@@ -1,7 +1,10 @@
 -- Geotrace — Rediseño completo de la base de datos
 -- Fase 1: Fundamentos (RBAC, catálogos base y control de versión del esquema)
 -- Este archivo es destructivo: elimina las tablas heredadas antes de crear las nuevas.
--- Ejecutar en una transacción con privilegios suficientes para crear objetos en public y referenciar auth.users.
+-- Ejecutar en una transacción con privilegios suficientes para crear objetos en public.
+-- Este es el esquema oficial de PostgreSQL standalone: no requiere Supabase Auth,
+-- JWT, roles externos ni otros esquemas. Los identificadores no entrecomillados
+-- se resuelven en minúscula por las reglas de PostgreSQL.
 
 BEGIN;
 
@@ -52,13 +55,12 @@ CREATE TABLE public.schema_version (
 COMMENT ON TABLE public.schema_version IS 'Registra la versión aplicada del esquema y su fecha de aplicación.';
 
 -- ============================================================
--- PERSONA: usuarios del sistema vinculados a Supabase Auth
+-- PERSONA: usuarios del sistema identificados por AD/aplicación
 -- ============================================================
 DROP TABLE IF EXISTS public.PERSONA CASCADE;
 
 CREATE TABLE public.PERSONA (
     persona_id        bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    auth_user_id      uuid REFERENCES auth.users(id) ON DELETE SET NULL,
     codigo_persona    varchar(255) NOT NULL,
     nombre            varchar(255) NOT NULL,
     apellidos         varchar(255) NOT NULL,
@@ -69,14 +71,12 @@ CREATE TABLE public.PERSONA (
     updated_at        timestamptz NOT NULL DEFAULT now(),
 
     CONSTRAINT uq_persona_codigo_persona UNIQUE (codigo_persona),
-    CONSTRAINT uq_persona_correo UNIQUE (correo),
-    CONSTRAINT uq_persona_auth_user_id UNIQUE (auth_user_id)
+    CONSTRAINT uq_persona_correo UNIQUE (correo)
 );
 
-COMMENT ON TABLE public.PERSONA IS 'Personas que interactúan con el catálogo; cada fila puede vincularse a un usuario de Supabase Auth.';
-COMMENT ON COLUMN public.PERSONA.auth_user_id IS 'Referencia opcional a auth.users; habilita la resolución de roles vía auth.uid().';
+COMMENT ON TABLE public.PERSONA IS 'Personas que interactúan con el catálogo; correo identifica la cuenta AD/aplicación.';
+COMMENT ON COLUMN public.PERSONA.correo IS 'Identificador único de AD/aplicación; no depende de un proveedor de autenticación externo.';
 
-CREATE INDEX idx_persona_auth_user_id ON public.PERSONA(auth_user_id);
 CREATE INDEX idx_persona_correo ON public.PERSONA(correo);
 CREATE INDEX idx_persona_codigo_persona ON public.PERSONA(codigo_persona);
 

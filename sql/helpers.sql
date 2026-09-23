@@ -1,5 +1,5 @@
--- Geotrace — Funciones auxiliares para RLS y autorización
--- Requiere que sql/schema.sql ya haya sido ejecutado.
+-- SUPABASE-SPECIFIC: no ejecutar durante la instalación PostgreSQL local.
+-- Requiere Supabase Auth y sql/schema.sql ya ejecutado en una base Supabase.
 
 -- ============================================================
 -- current_user_has_role(role_name)
@@ -17,7 +17,7 @@ AS $$
         FROM public.rel_persona_rol rpr
         JOIN public.persona p ON p.persona_id = rpr.persona_id
         JOIN public.cat_rol cr ON cr.rol_id = rpr.rol_id
-        WHERE p.auth_user_id = auth.uid()
+        WHERE p.correo = (auth.jwt() ->> 'email')
           AND cr.nombre = role_name
           AND rpr.activo = true
           AND (rpr.fecha_fin IS NULL OR rpr.fecha_fin > now())

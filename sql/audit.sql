@@ -1,3 +1,5 @@
+-- SUPABASE-SPECIFIC: no ejecutar durante la instalación PostgreSQL local.
+-- Requiere Supabase Auth, el rol authenticated y sql/triggers.sql.
 -- ============================================================
 -- Tabla de auditoría unificada
 -- ============================================================
