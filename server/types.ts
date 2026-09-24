@@ -9,6 +9,10 @@ export type RoleRepository = {
   findActiveUserByUsername(username: string): Promise<AuthenticatedUser | null>
 }
 
+export type LocalCredentialRepository = {
+  findByUsername(username: string): Promise<{ passwordHash: string } | null>
+}
+
 export type ManagedPerson = {
   persona_id: string
   codigo_persona: string

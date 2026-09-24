@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { AuthService, InvalidCredentialsError, MissingApplicationRoleError, requireRole } from '../../server/auth'
 import type { DirectoryAuthenticator, RoleRepository, SessionRepository, AuthenticatedUser } from '../../server/types'
+import { hashPassword } from '../../server/passwords'
 
 const user: AuthenticatedUser = { personaId: '1', username: 'ada@example.test', name: 'Ada Lovelace', roles: ['Catalogador'] }
 
@@ -9,6 +10,14 @@ function setup(role: AuthenticatedUser | null = user) {
   const roles: RoleRepository = { findActiveUserByUsername: vi.fn().mockResolvedValue(role) }
   const sessions: SessionRepository = { create: vi.fn(), find: vi.fn(), remove: vi.fn() }
   return { service: new AuthService(directory, roles, sessions, 60), directory, roles, sessions }
+}
+
+function setupLocal(role: AuthenticatedUser | null = { ...user, roles: ['Administrador'] }) {
+  const directory: DirectoryAuthenticator = { authenticate: vi.fn(), close: vi.fn() }
+  const roles: RoleRepository = { findActiveUserByUsername: vi.fn().mockResolvedValue(role) }
+  const sessions: SessionRepository = { create: vi.fn(), find: vi.fn(), remove: vi.fn() }
+  const credentials = { findByUsername: vi.fn() }
+  return { service: new AuthService(directory, roles, sessions, 60, { username: user.username, credentials }), directory, roles, sessions, credentials }
 }
 
 describe('AuthService', () => {
@@ -25,6 +34,34 @@ describe('AuthService', () => {
   vi.mocked(directory.authenticate).mockRejectedValue(new InvalidCredentialsError('Invalid credentials'))
     await expect(service.login(user.username, 'wrong')).rejects.toBeInstanceOf(InvalidCredentialsError)
     expect(sessions.create).not.toHaveBeenCalled()
+  })
+
+  it('prefers valid AD credentials over the local fallback', async () => {
+    const { service, directory, credentials } = setupLocal()
+    await service.login(user.username, 'password')
+    expect(directory.authenticate).toHaveBeenCalledOnce()
+    expect(credentials.findByUsername).not.toHaveBeenCalled()
+  })
+
+  it('falls back to a local credential when AD is unavailable', async () => {
+    const { service, directory, credentials, sessions } = setupLocal()
+    vi.mocked(directory.authenticate).mockRejectedValue(new Error('AD unavailable'))
+    vi.mocked(credentials.findByUsername).mockResolvedValue({ passwordHash: await hashPassword('password') })
+    const result = await service.login(user.username, 'password')
+    expect(result.user.roles).toEqual(['Administrador'])
+    expect(sessions.create).toHaveBeenCalledOnce()
+  })
+
+  it('rejects an incorrect local password and a user without an active role', async () => {
+    const first = setupLocal()
+    vi.mocked(first.directory.authenticate).mockRejectedValue(new Error('AD unavailable'))
+    vi.mocked(first.credentials.findByUsername).mockResolvedValue({ passwordHash: await hashPassword('password') })
+    await expect(first.service.login(user.username, 'wrong')).rejects.toBeInstanceOf(InvalidCredentialsError)
+
+    const second = setupLocal(null)
+    vi.mocked(second.directory.authenticate).mockRejectedValue(new Error('AD unavailable'))
+    vi.mocked(second.credentials.findByUsername).mockResolvedValue({ passwordHash: await hashPassword('password') })
+    await expect(second.service.login(user.username, 'password')).rejects.toBeInstanceOf(MissingApplicationRoleError)
   })
 
   it('rejects an AD user without an application role', async () => {

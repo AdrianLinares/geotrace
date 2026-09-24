@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isValidPasswordHash } from './passwords'
 
 const booleanFromEnv = z.enum(['true', 'false']).transform((value) => value === 'true')
 
@@ -18,11 +19,17 @@ const envSchema = z.object({
   SESSION_COOKIE_SAME_SITE: z.enum(['strict', 'lax', 'none']).default('lax'),
   SESSION_COOKIE_SECURE: booleanFromEnv.default('false'),
   SESSION_COOKIE_DOMAIN: z.string().optional(),
+  LOCAL_ADMIN_ENABLED: booleanFromEnv.default('false'),
+  LOCAL_ADMIN_USERNAME: z.string().min(1).optional(),
+  LOCAL_ADMIN_PASSWORD_HASH: z.string().min(1).optional(),
 })
 
 export type AppConfig = z.infer<typeof envSchema>
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
+  if (env.NODE_ENV === 'production' && env.LOCAL_ADMIN_ENABLED === 'true') {
+    throw new Error('LOCAL_ADMIN_ENABLED=true is not permitted when NODE_ENV=production; use AD authentication in production')
+  }
   const result = envSchema.safeParse(env)
   if (!result.success) {
     throw new Error(`Invalid server configuration: ${result.error.issues.map((issue) => issue.path.join('.') + ' ' + issue.message).join('; ')}`)
@@ -36,6 +43,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   }
   if (result.data.SESSION_COOKIE_SAME_SITE === 'none' && !result.data.SESSION_COOKIE_SECURE) {
     throw new Error('SESSION_COOKIE_SECURE must be true when SESSION_COOKIE_SAME_SITE is none')
+  }
+  if (result.data.LOCAL_ADMIN_ENABLED && (!result.data.LOCAL_ADMIN_USERNAME || !result.data.LOCAL_ADMIN_PASSWORD_HASH || !isValidPasswordHash(result.data.LOCAL_ADMIN_PASSWORD_HASH))) {
+    throw new Error('LOCAL_ADMIN_USERNAME and LOCAL_ADMIN_PASSWORD_HASH are required and valid when LOCAL_ADMIN_ENABLED=true')
   }
   return result.data
 }

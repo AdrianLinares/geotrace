@@ -1,19 +1,31 @@
-import type { DirectoryAuthenticator, RoleRepository, SessionRepository, AuthenticatedUser } from './types'
+import type { DirectoryAuthenticator, LocalCredentialRepository, RoleRepository, SessionRepository, AuthenticatedUser } from './types'
 import { createSessionToken, hashSessionToken } from './security'
+import { verifyPassword } from './passwords'
 
 export class InvalidCredentialsError extends Error {}
 export class MissingApplicationRoleError extends Error {}
 export class AuthenticationInfrastructureError extends Error {}
 
 export class AuthService {
-  constructor(private readonly directory: DirectoryAuthenticator, private readonly roles: RoleRepository, private readonly sessions: SessionRepository, private readonly ttlSeconds: number) {}
+  constructor(private readonly directory: DirectoryAuthenticator, private readonly roles: RoleRepository, private readonly sessions: SessionRepository, private readonly ttlSeconds: number, private readonly local?: { username: string; credentials: LocalCredentialRepository }) {}
 
   async login(username: string, password: string): Promise<{ token: string; user: AuthenticatedUser }> {
+    let authenticatedByDirectory = true
     try {
       await this.directory.authenticate(username, password)
     } catch (error) {
-      if (error instanceof InvalidCredentialsError) throw error
-      throw new AuthenticationInfrastructureError('Directory authentication unavailable')
+      authenticatedByDirectory = false
+      if (!this.local || username.toLowerCase() !== this.local.username.toLowerCase()) {
+        if (error instanceof InvalidCredentialsError) throw error
+        throw new AuthenticationInfrastructureError('Directory authentication unavailable')
+      }
+      let credential: { passwordHash: string } | null
+      try {
+        credential = await this.local.credentials.findByUsername(username)
+      } catch {
+        throw new AuthenticationInfrastructureError('Local authentication unavailable')
+      }
+      if (!credential || !(await verifyPassword(password, credential.passwordHash))) throw new InvalidCredentialsError('Invalid credentials')
     }
     let user: AuthenticatedUser | null
     try {
@@ -24,7 +36,7 @@ export class AuthService {
     if (!user || user.roles.length === 0) throw new MissingApplicationRoleError('No active application role')
     const token = createSessionToken()
     await this.sessions.create(hashSessionToken(token), user, new Date(Date.now() + this.ttlSeconds * 1000))
-    return { token, user }
+    return { token, user, ...(authenticatedByDirectory ? {} : { local: true }) }
   }
 
   async restore(token: string | undefined): Promise<AuthenticatedUser | null> {

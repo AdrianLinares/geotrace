@@ -54,6 +54,7 @@ LDAP_BIND_PASSWORD=<optional-secret>
 SERVER_HOST=127.0.0.1
 SERVER_PORT=3000
 SESSION_COOKIE_SECURE=true
+LOCAL_ADMIN_ENABLED=false
 ```
 
 Puede crear el archivo de forma segura con:
@@ -79,6 +80,34 @@ sudo -u geotrace env DATABASE_URL='postgresql://...' \
 En operación normal `DATABASE_URL` se toma del EnvironmentFile del servicio;
 el ejemplo anterior es deliberadamente un placeholder y no debe copiarse con
 una contraseña real en el historial del shell.
+
+### Bypass temporal de emergencia para AD caído
+
+El login local es un bypass **temporal, solo para desarrollo**, y está
+deshabilitado por defecto. No lo active en producción salvo una autorización
+explícita y una ventana de emergencia. Aplique la migración y cree o actualice
+la credencial desde el backend:
+
+```bash
+pnpm run db:migrate:local-admin
+pnpm run local-admin
+```
+
+El comando pide usuario y contraseña por entrada interactiva; nunca pase la
+contraseña como argumento ni la guarde en un archivo. Configure en el
+EnvironmentFile, sin versionarlo:
+
+```text
+LOCAL_ADMIN_ENABLED=true
+LOCAL_ADMIN_USERNAME=<username>
+LOCAL_ADMIN_PASSWORD_HASH=<hash-scrypt-reportado-por-el-comando>
+```
+
+El backend no arranca si el modo está habilitado sin username/hash válidos.
+Para desactivarlo inmediatamente cambie `LOCAL_ADMIN_ENABLED=false` y reinicie
+el servicio. Cuando AD vuelva a funcionar, desactívelo, revise o revoque la
+credencial local y elimine este bypass en el siguiente trabajo de
+mantenimiento.
 
 ## Frontend, systemd y Nginx HTTPS
 

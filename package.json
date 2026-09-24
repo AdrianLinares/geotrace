@@ -13,6 +13,8 @@
     "build:frontend": "vite build",
     "start:server:production": "pnpm exec tsx server/index.ts",
     "db:migrate:local-sessions": "./scripts/apply-local-session-migration.sh",
+    "db:migrate:local-admin": "./scripts/apply-local-admin-migration.sh",
+    "local-admin": "tsx scripts/manage-local-admin.ts",
     "check:local-schema": "node scripts/check-local-schema.mjs",
     "smoke:local": "./scripts/smoke-check-local.sh",
     "build": "vite build",
