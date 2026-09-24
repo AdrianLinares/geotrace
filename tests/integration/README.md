@@ -1,8 +1,6 @@
 Integration test notes
 
-- The AuthProvider integration test mocks the supabase client via
-  vi.mock('@/lib/supabase', async () => import('../mocks/supabase'))
-- Ensure that tests/mocks/supabase.ts exports `supabaseMock`, `emitAuthStateChange`,
-  and the query builder helpers (mockPersonaResponse, mockSession).
+- The AuthProvider integration test mocks the local authentication API.
+- Keep network calls mocked at the `src/lib/authApi.ts` boundary.
 
 Run: npx vitest tests/integration --run

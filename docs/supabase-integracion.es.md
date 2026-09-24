@@ -1,21 +1,19 @@
-# Integración con Supabase
+# Integración histórica con Supabase
 
-Este documento explica cómo el proyecto se integra con Supabase para base de datos y autenticación.
+Este documento se conserva únicamente como referencia histórica. La aplicación
+instalada en la VM no usa Supabase: utiliza Active Directory/LDAP, un backend
+Node.js local y PostgreSQL local.
 
-## Configuración del Cliente
+La configuración anterior mediante `src/lib/supabase.ts` y `VITE_SUPABASE_*`
+fue retirada. No reutilice los ejemplos restantes de este documento para una
+instalación nueva; consulte `docs/despliegue-vm.es.md`.
 
-El cliente de Supabase se configura en `src/lib/supabase.ts`:
+## Migración
 
-```typescript
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-)
-
-export default supabase
-```
+El esquema local se instala desde `sql/schema.sql` y la sesión desde
+`sql/migrations/001_app_auth_sessions.sql`. Los archivos RLS, triggers y
+auditoría originales de Supabase están marcados como históricos y no forman
+parte de la secuencia local.
 
 ## Esquema de Base de Datos
 
@@ -33,8 +31,8 @@ Los tipos de base de datos están definidos en `src/types/database.ts` (mantenid
 
 La aplicación usa Active Directory/LDAP para autenticar y PostgreSQL local para resolver las asignaciones de roles. Los roles se verifican en backend y se reflejan adicionalmente en `src/components/shared/roleGuards.tsx`.
 
-## Notas para Colombia
+## Notas operativas
 
-- Configure RLS (Row Level Security) para cumplir con políticas de privacidad de datos del SGC.
-- Use timestamps en zona horaria UTC-5 para registros.
+- La autorización se aplica en el backend mediante AD y roles PostgreSQL.
+- Use timestamps con zona horaria y mantenga las políticas de backup del SGC.
 - Asegúrese de que los nombres de tablas y campos cumplan con convenciones locales.

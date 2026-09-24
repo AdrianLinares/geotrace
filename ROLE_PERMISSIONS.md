@@ -2,7 +2,7 @@
 
 ## Estado Actual (Base implementada)
 
-La aplicación actualmente tiene **una única distinción de permisos**: Admin vs. No-Admin.
+La aplicación usa **guards granulares por rol** implementados en `src/components/shared/roleGuards.tsx` (`WithCatalogador`, `WithRevisor`, `WithCurador`, `WithAdmin`).
 
 ### Rutas y Visibilidad por Rol
 
@@ -10,13 +10,14 @@ La aplicación actualmente tiene **una única distinción de permisos**: Admin v
 | ---------------------------- | ----------------------------- | ----------- | ------- | ------- | ------------- | --------------- |
 | Dashboard                    | `/`                           | ✅          | ✅      | ✅      | ✅            | Sí              |
 | Colecciones                  | `/colecciones`                | ✅          | ✅      | ✅      | ✅            | Sí              |
+| Pozos                        | `/pozos`                      | ✅          | ✅      | ✅      | ✅            | Sí              |
 | Placas                       | `/placas`                     | ✅          | ✅      | ✅      | ✅            | Sí              |
 | Ubicaciones                  | `/ubicaciones`                | ✅          | ✅      | ✅      | ✅            | Sí              |
 | Reportes                     | `/reportes`                   | ✅          | ✅      | ✅      | ✅            | Sí              |
 | Reportes > Inventario        | `/reportes/inventario`        | ✅          | ✅      | ✅      | ✅            | Indirecto       |
 | Reportes > Placas Problemas  | `/reportes/problemas`         | ✅          | ✅      | ✅      | ✅            | Indirecto       |
 | Reportes > Ocupación Muebles | `/reportes/ocupacion-muebles` | ✅          | ✅      | ✅      | ✅            | Indirecto       |
-| **Catálogos**                | `/catalogos`                  | ❌          | ❌      | ❌      | ✅            | Sí (solo admin) |
+| **Catálogos**                | `/catalogos`                  | ❌          | ❌      | ✅      | ✅            | Sí (curador+)   |
 | **Importar Datos**           | `/importar`                   | ❌          | ❌      | ❌      | ✅            | Sí (solo admin) |
 | **Gestión de Usuarios**      | `/usuarios`                   | ❌          | ❌      | ❌      | ✅            | Sí (solo admin) |
 
@@ -109,45 +110,32 @@ src/components/shared/roleGuards.tsx
     - Secciones colapsables por permiso (Curación, Administración)
     - Links condicionales según nivel
 
-### 4. Auditoría (✅ INIT)
+### 4. Auditoría (⏳ PENDIENTE EN RUNTIME LOCAL)
 
-- [src/lib/audit.ts](src/lib/audit.ts): Servicio de logging de operaciones CRUD
+- Auditoría local: pendiente de implementación en un servicio backend administrativo; no se usan los artefactos Supabase legacy.
 - [sql/audit.sql](sql/audit.sql): Esquema de tabla `auditoria` con RLS
-- **Estado**: Estructura lista; requiere ejecutar SQL en Supabase para activar
+- **Estado**: `sql/schema.sql` no crea `public.auditoria`; `sql/audit.sql` es Supabase-específico y no se ejecuta como parte del runtime local. Por eso el dashboard devuelve `actividadReciente: []` y no expone auditoría a usuarios no administradores.
 
 ---
 
 ## Próximos Pasos (Opcionales)
 
-1. **Ejecutar SQL de auditoría** en Supabase para crear tabla `auditoria`
+1. **Diseñar la migración de auditoría local** sin asumir `auth.users`; queda fuera de este work unit y no se aplica `sql/audit.sql`.
 
-2. **Integrar logAudit** en operaciones CRUD actuales:
+2. **Crear un endpoint administrativo separado** para auditoría, protegido por rol de administrador, cuando exista una tabla local compatible.
 
-    ```typescript
-    // Ejemplo en hooks/usePlacas.ts (o similar)
-    const { mutateAsync } = useMutation({
-        mutationFn: async (placa) => {
-            const { error } = await supabase.from("placa").insert(placa);
-            if (!error)
-                logAudit(
-                    "placa",
-                    "CREATE",
-                    placa.id,
-                    user.persona_id,
-                    user.nombre,
-                );
-        },
-    });
-    ```
+3. Integrar auditoría únicamente mediante un servicio backend local cuando exista
+   una tabla compatible; los hooks del navegador no deben escribir directamente en
+   PostgreSQL.
 
-3. **Row-Level Security (RLS) en Supabase**:
+4. **Row-Level Security (RLS) en Supabase**:
     - Catalogadores solo ven/editan sus propios registros (via `created_by` o `usuario_id`)
     - Revisores ven todo
     - Curadores + Admins sin restricción
 
-4. **Reportes de auditoría**:
-    - Nueva vista de auditoría para admins (`/auditoria`)
-    - Query de cambios recientes, actividad por usuario, etc.
+5. **Reportes de auditoría** (pendiente; las rutas de reportes de auditoría no están registradas todavía):
+     - Nueva vista de auditoría para admins (`/auditoria`), con endpoint/rol separado
+     - Query de cambios recientes, actividad por usuario, etc.
 
 ---
 

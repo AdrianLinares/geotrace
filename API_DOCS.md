@@ -2,12 +2,13 @@
 
 Este archivo recoge las interfaces y puntos de integración que un desarrollador junior usará más a menudo.
 
-1. Cliente Supabase
-    - `src/lib/supabase.ts` exporta `supabase` (cliente configurado con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`).
-    - Usar `supabase.from('tabla')` para consultas. Prefiere encapsular en hooks.
+1. Cliente API local
+    - `src/lib/api.ts` centraliza las peticiones autenticadas al backend local.
+    - `src/lib/authApi.ts` gestiona `/auth/login`, `/auth/me` y `/auth/logout`.
+    - Usa hooks para encapsular consultas y mutaciones; no accedas a PostgreSQL desde el navegador.
 
 2. Hooks de datos (React Query)
-    - Ver `src/hooks/` para ejemplos: `useColecciones`, `usePlacas`, `useUbicaciones`.
+    - Ver `src/hooks/` para ejemplos: `useColecciones`, `usePlacas`, `useUbicaciones`, `usePozos`, `useMuestras`, `useCatalogos`, `useDashboard`.
     - Patrón: hook exporta `useXxx()` que internamente usa `useQuery` o `useMutation`.
     - Cache: React Query maneja revalidación y errores, usa `isLoading`, `data`, `error`.
 
