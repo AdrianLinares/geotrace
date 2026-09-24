@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createLdapAuthenticator } from '../../server/ldap'
+import { createDirectoryAuthenticator, createLdapAuthenticator, LdapClientError } from '../../server/ldap'
 import { InvalidCredentialsError } from '../../server/auth'
 import type { AppConfig } from '../../server/config'
 
@@ -21,6 +21,22 @@ function client() {
 }
 
 describe('LDAP authenticator', () => {
+  it('uses a disabled directory when local-only configuration has no LDAP', async () => {
+    const localOnly = { ...config, LDAP_URL: undefined, LDAP_BASE_DN: undefined, LOCAL_ADMIN_ENABLED: true }
+    const createLdap = vi.fn()
+    const authenticator = createDirectoryAuthenticator(localOnly, createLdap)
+
+    await expect(authenticator.authenticate('local-admin', 'password')).rejects.toBeInstanceOf(LdapClientError)
+    expect(createLdap).not.toHaveBeenCalled()
+    await authenticator.close()
+  })
+
+  it('does not unbind when the LDAP client cannot be created', async () => {
+    const authenticator = createLdapAuthenticator(config, () => { throw new Error('client creation failed') })
+
+    await expect(authenticator.authenticate('ada', 'password')).rejects.toThrow('LDAP directory unavailable')
+  })
+
   it('creates a client per attempt and unbinds it when the initial bind fails', async () => {
     const first = client()
     first.bind.mockRejectedValueOnce(new Error('directory timeout'))

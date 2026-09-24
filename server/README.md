@@ -9,9 +9,9 @@ Copy the names below into the process environment; do not commit a `.env` file o
 | Variable | Required | Description |
 | --- | --- | --- |
 | `DATABASE_URL` | yes | PostgreSQL connection string for the local application database. |
-| `LDAP_URL` | yes | LDAP/LDAPS server URL. |
+| `LDAP_URL` | production yes; development optional | LDAP/LDAPS server URL. In development, omit it together with `LDAP_BASE_DN` when using the local fallback. |
 | `LDAP_STARTTLS` | no | Set `true` only when `LDAP_URL` uses `ldap://` and the server supports StartTLS. Production rejects plain LDAP without this explicit setting. |
-| `LDAP_BASE_DN` | yes | Search base DN. |
+| `LDAP_BASE_DN` | production yes; development optional | Search base DN. |
 | `LDAP_BIND_DN` / `LDAP_BIND_PASSWORD` | no (pair) | Optional service-account bind used for the directory search. |
 | `LDAP_USER_SEARCH_FILTER` | no | Search filter containing `{{username}}`; defaults to common AD attributes. |
 | `SERVER_HOST` / `SERVER_PORT` | no | Listen address and port. |
@@ -20,6 +20,9 @@ Copy the names below into the process environment; do not commit a `.env` file o
 | `SESSION_COOKIE_SAME_SITE` | no | `strict`, `lax`, or `none`; defaults to `lax`. |
 | `SESSION_COOKIE_SECURE` | no | Set `true` behind HTTPS. Required for `SameSite=none`. |
 | `SESSION_COOKIE_DOMAIN` | no | Optional cookie domain. |
+| `LOCAL_ADMIN_ENABLED` | no | Defaults to `false`. Set `true` only in development/test to enable the local fallback; production rejects it. |
+| `LOCAL_ADMIN_USERNAME` | when local fallback is enabled | Username for the local fallback administrator. |
+| `LOCAL_ADMIN_PASSWORD_HASH` | when local fallback is enabled | Valid `scrypt$...` hash for the local fallback administrator. Never use a plaintext password. |
 
 Run the session DDL in the local PostgreSQL database, then start the server:
 
@@ -28,6 +31,13 @@ pnpm install --frozen-lockfile
 psql "$DATABASE_URL" -f sql/migrations/001_app_auth_sessions.sql
 pnpm run dev:server
 ```
+
+Production requires LDAP: provide `LDAP_URL` and `LDAP_BASE_DN`, and use LDAPS or
+explicit StartTLS. Development may omit both and use the local fallback by
+setting all three `LOCAL_ADMIN_*` variables above. The fallback is disabled by
+default and must never be enabled in production. To disable it immediately,
+set `LOCAL_ADMIN_ENABLED=false` and restart the server; also revoke or remove
+the local credential from the database when appropriate.
 
 Endpoints are `GET /health`, `POST /auth/login` (`{ "username", "password" }`), `GET /auth/me`, `POST /auth/logout`, authenticated reads, and local `MUESTRA` CRUD: `POST /api/samples`, `PUT /api/samples/:id`, and restricted `DELETE /api/samples/:id`. Lists accept bounded pagination and return `{ data, total }`; plate lists additionally accept `collectionId`, `states`, and `search`.
 

@@ -23,6 +23,23 @@ describe('server configuration', () => {
     expect(loadConfig({ ...baseEnv, LOCAL_ADMIN_ENABLED: 'true', LOCAL_ADMIN_USERNAME: 'local-admin', LOCAL_ADMIN_PASSWORD_HASH: hash }).LOCAL_ADMIN_ENABLED).toBe(true)
   })
 
+  it('accepts local-only administration without LDAP configuration', async () => {
+    const hash = await hashPassword('password')
+    const config = loadConfig({
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgres://localhost/geotrace',
+      LOCAL_ADMIN_ENABLED: 'true',
+      LOCAL_ADMIN_USERNAME: 'local-admin',
+      LOCAL_ADMIN_PASSWORD_HASH: hash,
+    })
+    expect(config.LDAP_URL).toBeUndefined()
+    expect(config.LDAP_BASE_DN).toBeUndefined()
+  })
+
+  it('still requires LDAP when local administration is disabled', () => {
+    expect(() => loadConfig({ NODE_ENV: 'test', DATABASE_URL: 'postgres://localhost/geotrace' })).toThrow(/LDAP_URL and LDAP_BASE_DN/)
+  })
+
   it('rejects plain LDAP in production unless StartTLS is explicitly enabled', () => {
     expect(() => loadConfig({ ...baseEnv, NODE_ENV: 'production' })).toThrow(/Production LDAP/)
   })

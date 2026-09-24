@@ -19,9 +19,11 @@ export function createLdapAuthenticator(config: AppConfig, createClient: LdapCli
 
   return {
     async authenticate(username, password) {
-      const client = createClient(config.LDAP_URL)
+      if (!config.LDAP_URL || !config.LDAP_BASE_DN) throw new LdapClientError('LDAP directory unavailable')
+      let client: LdapClient | undefined
       let userBindStarted = false
       try {
+        client = createClient(config.LDAP_URL)
         if (new URL(config.LDAP_URL).protocol === 'ldap:' && config.LDAP_STARTTLS) {
           await client.startTLS({ rejectUnauthorized: true })
         }
@@ -37,11 +39,24 @@ export function createLdapAuthenticator(config: AppConfig, createClient: LdapCli
         if (userBindStarted && isInvalidCredentials(error)) throw new InvalidCredentialsError('Invalid credentials')
         throw new LdapClientError('LDAP directory unavailable')
       } finally {
-        await client.unbind().catch(() => undefined)
+        if (client) await client.unbind().catch(() => undefined)
       }
     },
     async close() {
       // Clients are intentionally scoped to one authentication attempt.
     },
   }
+}
+
+export function createUnavailableDirectoryAuthenticator(): DirectoryAuthenticator {
+  return {
+    async authenticate() {
+      throw new LdapClientError('LDAP directory unavailable')
+    },
+    async close() {},
+  }
+}
+
+export function createDirectoryAuthenticator(config: AppConfig, createLdap: (config: AppConfig) => DirectoryAuthenticator = createLdapAuthenticator): DirectoryAuthenticator {
+  return config.LDAP_URL && config.LDAP_BASE_DN ? createLdap(config) : createUnavailableDirectoryAuthenticator()
 }

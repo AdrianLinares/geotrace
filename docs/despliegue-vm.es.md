@@ -67,7 +67,8 @@ sudoedit /etc/geotrace/geotrace.env
 Configure AD/LDAP con LDAPS o `LDAP_STARTTLS=true`; en producción el backend
 rechaza LDAP plano. Use el filtro `LDAP_USER_SEARCH_FILTER` si el AD no usa los
 atributos predeterminados. Mantenga `LDAP_BIND_DN` y
-`LDAP_BIND_PASSWORD` como pareja. No ponga secretos en el frontend.
+`LDAP_BIND_PASSWORD` como pareja. En producción LDAP es obligatorio: no se
+debe omitir ni sustituir por el acceso local. No ponga secretos en el frontend.
 
 Inicialice el esquema oficial que corresponda a su release y después aplique
 la migración de sesiones:
@@ -81,12 +82,12 @@ En operación normal `DATABASE_URL` se toma del EnvironmentFile del servicio;
 el ejemplo anterior es deliberadamente un placeholder y no debe copiarse con
 una contraseña real en el historial del shell.
 
-### Bypass temporal de emergencia para AD caído
+### Fallback local solo para desarrollo
 
-El login local es un bypass **temporal, solo para desarrollo**, y está
-deshabilitado por defecto. No lo active en producción salvo una autorización
-explícita y una ventana de emergencia. Aplique la migración y cree o actualice
-la credencial desde el backend:
+En development/test se puede omitir LDAP y usar un fallback local temporal. Está
+deshabilitado por defecto y **no debe habilitarse en producción, ni siquiera
+como bypass de emergencia**. Aplique la migración y cree o actualice la
+credencial desde el backend:
 
 ```bash
 pnpm run db:migrate:local-admin
@@ -103,11 +104,14 @@ LOCAL_ADMIN_USERNAME=<username>
 LOCAL_ADMIN_PASSWORD_HASH=<hash-scrypt-reportado-por-el-comando>
 ```
 
-El backend no arranca si el modo está habilitado sin username/hash válidos.
+`LOCAL_ADMIN_ENABLED`, `LOCAL_ADMIN_USERNAME` y
+`LOCAL_ADMIN_PASSWORD_HASH` son las tres variables del fallback. El backend no
+arranca si está habilitado sin username/hash válidos. En development/test,
+LDAP puede omitirse solo cuando `LOCAL_ADMIN_ENABLED=true` y esas credenciales
+son válidas.
 Para desactivarlo inmediatamente cambie `LOCAL_ADMIN_ENABLED=false` y reinicie
-el servicio. Cuando AD vuelva a funcionar, desactívelo, revise o revoque la
-credencial local y elimine este bypass en el siguiente trabajo de
-mantenimiento.
+el servicio; después revise o revoque la credencial local. En producción,
+mantenga siempre `LOCAL_ADMIN_ENABLED=false` y LDAP configurado.
 
 ## Frontend, systemd y Nginx HTTPS
 

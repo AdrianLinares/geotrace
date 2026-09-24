@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { AuthService, InvalidCredentialsError, MissingApplicationRoleError, requireRole } from '../../server/auth'
 import type { DirectoryAuthenticator, RoleRepository, SessionRepository, AuthenticatedUser } from '../../server/types'
 import { hashPassword } from '../../server/passwords'
+import { createDirectoryAuthenticator } from '../../server/ldap'
+import { createApp } from '../../server/app'
 
 const user: AuthenticatedUser = { personaId: '1', username: 'ada@example.test', name: 'Ada Lovelace', roles: ['Catalogador'] }
 
@@ -50,6 +52,28 @@ describe('AuthService', () => {
     const result = await service.login(user.username, 'password')
     expect(result.user.roles).toEqual(['Administrador'])
     expect(sessions.create).toHaveBeenCalledOnce()
+  })
+
+  it('logs in locally through the disabled directory when LDAP is not configured', async () => {
+    const config = {
+      NODE_ENV: 'test', SERVER_HOST: '127.0.0.1', SERVER_PORT: 3000,
+      DATABASE_URL: 'postgres://localhost/geotrace', LDAP_STARTTLS: false,
+      LDAP_USER_SEARCH_FILTER: '(uid={{username}})', SESSION_COOKIE_NAME: 'session', SESSION_TTL_SECONDS: 60,
+      SESSION_COOKIE_SAME_SITE: 'lax', SESSION_COOKIE_SECURE: false, LOCAL_ADMIN_ENABLED: true,
+    } as const
+    const directory = createDirectoryAuthenticator(config)
+    const roles: RoleRepository = { findActiveUserByUsername: vi.fn().mockResolvedValue({ ...user, username: 'local-admin', roles: ['Administrador'] }) }
+    const sessions: SessionRepository = { create: vi.fn(), find: vi.fn(), remove: vi.fn() }
+    const credentials = { findByUsername: vi.fn().mockResolvedValue({ passwordHash: await hashPassword('password') }) }
+    const service = new AuthService(directory, roles, sessions, 60, { username: 'local-admin', credentials })
+
+    await expect(service.login('local-admin', 'password')).resolves.toMatchObject({ user: { username: 'local-admin' } })
+    expect(credentials.findByUsername).toHaveBeenCalledWith('local-admin')
+    expect(sessions.create).toHaveBeenCalledOnce()
+
+    const app = await createApp({ auth: new AuthService(directory, roles, sessions, 60, { username: 'local-admin', credentials }), config })
+    await expect(app.inject({ method: 'POST', url: '/auth/login', payload: { username: 'local-admin', password: 'password' } })).resolves.toMatchObject({ statusCode: 200 })
+    await app.close()
   })
 
   it('rejects an incorrect local password and a user without an active role', async () => {
