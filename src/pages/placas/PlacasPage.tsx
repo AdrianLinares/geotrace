@@ -3,7 +3,6 @@ import AppLayout from '../../components/layout/AppLayout'
 import { usePlacas, useCreatePlaca, useUpdatePlaca } from '../../hooks/usePlacas'
 import { useColecciones } from '../../hooks/useColecciones'
 import PlacaModal from './PlacaModal'
-import MuestraModal from '@/pages/muestras/MuestraModal'
 import { Placa } from '@/types/database'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -21,9 +20,6 @@ export default function PlacasPage() {
   const [placaToEdit, setPlacaToEdit] = useState<Placa | null>(null)
   const [estadoModalOpen, setEstadoModalOpen] = useState(false)
   const [placaForEstado, setPlacaForEstado] = useState<Placa | null>(null)
-  const [muestraModalOpen, setMuestraModalOpen] = useState(false)
-  const [muestraToEdit, setMuestraToEdit] = useState<any>(null)
-  const [placaForMuestra, setPlacaForMuestra] = useState<string | undefined>(undefined)
 
   const { data, isLoading } = usePlacas(page, {
     coleccion_id: selectedColeccion,
@@ -141,13 +137,6 @@ export default function PlacasPage() {
         placa={placaForEstado}
       />
 
-      {/* Muestra Modal */}
-      <MuestraModal
-        isOpen={muestraModalOpen}
-        onClose={() => { setMuestraModalOpen(false); setMuestraToEdit(null) }}
-        muestraToEdit={muestraToEdit}
-        placaId={placaForMuestra}
-      />
     </AppLayout>
   )
 }

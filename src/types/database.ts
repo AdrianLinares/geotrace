@@ -1,4 +1,4 @@
-// Minimal TypeScript types matching the Supabase schema (subset used by the UI)
+// Minimal TypeScript types for the normalized database subset used by the UI
 
 export type Coleccion = {
   coleccion_id: string
@@ -61,26 +61,29 @@ export type LegacyUbicacionFisica = Record<string, unknown>
 
 export type Placa = {
   placa_id: string
-  codigo_ubicacion?: string | null
-  codigo_placa?: string | null
-  clase_placa_id?: string | null
-  diseno_placa_id?: string | null
-  configuracion_cavidades_id?: string | null
-  estado_catalogacion_id?: string | null
-  ubicacion_id?: string | null
-  coleccion_id?: string | null
-  clase_placa?: string | null
-  rol_placa?: string | null
-  diseno_placa?: string | null
-  total_cavidades?: number | null
-  estado_placa?: string | null
-  tipo_rejilla?: string | null
-  cubierta?: string | null
-  tipo_abrazadera?: string | null
+  codigo_ubicacion: string | null
+  coleccion_id: string | null
+  codigo_placa: string | null
+  clase_placa_id: string | null
+  etapa_uso_placa_id: string | null
+  diseno_placa_id: string | null
+  configuracion_cavidades_id: string | null
+  material_placa_id: string | null
+  color_placa_id: string | null
+  configuracion_rejilla_id: string | null
+  tipo_proteccion_id: string | null
+  sistema_ensamble_id: string | null
   catalogador_id?: string | null
-  estado_catalogacion?: 'En proceso' | 'Incompleto' | 'En revisión' | 'Validado' | 'Cerrado'
-  created_at?: string | null
-  updated_at?: string | null
+  fecha_ingreso: string | null
+  estado_catalogacion_id: string | null
+  revisor_id: string | null
+  fecha_revision: string | null
+  estado_revision_id: string | null
+  comentarios: string | null
+  observaciones: string | null
+  clase_placa?: string | null
+  diseno_placa?: string | null
+  estado_catalogacion?: 'En proceso' | 'Incompleto' | 'En revisión' | 'Validado' | 'Cerrado' | string | null
 }
 
 export type Muestra = {

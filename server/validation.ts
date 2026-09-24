@@ -54,6 +54,36 @@ export const physicalLocationQuerySchema = paginationSchema.extend({
   sectionId: normalizedIdSchema.optional(),
 }).strict()
 
+const optionalPlateId = z.preprocess(value => value === '' ? null : value, normalizedIdSchema.nullable().optional())
+const optionalPlateText = z.string().trim().max(255).nullable().optional()
+const optionalPlateLongText = z.string().max(10000).nullable().optional()
+export const plateMutationSchema = z.object({
+  codigo_ubicacion: optionalPlateText,
+  coleccion_id: optionalPlateId,
+  codigo_placa: optionalPlateText,
+  clase_placa_id: optionalPlateId,
+  etapa_uso_placa_id: optionalPlateId,
+  diseno_placa_id: optionalPlateId,
+  configuracion_cavidades_id: optionalPlateId,
+  material_placa_id: optionalPlateId,
+  color_placa_id: optionalPlateId,
+  configuracion_rejilla_id: optionalPlateId,
+  tipo_proteccion_id: optionalPlateId,
+  sistema_ensamble_id: optionalPlateId,
+  catalogador_id: optionalPlateId,
+  fecha_ingreso: z.string().datetime({ offset: true }).nullable().optional(),
+  estado_catalogacion_id: optionalPlateId,
+  revisor_id: optionalPlateId,
+  fecha_revision: z.string().datetime({ offset: true }).nullable().optional(),
+  estado_revision_id: optionalPlateId,
+  comentarios: optionalPlateLongText,
+  observaciones: optionalPlateLongText,
+}).strict()
+
+export const plateUpdateSchema = plateMutationSchema.refine(input => Object.keys(input).length > 0, 'At least one plate field is required')
+export const plateCreateSchema = plateMutationSchema.refine(input => Object.keys(input).length > 0, 'At least one plate field is required')
+export const plateTransitionSchema = z.object({ estado_catalogacion_id: normalizedIdSchema }).strict()
+
 export function completeCollectionInput(input: z.infer<typeof collectionBodySchema>) {
   return {
     codigo_coleccion: input.codigo_coleccion ?? null,

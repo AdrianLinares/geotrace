@@ -95,6 +95,7 @@ export type PlateDto = {
   coleccion_id: string | null
   codigo_placa: string | null
   clase_placa_id: string | null
+  etapa_uso_placa_id: string | null
   clase_placa: string | null
   diseno_placa_id: string | null
   diseno_placa: string | null
@@ -113,6 +114,29 @@ export type PlateDto = {
   estado_revision_id: string | null
   comentarios: string | null
   observaciones: string | null
+}
+
+export type PlateMutationInput = {
+  codigo_ubicacion?: string | null
+  coleccion_id?: string | null
+  codigo_placa?: string | null
+  clase_placa_id?: string | null
+  etapa_uso_placa_id?: string | null
+  diseno_placa_id?: string | null
+  configuracion_cavidades_id?: string | null
+  material_placa_id?: string | null
+  color_placa_id?: string | null
+  configuracion_rejilla_id?: string | null
+  tipo_proteccion_id?: string | null
+  sistema_ensamble_id?: string | null
+  catalogador_id?: string | null
+  fecha_ingreso?: string | null
+  estado_catalogacion_id?: string | null
+  revisor_id?: string | null
+  fecha_revision?: string | null
+  estado_revision_id?: string | null
+  comentarios?: string | null
+  observaciones?: string | null
 }
 
 export type SampleDto = {
@@ -206,4 +230,10 @@ export type CollectionRepository = ReadRepository & {
   createCollection(input: CollectionInput): Promise<CollectionDto>
   updateCollection(id: string, input: CollectionUpdateInput): Promise<CollectionDto | null>
   deleteCollection(id: string): Promise<boolean>
+}
+
+export type PlateRepository = CollectionRepository & {
+  createPlate(input: PlateMutationInput): Promise<PlateDto>
+  updatePlate(id: string, input: PlateMutationInput, user: AuthenticatedUser): Promise<PlateDto | null>
+  transitionPlate(id: string, targetStateId: string, user: AuthenticatedUser): Promise<PlateDto | null>
 }

@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { Button } from '../../components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog'
-import { Textarea } from '../../components/ui/textarea'
 import { useCambiarEstado } from '../../hooks/usePlacas'
-import { useAppStore } from '../../stores/appStore'
 import { Placa } from '../../types/database'
 
 interface Props {
@@ -22,32 +20,26 @@ interface Props {
  *   definida en el backend.
  */
 
-const TRANSITIONS: Record<string, string[]> = {
-  'En proceso': ['Incompleto', 'En revisión'],
-  'En revisión': ['Validado', 'Incompleto'],
-  'Incompleto': ['En proceso'],
-  'Validado': [], // only Curador/Admin via special permission
+const TRANSITIONS: Record<string, Array<{ id: string; label: string }>> = {
+  '1': [{ id: '2', label: 'Incompleto' }, { id: '3', label: 'En revisión' }],
+  '2': [{ id: '1', label: 'En proceso' }],
+  '3': [{ id: '2', label: 'Incompleto' }, { id: '4', label: 'Validado' }],
+  '4': [{ id: '1', label: 'En proceso' }, { id: '5', label: 'Cerrado' }],
+  '5': [],
 }
 
 export default function CambiarEstadoModal({ isOpen, onClose, placa }: Props) {
-  const user = useAppStore(s => s.user)
   const [nuevoEstado, setNuevoEstado] = useState<string>('')
-  const [obs, setObs] = useState('')
   const cambiar = useCambiarEstado()
 
-  const allowed = placa?.estado_catalogacion
-    ? (placa.estado_catalogacion === 'Validado'
-      ? (['Curador', 'Administrador'].includes(user?.rol || '') ? ['En proceso'] : [])
-      : TRANSITIONS[placa.estado_catalogacion] || [])
-    : []
+  const allowed = placa?.estado_catalogacion_id ? TRANSITIONS[placa.estado_catalogacion_id] || [] : []
 
   async function handleConfirm() {
     if (!placa || !nuevoEstado) return
     try {
       await cambiar.mutateAsync({
         placa_id: placa.placa_id,
-        nuevoEstado,
-        observaciones: obs,
+         estado_catalogacion_id: nuevoEstado,
       })
       onClose()
     } catch (e: any) {
@@ -66,10 +58,6 @@ export default function CambiarEstadoModal({ isOpen, onClose, placa }: Props) {
         </DialogHeader>
 
         <div className="space-y-4">
-          {placa?.estado_catalogacion === 'Validado' && !['Curador', 'Administrador'].includes(user?.rol || '') && (
-            <p className="text-red-500">No tienes permisos para cambiar el estado de una placa Validada.</p>
-          )}
-
           <div>
             <label className="block text-sm">Nuevo estado</label>
             <select
@@ -78,15 +66,10 @@ export default function CambiarEstadoModal({ isOpen, onClose, placa }: Props) {
               className="w-full border p-2 rounded"
             >
               <option value="">Seleccione...</option>
-              {allowed.map(est => (
-                <option key={est} value={est}>{est}</option>
+               {allowed.map(est => (
+                <option key={est.id} value={est.id}>{est.label}</option>
               ))}
             </select>
-          </div>
-
-          <div>
-            <label className="block text-sm">Observaciones</label>
-            <Textarea value={obs} onChange={e => setObs(e.target.value)} />
           </div>
 
           <div className="flex justify-end gap-2">

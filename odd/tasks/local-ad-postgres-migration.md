@@ -84,6 +84,7 @@ Repository-local source, tests, SQL migration files, deployment configuration, a
 - ODD-005 progress: normalized dashboard metrics and conservation/occupancy reads were migrated behind `/api/dashboard`; local audit activity remains intentionally empty until an administrator-scoped local audit model is implemented.
 - ODD-005 progress: administrative user and role management now uses local PostgreSQL `persona`, `cat_rol`, and `rel_persona_rol`, with Administrator-only authorization, transactional assignment, last-admin protection, and frontend session reconciliation after revocation.
 - ODD-005 progress: conservation reference catalogs now use an authenticated local API endpoint with normalized PostgreSQL tables and a tested `{ data: { vidrio, acetato, marcoPlaca } }` contract.
+- ODD-005 progress: normalized plate create/update/status-transition operations now use the local API with backend role enforcement and Catalogador ownership; marked-plate annotations, sample compound forms, and local audit remain separate pending work.
 - Engram mirror: pending because Engram tools were unavailable in this session.
 
 ## Next step

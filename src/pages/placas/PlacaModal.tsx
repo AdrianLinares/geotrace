@@ -5,13 +5,8 @@ import { Button } from '../../components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
 import { useCreatePlaca, useUpdatePlaca } from '../../hooks/usePlacas'
-import { supabase } from '../../lib/supabase'
 import { PlacaForm, placaSchema } from '../../lib/validations/placa'
-import { useAppStore } from '../../stores/appStore'
 import TabInformacionGeneral from './tabs/TabInformacionGeneral'
-import TabMarcado from './tabs/TabMarcado'
-import TabMuestras from './tabs/TabMuestras'
-import TabNotasManuscritas from './tabs/TabNotasManuscritas'
 import { toast } from '../../components/shared/toast'
 
 interface Props {
@@ -22,10 +17,9 @@ interface Props {
 
 /**
  * PlacaModal
- * - Modal para crear/editar una `placa` con pestañas para secciones relacionadas:
- *   información general, marcado, notas manuscritas y muestras.
+ * - Modal para crear/editar las columnas normalizadas de `placa`.
  * - Usa `react-hook-form` con `zod` (resolver) para validación.
- * - Persiste datos en varias tablas (`placa`, `marcado_placa`, `nota_manuscrita`).
+ * - Este work unit persiste solamente columnas normalizadas de `placa`.
  *
  * Consejos para desarrolladores junior:
  * - Las upserts múltiples aquí no son atómicas: en producción prefiera
@@ -35,7 +29,6 @@ interface Props {
  */
 
 export default function PlacaModal({ isOpen, onClose, placaToEdit }: Props) {
-  const user = useAppStore(s => s.user)
   const isEditing = !!placaToEdit?.placa_id
 
   const methods = useForm<PlacaForm>({
@@ -58,46 +51,12 @@ export default function PlacaModal({ isOpen, onClose, placaToEdit }: Props) {
 
   async function onSubmit(values: PlacaForm) {
     try {
-      // Add catalogador_id from current user if not set
-      const payload = {
-        ...values,
-        catalogador_id: user?.persona_id || undefined,
-      }
-
       let placaId = placaToEdit?.placa_id
       if (isEditing) {
-        await update.mutateAsync({ ...payload, placa_id: placaId! })
+        await update.mutateAsync({ ...values, placa_id: placaId! })
       } else {
-        const newPlaca = await create.mutateAsync(payload)
+        const newPlaca = await create.mutateAsync(values)
         placaId = (newPlaca as any)?.placa_id
-      }
-
-      // Save marcado_placa if present
-      if (values.marcado && placaId) {
-        const marcado = {
-          marcado_placa_id: `MP-${placaId}`,
-          placa_id: placaId,
-          ...values.marcado,
-          catalogador_id: user?.persona_id,
-        }
-        await supabase.from('marcado_placa').upsert(marcado, { onConflict: 'marcado_placa_id' })
-      }
-
-      // Save notas manuscritas if present (concurrente)
-      if (values.notas && placaId) {
-        await Promise.all(
-          values.notas.map(async (nota) => {
-            const notaId = `${placaId}_${nota.zona}_${Math.random().toString(36).slice(2, 6)}`
-            return supabase.from('nota_manuscrita').upsert({
-              nota_id: notaId,
-              placa_id: placaId,
-              zona: nota.zona,
-              clave_nota: nota.clave_nota,
-              texto_nota: nota.texto_nota,
-              catalogador_id: user?.persona_id,
-            }, { onConflict: 'nota_id' })
-          })
-        )
       }
 
       onClose()
@@ -113,8 +72,9 @@ export default function PlacaModal({ isOpen, onClose, placaToEdit }: Props) {
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Editar Placa' : 'Nueva Placa'}</DialogTitle>
           <DialogDescription>
-            Complete la información en las pestañas y guarde.
+            Complete los IDs y campos normalizados de PLACA y guarde.
           </DialogDescription>
+          <p className="text-sm text-amber-700">Limitación de esta migración: MARCADO_PLACA, ANOTACION_PLACA y MUESTRA requieren work units separados y no se guardarán parcialmente.</p>
         </DialogHeader>
 
         <FormProvider {...methods}>
@@ -122,22 +82,10 @@ export default function PlacaModal({ isOpen, onClose, placaToEdit }: Props) {
             <Tabs defaultValue="general">
               <TabsList>
                 <TabsTrigger value="general">Información General</TabsTrigger>
-                <TabsTrigger value="marcado">Marcado</TabsTrigger>
-                <TabsTrigger value="notas">Notas Manuscritas</TabsTrigger>
-                <TabsTrigger value="muestras">Muestras</TabsTrigger>
               </TabsList>
 
               <TabsContent value="general">
                 <TabInformacionGeneral control={methods.control} errors={errors} />
-              </TabsContent>
-              <TabsContent value="marcado">
-                <TabMarcado control={methods.control} errors={errors} />
-              </TabsContent>
-              <TabsContent value="notas">
-                <TabNotasManuscritas control={methods.control} />
-              </TabsContent>
-              <TabsContent value="muestras">
-                <TabMuestras control={methods.control} />
               </TabsContent>
             </Tabs>
 

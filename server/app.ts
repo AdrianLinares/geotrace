@@ -3,11 +3,11 @@ import cookie from '@fastify/cookie'
 import { ZodError } from 'zod'
 import type { AppConfig } from './config'
 import { AuthService, AuthenticationInfrastructureError, InvalidCredentialsError, MissingApplicationRoleError, requireRole } from './auth'
-import { LastAdministratorError, UnknownRoleError } from './repositories'
-import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput, AdminRepository, ConservationRepository } from './types'
-import { basinQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, normalizedIdSchema, personIdSchema, personUpdateSchema, physicalLocationQuerySchema, plateQuerySchema, sampleQuerySchema, wellQuerySchema } from './validation'
+import { InvalidPlateTransitionError, LastAdministratorError, PlateAuthorizationError, UnknownRoleError } from './repositories'
+import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput, AdminRepository, ConservationRepository, PlateRepository } from './types'
+import { basinQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, normalizedIdSchema, personIdSchema, personUpdateSchema, physicalLocationQuerySchema, plateCreateSchema, plateQuerySchema, plateTransitionSchema, plateUpdateSchema, sampleQuerySchema, wellQuerySchema } from './validation'
 
-type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: CollectionRepository; admin?: AdminRepository; conservation?: ConservationRepository }
+type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: PlateRepository; admin?: AdminRepository; conservation?: ConservationRepository }
 
 export async function createApp({ auth, config, databaseHealth, reads, admin, conservation }: Dependencies): Promise<FastifyInstance> {
   const app = Fastify({ logger: config.NODE_ENV !== 'test' })
@@ -27,6 +27,8 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, co
     if (error instanceof AuthenticationInfrastructureError) return reply.code(503).send({ error: 'Authentication service unavailable' })
     if (error instanceof LastAdministratorError) return reply.code(409).send({ error: 'The last administrator cannot be removed' })
     if (error instanceof UnknownRoleError) return reply.code(404).send({ error: 'Application role not found' })
+    if (error instanceof PlateAuthorizationError) return reply.code(403).send({ error: error.message })
+    if (error instanceof InvalidPlateTransitionError) return reply.code(409).send({ error: error.message })
     if ((error as { code?: string }).code === '23505') return reply.code(409).send({ error: 'Person data conflicts with an existing record' })
     if (error instanceof ZodError) return reply.code(400).send({ error: 'Invalid request' })
     return reply.code(500).send({ error: 'Internal server error' })
@@ -159,6 +161,34 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, co
       if (!(await requireSession(request, reply))) return
       const id = normalizedIdSchema.parse(request.params.id)
       const result = await reads.getPlate(id)
+      return result ?? reply.code(404).send({ error: 'Plate not found' })
+    })
+    app.post<{ Body: unknown }>('/api/plates', async (request, reply) => {
+      const user = await requireSession(request, reply); if (!user) return
+       if (!requireRole('Catalogador')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user)) return reply.code(403).send({ error: 'Plate creation role required' })
+      const input = plateCreateSchema.parse(request.body)
+       if ((input.revisor_id !== undefined || input.fecha_revision !== undefined || input.estado_revision_id !== undefined) && !requireRole('Revisor')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user)) return reply.code(403).send({ error: 'Review fields require a reviewer role' })
+       return reply.code(201).send(await reads.createPlate({ ...input, catalogador_id: user.personaId, fecha_ingreso: input.fecha_ingreso ?? new Date().toISOString() }))
+    })
+    app.put<{ Params: { id: string }; Body: unknown }>('/api/plates/:id', async (request, reply) => {
+      const user = await requireSession(request, reply); if (!user) return
+       if (!requireRole('Catalogador')(user) && !requireRole('Revisor')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user)) return reply.code(403).send({ error: 'Plate editing role required' })
+       const id = normalizedIdSchema.parse(request.params.id)
+       const input = plateUpdateSchema.parse(request.body)
+       if (input.estado_catalogacion_id !== undefined) return reply.code(400).send({ error: 'Use the status transition endpoint for catalogation state changes' })
+       if (input.catalogador_id !== undefined) return reply.code(400).send({ error: 'Plate ownership cannot be changed' })
+       if ((input.revisor_id !== undefined || input.fecha_revision !== undefined || input.estado_revision_id !== undefined) && !requireRole('Revisor')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user)) return reply.code(403).send({ error: 'Review fields require a reviewer role' })
+       const current = await reads.getPlate(id)
+       if (!current) return reply.code(404).send({ error: 'Plate not found' })
+       if (requireRole('Catalogador')(user) && !requireRole('Revisor')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user) && current.catalogador_id !== user.personaId) return reply.code(403).send({ error: 'Catalogador can only edit owned plates' })
+       const result = await reads.updatePlate(id, input, user)
+      return result ?? reply.code(404).send({ error: 'Plate not found' })
+    })
+    app.post<{ Params: { id: string }; Body: unknown }>('/api/plates/:id/status', async (request, reply) => {
+      const user = await requireSession(request, reply); if (!user) return
+      const id = normalizedIdSchema.parse(request.params.id)
+      const { estado_catalogacion_id } = plateTransitionSchema.parse(request.body)
+      const result = await reads.transitionPlate(id, estado_catalogacion_id, user)
       return result ?? reply.code(404).send({ error: 'Plate not found' })
     })
     app.get<{ Querystring: { page?: string; pageSize?: string; placaId?: string } }>('/api/samples', async (request, reply) => {

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Placa } from '../types/database'
 import { apiRequest } from '../lib/api'
-export { useCreatePlaca, useUpdatePlaca, useCambiarEstado } from './usePlacasLegacyMutations'
+export { useCreatePlaca, useUpdatePlaca, useCambiarEstado } from './usePlacaMutations'
 
 const PAGE_SIZE = 20
 
@@ -46,17 +46,3 @@ export function usePlaca(id?: string) {
 // Allowed transitions (client-side mapping)
 // - Estas reglas son sólo una ayuda UX; la autorización y validación
 //   final debe aplicarse en el backend (RLS / triggers) para seguridad.
-const TRANSITIONS: Record<string, string[]> = {
-  'En proceso': ['Incompleto', 'En revisión'],
-  'En revisión': ['Validado', 'Incompleto'],
-  'Incompleto': ['En proceso'],
-  'Validado': [], // only Curador/Admin can reopen
-}
-
-/**
- * useCambiarEstado
- * - Cambia el estado de una placa y escribe una entrada en `auditoria_cambios`.
- * - Importante: la función lee el estado actual, hace update y luego crea auditoría.
- * - Riesgos: hay operaciones asíncronas encadenadas; en alta concurrencia conviene
- *   usar transacciones en el servidor (Postgres) para evitar inconsistencias.
- */

@@ -1,8 +1,10 @@
 import type { Pool } from 'pg'
-import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto, AdminRepository, ManagedPerson, ApplicationRole, PersonUpdateInput, ConservationRepository, ConservationReferenceDto } from './types'
+import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto, AdminRepository, ManagedPerson, ApplicationRole, PersonUpdateInput, ConservationRepository, ConservationReferenceDto, PlateMutationInput, PlateRepository } from './types'
 
 export class LastAdministratorError extends Error {}
 export class UnknownRoleError extends Error {}
+export class InvalidPlateTransitionError extends Error {}
+export class PlateAuthorizationError extends Error {}
 
 export function createRoleRepository(pool: Pool): RoleRepository {
   return {
@@ -152,6 +154,7 @@ const wellColumns = `p.pozo_id::text AS pozo_id, p.codigo_pozo, p.nombre_pozo,
   p.estado_revision_id::text AS estado_revision_id, p.observaciones`
 const plateColumns = `p.placa_id::text AS placa_id, p.codigo_ubicacion, p.coleccion_id::text AS coleccion_id,
   p.codigo_placa, p.clase_placa_id::text AS clase_placa_id, cp.nombre AS clase_placa,
+  p.etapa_uso_placa_id::text AS etapa_uso_placa_id,
   p.diseno_placa_id::text AS diseno_placa_id, dp.nombre AS diseno_placa,
   p.configuracion_cavidades_id::text AS configuracion_cavidades_id,
   p.material_placa_id::text AS material_placa_id, p.color_placa_id::text AS color_placa_id,
@@ -174,7 +177,22 @@ const physicalLocationColumns = `uf.ubicacion_fisica_id::text AS ubicacion_fisic
   uf.columna_bandeja_id::text AS columna_bandeja_id, ccb.codigo_columna AS columna_codigo,
   ccb.nombre AS columna_nombre, uf.posicion_bandeja,
   b.material_bandeja_id::text AS material_bandeja_id, cmb.nombre AS material_bandeja,
-  uf.fecha_ubicacion, uf.observaciones`
+   uf.fecha_ubicacion, uf.observaciones`
+
+const plateMutationColumns: Record<keyof PlateMutationInput, string> = {
+  codigo_ubicacion: 'codigo_ubicacion', coleccion_id: 'coleccion_id', codigo_placa: 'codigo_placa', clase_placa_id: 'clase_placa_id',
+  etapa_uso_placa_id: 'etapa_uso_placa_id', diseno_placa_id: 'diseno_placa_id', configuracion_cavidades_id: 'configuracion_cavidades_id',
+  material_placa_id: 'material_placa_id', color_placa_id: 'color_placa_id', configuracion_rejilla_id: 'configuracion_rejilla_id',
+  tipo_proteccion_id: 'tipo_proteccion_id', sistema_ensamble_id: 'sistema_ensamble_id', catalogador_id: 'catalogador_id', fecha_ingreso: 'fecha_ingreso',
+  estado_catalogacion_id: 'estado_catalogacion_id', revisor_id: 'revisor_id', fecha_revision: 'fecha_revision', estado_revision_id: 'estado_revision_id',
+  comentarios: 'comentarios', observaciones: 'observaciones',
+}
+
+const getPlate = (client: Pick<Pool, 'query'>, id: string) => client.query<PlateDto>(`SELECT ${plateColumns} FROM public.placa p
+  LEFT JOIN public.cat_clase_placa cp ON cp.clase_placa_id = p.clase_placa_id
+  LEFT JOIN public.cat_diseno_placa dp ON dp.diseno_placa_id = p.diseno_placa_id
+  LEFT JOIN public.cat_estado_catalogacion ec ON ec.estado_catalogacion_id = p.estado_catalogacion_id
+  WHERE p.placa_id = $1`, [id]).then(result => result.rows[0] ?? null)
 
 const collectionInputValues = (input: CollectionInput) => [
   input.codigo_coleccion,
@@ -194,7 +212,7 @@ const collectionUpdateColumns: Record<keyof CollectionInput, string> = {
   estado_coleccion: 'estado_coleccion',
 }
 
-export function createReadRepository(pool: Pool): CollectionRepository {
+export function createReadRepository(pool: Pool): PlateRepository {
   return {
     async listCollections(page, pageSize, search) {
       const offset = page * pageSize
@@ -263,6 +281,45 @@ export function createReadRepository(pool: Pool): CollectionRepository {
          LEFT JOIN public.cat_estado_catalogacion ec ON ec.estado_catalogacion_id = p.estado_catalogacion_id
         WHERE p.placa_id = $1`, [id])
       return result.rows[0] ?? null
+    },
+    async createPlate(input) {
+      const entries = (Object.keys(plateMutationColumns) as Array<keyof PlateMutationInput>).filter(column => input[column] !== undefined)
+      const values = entries.map(column => input[column])
+      const result = await pool.query<{ placa_id: string }>(`INSERT INTO public.placa (${entries.map(column => plateMutationColumns[column]).join(', ')}) VALUES (${entries.map((_, index) => `$${index + 1}`).join(', ')}) RETURNING placa_id::text AS placa_id`, values)
+      return (await getPlate(pool, result.rows[0].placa_id))!
+    },
+    async updatePlate(id, input, user) {
+      const entries = (Object.keys(plateMutationColumns) as Array<keyof PlateMutationInput>).filter(column => input[column] !== undefined)
+      const values = entries.map(column => input[column])
+      const catalogadorOnly = user.roles.some(role => role.trim().toLowerCase() === 'catalogador') && !user.roles.some(role => ['revisor', 'curador', 'administrador'].includes(role.trim().toLowerCase()))
+      const idParameter = values.length + 1
+      const parameters = [...values, id]
+      const ownerClause = catalogadorOnly ? ` AND catalogador_id = $${parameters.length + 1}` : ''
+      if (catalogadorOnly) parameters.push(user.personaId)
+      const result = await pool.query(`UPDATE public.placa SET ${entries.map((column, index) => `${plateMutationColumns[column]} = $${index + 1}`).join(', ')} WHERE placa_id = $${idParameter}${ownerClause}`, parameters)
+      return result.rowCount === 1 ? getPlate(pool, id) : null
+    },
+    async transitionPlate(id, targetStateId, user) {
+      const client = await pool.connect()
+      try {
+        await client.query('BEGIN')
+        const current = await client.query<{ estado: string; catalogador_id: string | null }>(`SELECT ec.estado, p.catalogador_id::text AS catalogador_id FROM public.placa p JOIN public.cat_estado_catalogacion ec ON ec.estado_catalogacion_id = p.estado_catalogacion_id WHERE p.placa_id = $1 FOR UPDATE`, [id])
+        if (!current.rows[0]) { await client.query('ROLLBACK'); return null }
+        const target = await client.query<{ estado: string }>('SELECT estado FROM public.cat_estado_catalogacion WHERE estado_catalogacion_id = $1', [targetStateId])
+        if (!target.rows[0]) throw new InvalidPlateTransitionError('Unknown target state')
+        const allowed: Record<string, string[]> = { 'En proceso': ['Incompleto', 'En revisión'], 'Incompleto': ['En proceso'], 'En revisión': ['Incompleto', 'Validado'], 'Validado': ['En proceso', 'Cerrado'], Cerrado: [] }
+        if (!allowed[current.rows[0].estado]?.includes(target.rows[0].estado)) throw new InvalidPlateTransitionError('Invalid state transition')
+        const review = ['En revisión', 'Validado', 'Cerrado'].includes(current.rows[0].estado) || ['En revisión', 'Validado', 'Cerrado'].includes(target.rows[0].estado)
+        const roles = review ? ['Revisor', 'Curador', 'Administrador'] : ['Catalogador', 'Curador', 'Administrador']
+        if (!user.roles.some(role => roles.some(required => required.toLowerCase() === role.trim().toLowerCase()))) throw new PlateAuthorizationError('Role cannot transition this state')
+        const catalogadorOnly = user.roles.some(role => role.trim().toLowerCase() === 'catalogador') && !user.roles.some(role => ['revisor', 'curador', 'administrador'].includes(role.trim().toLowerCase()))
+        if (catalogadorOnly && current.rows[0].catalogador_id !== user.personaId) throw new PlateAuthorizationError('Catalogador can only transition owned plates')
+        await client.query('UPDATE public.placa SET estado_catalogacion_id = $1, revisor_id = CASE WHEN $2 THEN $3 ELSE revisor_id END, fecha_revision = CASE WHEN $2 THEN now() ELSE fecha_revision END WHERE placa_id = $4', [targetStateId, review, user.personaId, id])
+        // The local schema intentionally has no auditoria_cambios table yet; audit remains pending.
+        const updated = await getPlate(client, id)
+        await client.query('COMMIT')
+        return updated
+      } catch (error) { await client.query('ROLLBACK'); throw error } finally { client.release() }
     },
     async listSamples(page, pageSize) {
        const from = `FROM public.muestra m
