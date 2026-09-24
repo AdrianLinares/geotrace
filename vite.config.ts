@@ -12,6 +12,11 @@ export default defineConfig({
   // which vitest marks deprecated.
   server: {
     deps: { inline: ['vite', '@vitejs/plugin-react'] },
+    proxy: {
+      '/auth': 'http://127.0.0.1:3000',
+      '/api': 'http://127.0.0.1:3000',
+      '/health': 'http://127.0.0.1:3000',
+    },
   },
   optimizeDeps: {
     include: ['vite', '@vitejs/plugin-react'],
