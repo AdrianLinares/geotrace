@@ -43,6 +43,7 @@ const paginationSchema = z.object({
 export const collectionQuerySchema = paginationSchema
 export const wellQuerySchema = paginationSchema
 export const basinQuerySchema = z.object({}).strict()
+export const catalogReferenceQuerySchema = z.object({}).strict()
 export const plateQuerySchema = paginationSchema.extend({
   collectionId: normalizedIdSchema.optional(),
   states: z.preprocess(value => typeof value === 'string' ? value.split(',').filter(Boolean) : value, z.array(z.string().trim().min(1)).max(20).optional()),

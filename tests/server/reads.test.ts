@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from '../../server/app'
 import { LastAdministratorError } from '../../server/repositories'
 import type { AppConfig } from '../../server/config'
-import type { AdminRepository, ConservationRepository, ReadRepository } from '../../server/types'
+import type { AdminRepository, CatalogRepository, ConservationRepository, ReadRepository } from '../../server/types'
 
 const config: AppConfig = {
   NODE_ENV: 'test', SERVER_HOST: '127.0.0.1', SERVER_PORT: 3000, DATABASE_URL: 'postgres://test',
@@ -36,6 +36,9 @@ const admin: AdminRepository = {
 }
 const conservation: ConservationRepository = {
   listStates: vi.fn().mockResolvedValue({ vidrio: [], acetato: [], marcoPlaca: [] }),
+}
+const catalogs: CatalogRepository = {
+  listReferences: vi.fn().mockResolvedValue({ cuencas: [], clasesPlaca: [], disenosPlaca: [], estadosCatalogacion: [], estadosRevision: [], materialesPlaca: [], coloresPlaca: [], configuracionesCavidades: [], configuracionesRejilla: [], etapasUsoPlaca: [], tiposProteccion: [], sistemasEnsamble: [] }),
 }
 
 afterEach(() => vi.clearAllMocks())
@@ -75,6 +78,29 @@ describe('authenticated read routes', () => {
     const response = await app.inject({ method: 'GET', url: '/api/reference/basins' })
     expect(response.statusCode).toBe(200)
     expect(reads.listBasins).toHaveBeenCalledOnce()
+    await app.close()
+  })
+
+  it('protects the grouped normalized catalog endpoint and rejects unsupported catalog selectors', async () => {
+    const unauthenticated = await createApp({ auth: { restore: vi.fn().mockResolvedValue(null) } as never, config, catalogs })
+    expect((await unauthenticated.inject({ method: 'GET', url: '/api/reference/catalogs' })).statusCode).toBe(401)
+    expect(catalogs.listReferences).not.toHaveBeenCalled()
+    await unauthenticated.close()
+
+    for (const role of ['Catalogador', 'Revisor']) {
+      const forbidden = await createApp({ auth: { restore: vi.fn().mockResolvedValue({ ...user, roles: [role] }) } as never, config, catalogs })
+      const response = await forbidden.inject({ method: 'GET', url: '/api/reference/catalogs' })
+      expect(response.statusCode).toBe(403)
+      expect(response.json()).toEqual({ error: 'Forbidden' })
+      expect(catalogs.listReferences).not.toHaveBeenCalled()
+      await forbidden.close()
+    }
+
+    const app = await createApp({ auth: { restore: vi.fn().mockResolvedValue({ ...user, roles: ['Curador'] }) } as never, config, catalogs })
+    expect((await app.inject({ method: 'GET', url: '/api/reference/catalogs' })).statusCode).toBe(200)
+    expect(catalogs.listReferences).toHaveBeenCalledOnce()
+    expect((await app.inject({ method: 'GET', url: '/api/reference/catalogs?catalog=empresa' })).statusCode).toBe(400)
+    expect(catalogs.listReferences).toHaveBeenCalledOnce()
     await app.close()
   })
 

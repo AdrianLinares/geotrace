@@ -156,6 +156,22 @@ export type DicCuenca = {
   created_at?: string | null
 }
 
+export type CatalogReference = { id: string; name: string | null }
+export type CatalogReferences = {
+  cuencas: Array<{ cuenca_id: string; nombre_cuenca: string | null }>
+  clasesPlaca: Array<{ clase_placa_id: string; codigo_clase: string | null; nombre: string | null; definicion: string | null }>
+  disenosPlaca: Array<{ diseno_placa_id: string; nombre: string | null }>
+  estadosCatalogacion: Array<{ estado_catalogacion_id: string; estado: string; significado: string; quien: string | null }>
+  estadosRevision: Array<{ estado_revision_id: string; nombre: string; significado: string }>
+  materialesPlaca: Array<{ material_placa_id: string; nombre: string | null }>
+  coloresPlaca: Array<{ color_placa_id: string; nombre: string | null }>
+  configuracionesCavidades: Array<{ configuracion_cavidades_id: string; diseno_placa_id: string | null; total_cavidades: number | null }>
+  configuracionesRejilla: Array<{ configuracion_rejilla_id: string; nombre: string | null; numero_subdivisiones: number | null; observaciones: string | null }>
+  etapasUsoPlaca: Array<{ etapa_uso_placa_id: string; codigo_etapa_uso_placa: string | null; nombre: string | null; observaciones: string | null }>
+  tiposProteccion: Array<{ tipo_proteccion_id: string; nombre: string | null }>
+  sistemasEnsamble: Array<{ sistema_ensamble_id: string; nombre: string | null }>
+}
+
 export type DicCampo = {
   campo_id: string
   nombre_campo: string

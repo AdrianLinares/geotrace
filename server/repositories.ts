@@ -1,5 +1,5 @@
 import type { Pool } from 'pg'
-import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto, AdminRepository, ManagedPerson, ApplicationRole, PersonUpdateInput, ConservationRepository, ConservationReferenceDto, PlateMutationInput, PlateRepository, ImportRepository, ImportBatch, ImportTable, ImportRow } from './types'
+import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto, AdminRepository, ManagedPerson, ApplicationRole, PersonUpdateInput, ConservationRepository, ConservationReferenceDto, PlateMutationInput, PlateRepository, ImportRepository, ImportBatch, ImportTable, ImportRow, CatalogRepository, CatalogReferencesDto, PlateClassDto, PlateDesignDto, CatalogationStateDto, ReviewStateDto, PlateMaterialDto, PlateColorDto, CavityConfigurationDto, GridConfigurationDto, PlateUseStageDto, ProtectionTypeDto, AssemblySystemDto } from './types'
 import { importColumns, validateImportRows } from './importValidation'
 
 export class LastAdministratorError extends Error {}
@@ -175,6 +175,41 @@ export function createConservationRepository(pool: Pool): ConservationRepository
         list<ConservationReferenceDto['marcoPlaca']>('cat_marco_placa_estado', 'marco_placa_estado_id', 'marco_placa_estado'),
       ])
       return { vidrio, acetato, marcoPlaca }
+    },
+  }
+}
+
+export function createCatalogRepository(pool: Pool): CatalogRepository {
+  return {
+    async listReferences(): Promise<CatalogReferencesDto> {
+      const [cuencas, clasesPlaca, disenosPlaca, estadosCatalogacion, estadosRevision, materialesPlaca, coloresPlaca, configuracionesCavidades, configuracionesRejilla, etapasUsoPlaca, tiposProteccion, sistemasEnsamble] = await Promise.all([
+        pool.query<BasinDto>('SELECT cuenca_id::text AS cuenca_id, nombre_cuenca FROM public.cat_cuenca ORDER BY nombre_cuenca NULLS LAST, cuenca_id'),
+        pool.query<PlateClassDto>('SELECT clase_placa_id::text AS clase_placa_id, codigo_clase, nombre, definicion FROM public.cat_clase_placa ORDER BY nombre NULLS LAST, clase_placa_id'),
+        pool.query<PlateDesignDto>('SELECT diseno_placa_id::text AS diseno_placa_id, nombre FROM public.cat_diseno_placa ORDER BY nombre NULLS LAST, diseno_placa_id'),
+        pool.query<CatalogationStateDto>('SELECT estado_catalogacion_id::text AS estado_catalogacion_id, estado, significado, quien FROM public.cat_estado_catalogacion ORDER BY estado_catalogacion_id'),
+        pool.query<ReviewStateDto>('SELECT estado_revision_id::text AS estado_revision_id, nombre, significado FROM public.cat_estado_revision ORDER BY estado_revision_id'),
+        pool.query<PlateMaterialDto>('SELECT material_placa_id::text AS material_placa_id, nombre FROM public.cat_material_placa ORDER BY nombre NULLS LAST, material_placa_id'),
+        pool.query<PlateColorDto>('SELECT color_placa_id::text AS color_placa_id, nombre FROM public.cat_color_placa ORDER BY nombre NULLS LAST, color_placa_id'),
+        pool.query<CavityConfigurationDto>('SELECT configuracion_cavidades_id::text AS configuracion_cavidades_id, diseno_placa_id::text AS diseno_placa_id, total_cavidades FROM public.cat_configuracion_cavidades ORDER BY configuracion_cavidades_id'),
+        pool.query<GridConfigurationDto>('SELECT configuracion_rejilla_id::text AS configuracion_rejilla_id, nombre, numero_subdivisiones, observaciones FROM public.cat_configuracion_rejilla ORDER BY nombre NULLS LAST, configuracion_rejilla_id'),
+        pool.query<PlateUseStageDto>('SELECT etapa_uso_placa_id::text AS etapa_uso_placa_id, codigo_etapa_uso_placa, nombre, observaciones FROM public.cat_etapa_uso_placa ORDER BY nombre NULLS LAST, etapa_uso_placa_id'),
+        pool.query<ProtectionTypeDto>('SELECT tipo_proteccion_id::text AS tipo_proteccion_id, nombre FROM public.cat_tipo_proteccion ORDER BY nombre NULLS LAST, tipo_proteccion_id'),
+        pool.query<AssemblySystemDto>('SELECT sistema_ensamble_id::text AS sistema_ensamble_id, nombre FROM public.cat_sistema_ensamble ORDER BY nombre NULLS LAST, sistema_ensamble_id'),
+      ])
+      return {
+        cuencas: cuencas.rows,
+        clasesPlaca: clasesPlaca.rows,
+        disenosPlaca: disenosPlaca.rows,
+        estadosCatalogacion: estadosCatalogacion.rows,
+        estadosRevision: estadosRevision.rows,
+        materialesPlaca: materialesPlaca.rows,
+        coloresPlaca: coloresPlaca.rows,
+        configuracionesCavidades: configuracionesCavidades.rows,
+        configuracionesRejilla: configuracionesRejilla.rows,
+        etapasUsoPlaca: etapasUsoPlaca.rows,
+        tiposProteccion: tiposProteccion.rows,
+        sistemasEnsamble: sistemasEnsamble.rows,
+      }
     },
   }
 }

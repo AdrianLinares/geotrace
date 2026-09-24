@@ -86,6 +86,7 @@ Repository-local source, tests, SQL migration files, deployment configuration, a
 - ODD-005 progress: conservation reference catalogs now use an authenticated local API endpoint with normalized PostgreSQL tables and a tested `{ data: { vidrio, acetato, marcoPlaca } }` contract.
 - ODD-005 progress: normalized plate create/update/status-transition operations now use the local API with backend role enforcement and Catalogador ownership; marked-plate annotations, sample compound forms, and local audit remain separate pending work.
 - ODD-005 progress: administrator-only normalized batch import now uses one transactional API request, fixed table/column whitelists, global size limits, and per-sheet mappings; people/roles, furniture, legacy catalogs, annotations, and audit remain excluded.
+- ODD-005 progress: active catalog reference reads now use a Curador/Administrador-authorized local API with only schema-confirmed normalized catalog tables; legacy dictionary tabs are explicitly unavailable.
 - Engram mirror: pending because Engram tools were unavailable in this session.
 
 ## Next step

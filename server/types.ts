@@ -81,6 +81,37 @@ export type WellDto = {
 
 export type BasinDto = { cuenca_id: string; nombre_cuenca: string | null }
 
+export type PlateDesignDto = { diseno_placa_id: string; nombre: string | null }
+export type PlateClassDto = { clase_placa_id: string; codigo_clase: string | null; nombre: string | null; definicion: string | null }
+export type CatalogationStateDto = { estado_catalogacion_id: string; estado: string; significado: string; quien: string | null }
+export type ReviewStateDto = { estado_revision_id: string; nombre: string; significado: string }
+export type PlateUseStageDto = { etapa_uso_placa_id: string; codigo_etapa_uso_placa: string | null; nombre: string | null; observaciones: string | null }
+export type PlateMaterialDto = { material_placa_id: string; nombre: string | null }
+export type PlateColorDto = { color_placa_id: string; nombre: string | null }
+export type CavityConfigurationDto = { configuracion_cavidades_id: string; diseno_placa_id: string | null; total_cavidades: number | null }
+export type GridConfigurationDto = { configuracion_rejilla_id: string; nombre: string | null; numero_subdivisiones: number | null; observaciones: string | null }
+export type ProtectionTypeDto = { tipo_proteccion_id: string; nombre: string | null }
+export type AssemblySystemDto = { sistema_ensamble_id: string; nombre: string | null }
+
+export type CatalogReferencesDto = {
+  cuencas: BasinDto[]
+  clasesPlaca: PlateClassDto[]
+  disenosPlaca: PlateDesignDto[]
+  estadosCatalogacion: CatalogationStateDto[]
+  estadosRevision: ReviewStateDto[]
+  materialesPlaca: PlateMaterialDto[]
+  coloresPlaca: PlateColorDto[]
+  configuracionesCavidades: CavityConfigurationDto[]
+  configuracionesRejilla: GridConfigurationDto[]
+  etapasUsoPlaca: PlateUseStageDto[]
+  tiposProteccion: ProtectionTypeDto[]
+  sistemasEnsamble: AssemblySystemDto[]
+}
+
+export type CatalogRepository = {
+  listReferences(): Promise<CatalogReferencesDto>
+}
+
 export type ConservationStateDto = {
   id: string
   name: string | null

@@ -1,6 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiRequest } from '../lib/api'
-import { DicCuenca } from '../types/database'
+import { CatalogReferences, DicCuenca } from '../types/database'
+
+export function useCatalogos() {
+  return useQuery({
+    queryKey: ['reference-catalogs'],
+    queryFn: async () => {
+      const { data } = await apiRequest<{ data: CatalogReferences }>('/api/reference/catalogs')
+      return data
+    },
+  })
+}
 
 export function useCuencas() {
   return useQuery({

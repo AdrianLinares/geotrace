@@ -4,13 +4,13 @@ import { ZodError } from 'zod'
 import type { AppConfig } from './config'
 import { AuthService, AuthenticationInfrastructureError, InvalidCredentialsError, MissingApplicationRoleError, requireRole } from './auth'
 import { InvalidPlateTransitionError, LastAdministratorError, PlateAuthorizationError, UnknownRoleError } from './repositories'
-import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput, AdminRepository, ConservationRepository, PlateRepository, ImportRepository } from './types'
-import { basinQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, normalizedIdSchema, personIdSchema, personUpdateSchema, physicalLocationQuerySchema, plateCreateSchema, plateQuerySchema, plateTransitionSchema, plateUpdateSchema, sampleQuerySchema, wellQuerySchema } from './validation'
+import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput, AdminRepository, ConservationRepository, PlateRepository, ImportRepository, CatalogRepository } from './types'
+import { basinQuerySchema, catalogReferenceQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, normalizedIdSchema, personIdSchema, personUpdateSchema, physicalLocationQuerySchema, plateCreateSchema, plateQuerySchema, plateTransitionSchema, plateUpdateSchema, sampleQuerySchema, wellQuerySchema } from './validation'
 import { importBodySchema, IMPORT_MAX_BYTES } from './importValidation'
 
-type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: PlateRepository; admin?: AdminRepository; imports?: ImportRepository; conservation?: ConservationRepository }
+type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: PlateRepository; admin?: AdminRepository; imports?: ImportRepository; conservation?: ConservationRepository; catalogs?: CatalogRepository }
 
-export async function createApp({ auth, config, databaseHealth, reads, admin, imports, conservation }: Dependencies): Promise<FastifyInstance> {
+export async function createApp({ auth, config, databaseHealth, reads, admin, imports, conservation, catalogs }: Dependencies): Promise<FastifyInstance> {
   const app = Fastify({ logger: config.NODE_ENV !== 'test' })
   await app.register(cookie)
   const cookieOptions = {
@@ -84,6 +84,15 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, im
     if (!user) return null
     if (!requireRole('Administrador')(user)) {
       reply.code(403).send({ error: 'Administrator role required' })
+      return null
+    }
+    return user
+  }
+  const requireCatalogReferenceAccess = async (request: { cookies: Record<string, string | undefined> }, reply: Parameters<typeof requireSession>[1]) => {
+    const user = await requireSession(request, reply)
+    if (!user) return null
+    if (!requireRole('Curador')(user) && !requireRole('Administrador')(user)) {
+      reply.code(403).send({ error: 'Forbidden' })
       return null
     }
     return user
@@ -233,6 +242,13 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, im
     app.get('/api/reference/conservation', async (request, reply) => {
       if (!(await requireSession(request, reply))) return
       return { data: await conservation.listStates() }
+    })
+  }
+  if (catalogs) {
+    app.get('/api/reference/catalogs', async (request, reply) => {
+      if (!(await requireCatalogReferenceAccess(request, reply))) return
+      catalogReferenceQuerySchema.parse(request.query)
+      return { data: await catalogs.listReferences() }
     })
   }
   return app

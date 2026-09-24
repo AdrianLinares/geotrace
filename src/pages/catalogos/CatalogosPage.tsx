@@ -1,256 +1,59 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import AppLayout from '../../components/layout/AppLayout'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import { supabase } from '../../lib/supabase'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import UnidadLitoForm from './UnidadLitoForm'
-import BiozonaForm from './BiozonaForm'
-import EdadForm from './EdadForm'
-import EmpresaForm from './EmpresaForm'
-import PersonaForm from './PersonaForm'
-import CuencaForm from './CuencaForm'
-import CampoForm from './CampoForm'
-import ContratoForm from './ContratoForm'
-import { useCuencas } from '../../hooks/useCatalogos'
-import { useLegacyCampo, useLegacyContrato } from '../../hooks/useLegacyCatalogos'
+import { useCatalogos } from '../../hooks/useCatalogos'
 
-export default function CatalogosPage() {
-  const qc = useQueryClient()
-  const [activeTab, setActiveTab] = useState('unidades')
-  const [editing, setEditing] = useState<any>(null)
-  const [showForm, setShowForm] = useState(false)
+type Column = { key: string; label: string }
 
-  // Fetch data
-  const { data: unidades } = useQuery({
-    queryKey: ['dic_unidad_lito'],
-    queryFn: async () => {
-      const { data } = await supabase.from('dic_unidad_lito').select('*')
-      return data || []
-    }
-  })
-  const { data: biozonas } = useQuery({
-    queryKey: ['dic_biozona'],
-    queryFn: async () => {
-      const { data } = await supabase.from('dic_biozona').select('*')
-      return data || []
-    }
-  })
-  const { data: edades } = useQuery({
-    queryKey: ['dic_edad'],
-    queryFn: async () => {
-      const { data } = await supabase.from('dic_edad').select('*')
-      return data || []
-    }
-  })
-  const { data: empresas } = useQuery({
-    queryKey: ['empresa'],
-    queryFn: async () => {
-      const { data } = await supabase.from('empresa').select('*')
-      return data || []
-    }
-  })
-  const { data: cuencas } = useCuencas()
-  const { data: campos } = useLegacyCampo()
-  const { data: contratos } = useLegacyContrato()
-  const { data: personas } = useQuery({
-    queryKey: ['persona'],
-    queryFn: async () => {
-      const { data } = await supabase.from('persona').select('*')
-      return data || []
-    }
-  })
-  // Generic delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: async ({ table, idField, idValue }: { table: string, idField: string, idValue: string }) => {
-      await supabase.from(table).delete().eq(idField, idValue)
-    },
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: [variables.table] })
-    }
-  })
+const catalogs = [
+  { key: 'cuencas', label: 'Cuencas', columns: [{ key: 'cuenca_id', label: 'ID' }, { key: 'nombre_cuenca', label: 'Nombre' }] },
+  { key: 'clasesPlaca', label: 'Clases de placa', columns: [{ key: 'clase_placa_id', label: 'ID' }, { key: 'codigo_clase', label: 'Código' }, { key: 'nombre', label: 'Nombre' }] },
+  { key: 'disenosPlaca', label: 'Diseños de placa', columns: [{ key: 'diseno_placa_id', label: 'ID' }, { key: 'nombre', label: 'Nombre' }] },
+  { key: 'estadosCatalogacion', label: 'Estados de catalogación', columns: [{ key: 'estado_catalogacion_id', label: 'ID' }, { key: 'estado', label: 'Estado' }, { key: 'significado', label: 'Significado' }] },
+  { key: 'estadosRevision', label: 'Estados de revisión', columns: [{ key: 'estado_revision_id', label: 'ID' }, { key: 'nombre', label: 'Nombre' }, { key: 'significado', label: 'Significado' }] },
+  { key: 'materialesPlaca', label: 'Materiales de placa', columns: [{ key: 'material_placa_id', label: 'ID' }, { key: 'nombre', label: 'Nombre' }] },
+  { key: 'coloresPlaca', label: 'Colores de placa', columns: [{ key: 'color_placa_id', label: 'ID' }, { key: 'nombre', label: 'Nombre' }] },
+  { key: 'configuracionesCavidades', label: 'Configuraciones de cavidades', columns: [{ key: 'configuracion_cavidades_id', label: 'ID' }, { key: 'diseno_placa_id', label: 'Diseño' }, { key: 'total_cavidades', label: 'Cavidades' }] },
+  { key: 'configuracionesRejilla', label: 'Configuraciones de rejilla', columns: [{ key: 'configuracion_rejilla_id', label: 'ID' }, { key: 'nombre', label: 'Nombre' }, { key: 'numero_subdivisiones', label: 'Subdivisiones' }] },
+  { key: 'etapasUsoPlaca', label: 'Etapas de uso de placa', columns: [{ key: 'etapa_uso_placa_id', label: 'ID' }, { key: 'codigo_etapa_uso_placa', label: 'Código' }, { key: 'nombre', label: 'Nombre' }] },
+  { key: 'tiposProteccion', label: 'Tipos de protección', columns: [{ key: 'tipo_proteccion_id', label: 'ID' }, { key: 'nombre', label: 'Nombre' }] },
+  { key: 'sistemasEnsamble', label: 'Sistemas de ensamble', columns: [{ key: 'sistema_ensamble_id', label: 'ID' }, { key: 'nombre', label: 'Nombre' }] },
+] as const
 
-  // Generic create/update helpers
-  const handleSave = async (table: string, values: any, idField: string) => {
-    try {
-      const { [idField]: id, ...payload } = values
-      // Clean empty strings to null for Supabase compatibility
-      const cleanPayload = Object.fromEntries(
-        Object.entries(payload).map(([key, val]) => [key, val === '' ? null : val])
-      )
-      if (id) {
-        await supabase.from(table).update(cleanPayload).eq(idField, id)
-      } else {
-        await supabase.from(table).insert(cleanPayload)
-      }
-      qc.invalidateQueries({ queryKey: [table] })
-      setShowForm(false)
-      setEditing(null)
-    } catch (e: any) {
-      alert('Error: ' + e.message)
-    }
-  }
-
-  // Simple table renderer
-  const renderTable = (columns: { key: string; label: string }[], rows: any[], idField: string, table: string) => (
+function CatalogTable({ columns, rows }: { columns: readonly Column[]; rows: readonly Record<string, unknown>[] }) {
+  return (
     <Table>
-      <TableHeader>
-        <TableRow>
-          {columns.map(c => <TableHead key={c.key}>{c.label}</TableHead>)}
-          <TableHead>Acciones</TableHead>
-        </TableRow>
-      </TableHeader>
+      <TableHeader><TableRow>{columns.map(column => <TableHead key={column.key}>{column.label}</TableHead>)}</TableRow></TableHeader>
       <TableBody>
-        {rows.map((row: any) => (
-          <TableRow key={row[idField]}>
-            {columns.map(c => <TableCell key={c.key}>{row[c.key] ?? '-'}</TableCell>)}
-            <TableCell className="space-x-2">
-              <Button variant="outline" size="sm" onClick={() => { setEditing(row); setShowForm(true) }}>Editar</Button>
-              <Button variant="destructive" size="sm" onClick={() => deleteMutation.mutate({ table, idField, idValue: row[idField] })}>Eliminar</Button>
-            </TableCell>
-          </TableRow>
-        ))}
+        {rows.map((row, index) => <TableRow key={String(row[columns[0].key] ?? index)}>{columns.map(column => <TableCell key={column.key}>{String(row[column.key] ?? '-')}</TableCell>)}</TableRow>)}
       </TableBody>
     </Table>
   )
+}
+
+export default function CatalogosPage() {
+  const [activeTab, setActiveTab] = useState<string>(catalogs[0].key)
+  const { data, isLoading, isError } = useCatalogos()
 
   return (
     <AppLayout>
-      <h2 className="text-xl font-semibold mb-4">Catálogos Maestros</h2>
-
+      <h2 className="text-xl font-semibold mb-4">Catálogos normalizados</h2>
+      <p className="mb-4 text-sm text-slate-600">Esta pantalla es de solo lectura. Las altas, ediciones y eliminaciones de catálogos requieren un work unit de escritura con permisos explícitos.</p>
+      {isError && <p role="alert" className="mb-4 text-sm text-red-600">No se pudieron cargar los catálogos.</p>}
+      {isLoading && <p className="mb-4 text-sm text-slate-600">Cargando catálogos...</p>}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="unidades">Unidades Litoestratigráficas</TabsTrigger>
-          <TabsTrigger value="biozonas">Biozonas</TabsTrigger>
-          <TabsTrigger value="edades">Edades Geológicas</TabsTrigger>
-          <TabsTrigger value="empresas">Empresas</TabsTrigger>
-          <TabsTrigger value="cuencas">Cuencas</TabsTrigger>
-          <TabsTrigger value="campos">Campos</TabsTrigger>
-          <TabsTrigger value="contratos">Contratos</TabsTrigger>
-          <TabsTrigger value="personas">Personas</TabsTrigger>
-        </TabsList>
-
-        {['unidades', 'biozonas', 'edades', 'empresas', 'cuencas', 'campos', 'contratos', 'personas'].map(tab => (
-          <TabsContent key={tab} value={tab}>
-            <div className="flex justify-end mb-4">
-              <Button onClick={() => { setEditing(null); setShowForm(true) }}>Nuevo</Button>
-            </div>
-            {tab === 'unidades' && renderTable([
-              { key: 'unidad_lito_id', label: 'ID' },
-              { key: 'nombre_oficial', label: 'Nombre Oficial' },
-              { key: 'tipo_unidad', label: 'Tipo Unidad' },
-              { key: 'rango', label: 'Rango' },
-            ], unidades || [], 'unidad_lito_id', 'dic_unidad_lito')}
-            {tab === 'biozonas' && renderTable([
-              { key: 'biozona_id', label: 'ID' },
-              { key: 'nombre_biozona', label: 'Nombre Biozona' },
-              { key: 'grupo_fosil', label: 'Grupo Fósil' },
-              { key: 'edad_tope', label: 'Edad Tope' },
-              { key: 'edad_base', label: 'Edad Base' },
-            ], biozonas || [], 'biozona_id', 'dic_biozona')}
-            {tab === 'edades' && renderTable([
-              { key: 'edad_id', label: 'ID' },
-              { key: 'nombre_edad', label: 'Edad' },
-              { key: 'jerarquia', label: 'Jerarquía' },
-              { key: 'tope_ma', label: 'Tope (Ma)' },
-              { key: 'base_ma', label: 'Base (Ma)' },
-            ], edades || [], 'edad_id', 'dic_edad')}
-            {tab === 'empresas' && renderTable([
-              { key: 'empresa_id', label: 'ID' },
-              { key: 'nombre_empresa', label: 'Empresa' },
-              { key: 'tipo_empresa', label: 'Tipo Empresa' },
-              { key: 'pais', label: 'País' },
-            ], empresas || [], 'empresa_id', 'empresa')}
-            {tab === 'cuencas' && renderTable([
-              { key: 'cuenca_id', label: 'ID' },
-              { key: 'nombre_cuenca', label: 'Cuenca' },
-            ], cuencas || [], 'cuenca_id', 'dic_cuenca')}
-            {tab === 'campos' && renderTable([
-              { key: 'campo_id', label: 'ID' },
-              { key: 'nombre_campo', label: 'Campo' },
-            ], campos || [], 'campo_id', 'dic_campo')}
-            {tab === 'contratos' && renderTable([
-              { key: 'contrato_id', label: 'ID' },
-              { key: 'nombre_contrato', label: 'Contrato' },
-            ], contratos || [], 'contrato_id', 'dic_contrato')}
-            {tab === 'personas' && renderTable([
-              { key: 'persona_id', label: 'ID' },
-              { key: 'nombre', label: 'Nombre' },
-              { key: 'rol', label: 'Rol' },
-              { key: 'email', label: 'Email' },
-              { key: 'activo', label: 'Activo' },
-            ], personas || [], 'persona_id', 'persona')}
+        <TabsList>{catalogs.map(catalog => <TabsTrigger key={catalog.key} value={catalog.key}>{catalog.label}</TabsTrigger>)}</TabsList>
+        {catalogs.map(catalog => (
+          <TabsContent key={catalog.key} value={catalog.key}>
+            <CatalogTable columns={catalog.columns} rows={(data?.[catalog.key as keyof typeof data] ?? []) as readonly Record<string, unknown>[]} />
           </TabsContent>
         ))}
-
       </Tabs>
-
-      {/* Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded w-2/3 max-h-[80vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">{editing ? 'Editar' : 'Nuevo'} - {activeTab}</h3>
-            {activeTab === 'unidades' && (
-              <UnidadLitoForm
-                defaultValues={editing}
-                onSubmit={(v) => handleSave('dic_unidad_lito', v, 'unidad_lito_id')}
-                onCancel={() => { setShowForm(false); setEditing(null) }}
-              />
-            )}
-            {activeTab === 'biozonas' && (
-              <BiozonaForm
-                defaultValues={editing}
-                onSubmit={(v) => handleSave('dic_biozona', v, 'biozona_id')}
-                onCancel={() => { setShowForm(false); setEditing(null) }}
-              />
-            )}
-            {activeTab === 'edades' && (
-              <EdadForm
-                defaultValues={editing}
-                onSubmit={(v) => handleSave('dic_edad', v, 'edad_id')}
-                onCancel={() => { setShowForm(false); setEditing(null) }}
-              />
-            )}
-            {activeTab === 'empresas' && (
-              <EmpresaForm
-                defaultValues={editing}
-                onSubmit={(v) => handleSave('empresa', v, 'empresa_id')}
-                onCancel={() => { setShowForm(false); setEditing(null) }}
-              />
-            )}
-            {activeTab === 'personas' && (
-              <PersonaForm
-                defaultValues={editing}
-                onSubmit={(v) => handleSave('persona', v, 'persona_id')}
-                onCancel={() => { setShowForm(false); setEditing(null) }}
-              />
-            )}
-            {activeTab === 'cuencas' && (
-              <CuencaForm
-                defaultValues={editing}
-                onSubmit={(v) => handleSave('dic_cuenca', v, 'cuenca_id')}
-                onCancel={() => { setShowForm(false); setEditing(null) }}
-              />
-            )}
-            {activeTab === 'campos' && (
-              <CampoForm
-                defaultValues={editing}
-                onSubmit={(v) => handleSave('dic_campo', v, 'campo_id')}
-                onCancel={() => { setShowForm(false); setEditing(null) }}
-              />
-            )}
-            {activeTab === 'contratos' && (
-              <ContratoForm
-                defaultValues={editing}
-                onSubmit={(v) => handleSave('dic_contrato', v, 'contrato_id')}
-                onCancel={() => { setShowForm(false); setEditing(null) }}
-              />
-            )}
-          </div>
-        </div>
-      )}
+      <section className="mt-6 rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <h3 className="font-semibold">Catálogos no disponibles en el esquema normalizado</h3>
+        <p className="mt-1">No se muestran ni se escriben dic_unidad_lito, dic_biozona, dic_edad, empresa, dic_campo ni dic_contrato: sus tablas no existen en <code>sql/schema.sql</code>. MuestraModal, auditoría, anotaciones y catálogos de escritura compleja quedan fuera de este work unit.</p>
+      </section>
     </AppLayout>
   )
 }

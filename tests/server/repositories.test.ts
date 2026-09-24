@@ -1,7 +1,18 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createAdminRepository, createConservationRepository, createReadRepository, createRoleRepository, LastAdministratorError } from '../../server/repositories'
+import { createAdminRepository, createCatalogRepository, createConservationRepository, createReadRepository, createRoleRepository, LastAdministratorError } from '../../server/repositories'
 
 describe('createReadRepository', () => {
+  it('reads only the confirmed normalized catalog tables with fixed SQL', async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [] })
+    await createCatalogRepository({ query } as never).listReferences()
+
+    expect(query).toHaveBeenCalledTimes(12)
+    const statements = query.mock.calls.map(([sql]) => String(sql))
+    expect(statements.join(' ')).not.toMatch(/dic_unidad_lito|dic_biozona|dic_edad|empresa|dic_campo|dic_contrato/)
+    expect(statements.every(sql => sql.includes('public.cat_'))).toBe(true)
+    expect(statements.every(sql => !sql.includes('$'))).toBe(true)
+    expect(statements.every(sql => !sql.match(/public\."[A-Z_]+"/))).toBe(true)
+  })
   it('lists conservation catalogs with lowercase schema names and stable ordering', async () => {
     const query = vi.fn().mockResolvedValue({ rows: [] })
     const repository = createConservationRepository({ query } as never)
