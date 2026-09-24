@@ -1,5 +1,6 @@
 import type { Pool } from 'pg'
-import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto, AdminRepository, ManagedPerson, ApplicationRole, PersonUpdateInput, ConservationRepository, ConservationReferenceDto, PlateMutationInput, PlateRepository } from './types'
+import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto, AdminRepository, ManagedPerson, ApplicationRole, PersonUpdateInput, ConservationRepository, ConservationReferenceDto, PlateMutationInput, PlateRepository, ImportRepository, ImportBatch, ImportTable, ImportRow } from './types'
+import { importColumns, validateImportRows } from './importValidation'
 
 export class LastAdministratorError extends Error {}
 export class UnknownRoleError extends Error {}
@@ -92,6 +93,40 @@ export function createAdminRepository(pool: Pool): AdminRepository {
         const updated = (await listPeople(client)).find(persona => persona.persona_id === personaId) ?? null
         await client.query('COMMIT')
         return updated
+      } catch (error) {
+        await client.query('ROLLBACK')
+        throw error
+      } finally {
+        client.release()
+      }
+    },
+  }
+}
+
+const importTableSql: Record<ImportTable, { table: string; columns: readonly string[] }> = {
+  coleccion: { table: 'public.coleccion', columns: importColumns.coleccion },
+  pozo: { table: 'public.pozo', columns: importColumns.pozo },
+  placa: { table: 'public.placa', columns: importColumns.placa },
+  muestra: { table: 'public.muestra', columns: importColumns.muestra },
+}
+
+export function createImportRepository(pool: Pool): ImportRepository {
+  return {
+    async importBatches(batches: ImportBatch[]) {
+      const validatedBatches = batches.map(({ table, rows }) => ({ table, rows: validateImportRows(table, rows) as ImportRow[] }))
+      const client = await pool.connect()
+      try {
+        await client.query('BEGIN')
+        for (const { table, rows } of validatedBatches) {
+          const definition = importTableSql[table]
+          const placeholders = definition.columns.map((_, index) => `$${index + 1}`).join(', ')
+          const statement = `INSERT INTO ${definition.table} (${definition.columns.join(', ')}) VALUES (${placeholders})`
+          for (const row of rows) {
+            await client.query(statement, definition.columns.map((column) => row[column] ?? null))
+          }
+        }
+        await client.query('COMMIT')
+        return validatedBatches.reduce((total, batch) => total + batch.rows.length, 0)
       } catch (error) {
         await client.query('ROLLBACK')
         throw error

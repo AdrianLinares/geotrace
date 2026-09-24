@@ -4,12 +4,13 @@ import { ZodError } from 'zod'
 import type { AppConfig } from './config'
 import { AuthService, AuthenticationInfrastructureError, InvalidCredentialsError, MissingApplicationRoleError, requireRole } from './auth'
 import { InvalidPlateTransitionError, LastAdministratorError, PlateAuthorizationError, UnknownRoleError } from './repositories'
-import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput, AdminRepository, ConservationRepository, PlateRepository } from './types'
+import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput, AdminRepository, ConservationRepository, PlateRepository, ImportRepository } from './types'
 import { basinQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, normalizedIdSchema, personIdSchema, personUpdateSchema, physicalLocationQuerySchema, plateCreateSchema, plateQuerySchema, plateTransitionSchema, plateUpdateSchema, sampleQuerySchema, wellQuerySchema } from './validation'
+import { importBodySchema, IMPORT_MAX_BYTES } from './importValidation'
 
-type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: PlateRepository; admin?: AdminRepository; conservation?: ConservationRepository }
+type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: PlateRepository; admin?: AdminRepository; imports?: ImportRepository; conservation?: ConservationRepository }
 
-export async function createApp({ auth, config, databaseHealth, reads, admin, conservation }: Dependencies): Promise<FastifyInstance> {
+export async function createApp({ auth, config, databaseHealth, reads, admin, imports, conservation }: Dependencies): Promise<FastifyInstance> {
   const app = Fastify({ logger: config.NODE_ENV !== 'test' })
   await app.register(cookie)
   const cookieOptions = {
@@ -24,12 +25,13 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, co
   const clearSessionCookie = (reply: { clearCookie: (name: string, options: typeof cookieOptions) => unknown }) => reply.clearCookie(config.SESSION_COOKIE_NAME, cookieOptions)
 
   app.setErrorHandler((error, _request, reply) => {
+    if ((error as { statusCode?: number }).statusCode === 413) return reply.code(413).send({ error: 'Import payload is too large' })
     if (error instanceof AuthenticationInfrastructureError) return reply.code(503).send({ error: 'Authentication service unavailable' })
     if (error instanceof LastAdministratorError) return reply.code(409).send({ error: 'The last administrator cannot be removed' })
     if (error instanceof UnknownRoleError) return reply.code(404).send({ error: 'Application role not found' })
     if (error instanceof PlateAuthorizationError) return reply.code(403).send({ error: error.message })
     if (error instanceof InvalidPlateTransitionError) return reply.code(409).send({ error: error.message })
-    if ((error as { code?: string }).code === '23505') return reply.code(409).send({ error: 'Person data conflicts with an existing record' })
+    if ((error as { code?: string }).code === '23505' || (error as { code?: string }).code === '23503') return reply.code(409).send({ error: 'Import conflicts with an existing record or reference' })
     if (error instanceof ZodError) return reply.code(400).send({ error: 'Invalid request' })
     return reply.code(500).send({ error: 'Internal server error' })
   })
@@ -101,6 +103,14 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, co
       const input = personUpdateSchema.parse(request.body)
       const person = await admin.updatePerson(id, input)
       return person ? person : reply.code(404).send({ error: 'Person not found' })
+    })
+  }
+  if (imports) {
+    app.post<{ Body: unknown }>('/api/admin/import', { bodyLimit: IMPORT_MAX_BYTES }, async (request, reply) => {
+      if (!(await requireAdministrator(request, reply))) return
+      const body = importBodySchema.parse(request.body)
+      const imported = await imports.importBatches(body.batches)
+      return { imported }
     })
   }
   if (reads) {

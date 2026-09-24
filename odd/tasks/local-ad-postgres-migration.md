@@ -85,6 +85,7 @@ Repository-local source, tests, SQL migration files, deployment configuration, a
 - ODD-005 progress: administrative user and role management now uses local PostgreSQL `persona`, `cat_rol`, and `rel_persona_rol`, with Administrator-only authorization, transactional assignment, last-admin protection, and frontend session reconciliation after revocation.
 - ODD-005 progress: conservation reference catalogs now use an authenticated local API endpoint with normalized PostgreSQL tables and a tested `{ data: { vidrio, acetato, marcoPlaca } }` contract.
 - ODD-005 progress: normalized plate create/update/status-transition operations now use the local API with backend role enforcement and Catalogador ownership; marked-plate annotations, sample compound forms, and local audit remain separate pending work.
+- ODD-005 progress: administrator-only normalized batch import now uses one transactional API request, fixed table/column whitelists, global size limits, and per-sheet mappings; people/roles, furniture, legacy catalogs, annotations, and audit remain excluded.
 - Engram mirror: pending because Engram tools were unavailable in this session.
 
 ## Next step

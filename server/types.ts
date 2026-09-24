@@ -34,6 +34,13 @@ export type AdminRepository = {
   updatePerson(personaId: string, input: PersonUpdateInput): Promise<ManagedPerson | null>
 }
 
+export type ImportTable = 'coleccion' | 'pozo' | 'placa' | 'muestra'
+export type ImportRow = Record<string, unknown>
+export type ImportBatch = { table: ImportTable; rows: ImportRow[] }
+export type ImportRepository = {
+  importBatches(batches: ImportBatch[]): Promise<number>
+}
+
 export type SessionRepository = {
   create(tokenHash: string, user: AuthenticatedUser, expiresAt: Date): Promise<void>
   find(tokenHash: string): Promise<AuthenticatedUser | null>
