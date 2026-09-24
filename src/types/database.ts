@@ -93,6 +93,10 @@ export type Muestra = {
   origen_muestra_id?: string | null
   metodo_adquisicion_id?: string | null
   estado_catalogacion_id?: string | null
+  catalogador_id?: string | null
+  fecha_ingreso?: string | null
+  revisor_id?: string | null
+  fecha_revision?: string | null
   tipo_muestra_subsuelo_id?: string | null
   tipo_intervalo_muestra_id?: string | null
   unidad_medida_id?: string | null
@@ -113,7 +117,6 @@ export type Muestra = {
   info_inferida?: boolean | null
   estado_catalogacion?: 'En proceso' | 'Incompleto' | 'En revisión' | 'Validado' | 'Cerrado'
   fecha_estado?: string | null
-  catalogador_id?: string | null
   created_at?: string | null
   updated_at?: string | null
 }

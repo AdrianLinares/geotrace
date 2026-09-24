@@ -1,7 +1,36 @@
 import { useQuery } from '@tanstack/react-query'
 import { Muestra } from '../types/database'
 import { apiRequest } from '../lib/api'
-export { useCreateMuestra, useUpdateMuestra, useDeleteMuestra } from './useMuestrasLegacyMutations'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+
+type SampleMutation = Partial<Pick<Muestra, 'nombre_muestra_original' | 'codigo_muestra_sistema' | 'origen_muestra_id' | 'metodo_adquisicion_id' | 'catalogador_id' | 'fecha_ingreso' | 'revisor_id' | 'fecha_revision' | 'estado_catalogacion_id' | 'observaciones'>>
+
+export function useCreateMuestra() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: SampleMutation) => apiRequest<Muestra>('/api/samples', { method: 'POST', body: JSON.stringify(payload) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['muestras'] }),
+  })
+}
+
+export function useUpdateMuestra() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ muestra_id, ...payload }: SampleMutation & { muestra_id: string }) => apiRequest<Muestra>(`/api/samples/${encodeURIComponent(muestra_id)}`, { method: 'PUT', body: JSON.stringify(payload) }),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['muestras'] })
+      qc.invalidateQueries({ queryKey: ['muestra', variables.muestra_id] })
+    },
+  })
+}
+
+export function useDeleteMuestra() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ muestra_id }: { muestra_id: string }) => apiRequest<{ ok: true }>(`/api/samples/${encodeURIComponent(muestra_id)}`, { method: 'DELETE' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['muestras'] }),
+  })
+}
 
 const PAGE_SIZE = 20
 export const MUESTRAS_PLACA_LIMITATION = 'MUESTRA no tiene una relación normalizada con PLACA.'

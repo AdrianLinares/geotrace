@@ -5,7 +5,7 @@ import type { AppConfig } from './config'
 import { AuthService, AuthenticationInfrastructureError, InvalidCredentialsError, MissingApplicationRoleError, requireRole } from './auth'
 import { InvalidPlateTransitionError, LastAdministratorError, PlateAuthorizationError, UnknownRoleError } from './repositories'
 import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput, AdminRepository, ConservationRepository, PlateRepository, ImportRepository, CatalogRepository } from './types'
-import { basinQuerySchema, catalogReferenceQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, normalizedIdSchema, personIdSchema, personUpdateSchema, physicalLocationQuerySchema, plateCreateSchema, plateQuerySchema, plateTransitionSchema, plateUpdateSchema, sampleQuerySchema, wellQuerySchema } from './validation'
+import { basinQuerySchema, catalogReferenceQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, normalizedIdSchema, personIdSchema, personUpdateSchema, physicalLocationQuerySchema, plateCreateSchema, plateQuerySchema, plateTransitionSchema, plateUpdateSchema, sampleCreateSchema, sampleQuerySchema, sampleUpdateSchema, wellQuerySchema } from './validation'
 import { importBodySchema, IMPORT_MAX_BYTES } from './importValidation'
 
 type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: PlateRepository; admin?: AdminRepository; imports?: ImportRepository; conservation?: ConservationRepository; catalogs?: CatalogRepository }
@@ -221,6 +221,32 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, im
       const id = normalizedIdSchema.parse(request.params.id)
       const result = await reads.getSample(id)
       return result ?? reply.code(404).send({ error: 'Sample not found' })
+    })
+    app.post<{ Body: unknown }>('/api/samples', async (request, reply) => {
+      const user = await requireSession(request, reply); if (!user) return
+      if (!requireRole('Catalogador')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user)) return reply.code(403).send({ error: 'Sample creation role required' })
+      const input = sampleCreateSchema.parse(request.body)
+      if ((input.revisor_id !== undefined || input.fecha_revision !== undefined || input.estado_catalogacion_id !== undefined) && !requireRole('Revisor')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user)) return reply.code(403).send({ error: 'Review fields require a reviewer role' })
+      return reply.code(201).send(await reads.createSample({ ...input, catalogador_id: user.personaId, fecha_ingreso: input.fecha_ingreso ?? new Date().toISOString() }))
+    })
+    app.put<{ Params: { id: string }; Body: unknown }>('/api/samples/:id', async (request, reply) => {
+      const user = await requireSession(request, reply); if (!user) return
+      if (!requireRole('Catalogador')(user) && !requireRole('Revisor')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user)) return reply.code(403).send({ error: 'Sample editing role required' })
+      const id = normalizedIdSchema.parse(request.params.id)
+      const input = sampleUpdateSchema.parse(request.body)
+      if (input.catalogador_id !== undefined) return reply.code(400).send({ error: 'Sample ownership cannot be changed' })
+      if ((input.revisor_id !== undefined || input.fecha_revision !== undefined || input.estado_catalogacion_id !== undefined) && !requireRole('Revisor')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user)) return reply.code(403).send({ error: 'Review fields require a reviewer role' })
+      const current = await reads.getSample(id)
+      if (!current) return reply.code(404).send({ error: 'Sample not found' })
+      if (requireRole('Catalogador')(user) && !requireRole('Revisor')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user) && current.catalogador_id !== user.personaId) return reply.code(403).send({ error: 'Catalogador can only edit owned samples' })
+      return (await reads.updateSample(id, input, user)) ?? reply.code(404).send({ error: 'Sample not found' })
+    })
+    app.delete<{ Params: { id: string } }>('/api/samples/:id', async (request, reply) => {
+      const user = await requireSession(request, reply); if (!user) return
+      if (!requireRole('Curador')(user) && !requireRole('Administrador')(user)) return reply.code(403).send({ error: 'Only curators and administrators can delete samples' })
+      const id = normalizedIdSchema.parse(request.params.id)
+      const deleted = await reads.deleteSample(id)
+      return deleted ? { ok: true } : reply.code(404).send({ error: 'Sample not found' })
     })
     app.get<{ Querystring: { page?: string; pageSize?: string; search?: string; occupied?: string; sectionId?: string } }>('/api/physical-locations', async (request, reply) => {
       if (!(await requireSession(request, reply))) return

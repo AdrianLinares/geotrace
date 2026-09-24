@@ -198,6 +198,19 @@ export type SampleDto = {
   unidad_medida_id: string | null
 }
 
+export type SampleMutationInput = {
+  nombre_muestra_original?: string | null
+  codigo_muestra_sistema?: string | null
+  origen_muestra_id?: string | null
+  metodo_adquisicion_id?: string | null
+  catalogador_id?: string | null
+  fecha_ingreso?: string | null
+  revisor_id?: string | null
+  fecha_revision?: string | null
+  estado_catalogacion_id?: string | null
+  observaciones?: string | null
+}
+
 export type PhysicalLocationDto = {
   ubicacion_fisica_id: string
   codigo_ubicacion: string | null
@@ -274,4 +287,7 @@ export type PlateRepository = CollectionRepository & {
   createPlate(input: PlateMutationInput): Promise<PlateDto>
   updatePlate(id: string, input: PlateMutationInput, user: AuthenticatedUser): Promise<PlateDto | null>
   transitionPlate(id: string, targetStateId: string, user: AuthenticatedUser): Promise<PlateDto | null>
+  createSample(input: SampleMutationInput): Promise<SampleDto>
+  updateSample(id: string, input: SampleMutationInput, user: AuthenticatedUser): Promise<SampleDto | null>
+  deleteSample(id: string): Promise<boolean>
 }

@@ -49,6 +49,23 @@ export const plateQuerySchema = paginationSchema.extend({
   states: z.preprocess(value => typeof value === 'string' ? value.split(',').filter(Boolean) : value, z.array(z.string().trim().min(1)).max(20).optional()),
 }).strict()
 export const sampleQuerySchema = paginationSchema.extend({ placaId: normalizedIdSchema.optional() }).strict()
+const optionalSampleId = z.preprocess(value => value === '' ? null : value, normalizedIdSchema.nullable().optional())
+const optionalSampleText = z.string().max(255).nullable().optional()
+const optionalSampleLongText = z.string().max(10000).nullable().optional()
+export const sampleMutationSchema = z.object({
+  nombre_muestra_original: optionalSampleText,
+  codigo_muestra_sistema: optionalSampleText,
+  origen_muestra_id: optionalSampleId,
+  metodo_adquisicion_id: optionalSampleId,
+  catalogador_id: optionalSampleId,
+  fecha_ingreso: z.string().datetime({ offset: true }).nullable().optional(),
+  revisor_id: optionalSampleId,
+  fecha_revision: z.string().datetime({ offset: true }).nullable().optional(),
+  estado_catalogacion_id: optionalSampleId,
+  observaciones: optionalSampleLongText,
+}).strict()
+export const sampleCreateSchema = sampleMutationSchema.refine(input => Object.keys(input).length > 0, 'At least one sample field is required')
+export const sampleUpdateSchema = sampleMutationSchema.refine(input => Object.keys(input).length > 0, 'At least one sample field is required')
 const optionalBooleanQuery = z.preprocess(value => value === undefined || value === true || value === false ? value : value === 'true' ? true : value === 'false' ? false : value, z.boolean().optional())
 export const physicalLocationQuerySchema = paginationSchema.extend({
   occupied: optionalBooleanQuery,

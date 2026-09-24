@@ -1,5 +1,5 @@
 import type { Pool } from 'pg'
-import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto, AdminRepository, ManagedPerson, ApplicationRole, PersonUpdateInput, ConservationRepository, ConservationReferenceDto, PlateMutationInput, PlateRepository, ImportRepository, ImportBatch, ImportTable, ImportRow, CatalogRepository, CatalogReferencesDto, PlateClassDto, PlateDesignDto, CatalogationStateDto, ReviewStateDto, PlateMaterialDto, PlateColorDto, CavityConfigurationDto, GridConfigurationDto, PlateUseStageDto, ProtectionTypeDto, AssemblySystemDto } from './types'
+import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, SampleMutationInput, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto, AdminRepository, ManagedPerson, ApplicationRole, PersonUpdateInput, ConservationRepository, ConservationReferenceDto, PlateMutationInput, PlateRepository, ImportRepository, ImportBatch, ImportTable, ImportRow, CatalogRepository, CatalogReferencesDto, PlateClassDto, PlateDesignDto, CatalogationStateDto, ReviewStateDto, PlateMaterialDto, PlateColorDto, CavityConfigurationDto, GridConfigurationDto, PlateUseStageDto, ProtectionTypeDto, AssemblySystemDto } from './types'
 import { importColumns, validateImportRows } from './importValidation'
 
 export class LastAdministratorError extends Error {}
@@ -257,6 +257,12 @@ const plateMutationColumns: Record<keyof PlateMutationInput, string> = {
   estado_catalogacion_id: 'estado_catalogacion_id', revisor_id: 'revisor_id', fecha_revision: 'fecha_revision', estado_revision_id: 'estado_revision_id',
   comentarios: 'comentarios', observaciones: 'observaciones',
 }
+const sampleMutationColumns: Record<keyof SampleMutationInput, string> = {
+  nombre_muestra_original: 'nombre_muestra_original', codigo_muestra_sistema: 'codigo_muestra_sistema',
+  origen_muestra_id: 'origen_muestra_id', metodo_adquisicion_id: 'metodo_adquisicion_id', catalogador_id: 'catalogador_id',
+  fecha_ingreso: 'fecha_ingreso', revisor_id: 'revisor_id', fecha_revision: 'fecha_revision',
+  estado_catalogacion_id: 'estado_catalogacion_id', observaciones: 'observaciones',
+}
 
 const getPlate = (client: Pick<Pool, 'query'>, id: string) => client.query<PlateDto>(`SELECT ${plateColumns} FROM public.placa p
   LEFT JOIN public.cat_clase_placa cp ON cp.clase_placa_id = p.clase_placa_id
@@ -407,6 +413,26 @@ export function createReadRepository(pool: Pool): PlateRepository {
          LEFT JOIN public.muestra_subsuelo ms ON ms.muestra_id = m.muestra_id
         WHERE m.muestra_id = $1`, [id])
       return result.rows[0] ?? null
+    },
+    async createSample(input) {
+      const entries = (Object.keys(sampleMutationColumns) as Array<keyof SampleMutationInput>).filter(column => input[column] !== undefined)
+      const values = entries.map(column => input[column])
+      const result = await pool.query<{ muestra_id: string }>(`INSERT INTO public.muestra (${entries.map(column => sampleMutationColumns[column]).join(', ')}) VALUES (${entries.map((_, index) => `$${index + 1}`).join(', ')}) RETURNING muestra_id::text AS muestra_id`, values)
+      return (await this.getSample(result.rows[0].muestra_id))!
+    },
+    async updateSample(id, input, user) {
+      const entries = (Object.keys(sampleMutationColumns) as Array<keyof SampleMutationInput>).filter(column => input[column] !== undefined)
+      const values = entries.map(column => input[column])
+      const catalogadorOnly = user.roles.some(role => role.trim().toLowerCase() === 'catalogador') && !user.roles.some(role => ['revisor', 'curador', 'administrador'].includes(role.trim().toLowerCase()))
+      const parameters = [...values, id] as unknown[]
+      const ownerClause = catalogadorOnly ? ` AND catalogador_id = $${parameters.length + 1}` : ''
+      if (catalogadorOnly) parameters.push(user.personaId)
+      const result = await pool.query(`UPDATE public.muestra SET ${entries.map((column, index) => `${sampleMutationColumns[column]} = $${index + 1}`).join(', ')} WHERE muestra_id = $${values.length + 1}${ownerClause}`, parameters)
+      return result.rowCount === 1 ? this.getSample(id) : null
+    },
+    async deleteSample(id) {
+      const result = await pool.query('DELETE FROM public.muestra WHERE muestra_id = $1', [id])
+      return result.rowCount === 1
     },
     async listPhysicalLocations(page, pageSize, filters) {
       const offset = page * pageSize
