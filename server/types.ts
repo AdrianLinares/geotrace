@@ -97,6 +97,57 @@ export type GridConfigurationDto = { configuracion_rejilla_id: string; nombre: s
 export type ProtectionTypeDto = { tipo_proteccion_id: string; nombre: string | null }
 export type AssemblySystemDto = { sistema_ensamble_id: string; nombre: string | null }
 
+export type LitoReportadaDto = {
+  uni_lito_reportada_id: string; codigo_uni_lito_reportada: string | null; nombre_reportado: string | null;
+  catalogador_id: string | null; fecha_ingreso: string | null; revisor_id: string | null;
+  fecha_revision: string | null; estado_revision_id: string | null; observaciones: string | null
+}
+export type LitoNormalizadaDto = {
+  uni_lito_normalizada_id: string; cod_uni_lito_normalizada: string | null; nombre_normalizado: string | null;
+  rango_lito_id: string | null; referencia_bibliografica_id: string | null; observaciones: string | null;
+  revisor_id: string | null; estado_revision_id: string | null; fecha_revision: string | null
+}
+export type LitoActualizadaDto = {
+  uni_lito_actualizada_id: string; cod_uni_lito_actualizada: string | null; nombre_oficial: string | null;
+  rango_lito_id: string | null; estado_nomenclatura_id: string | null; revisor_id: string | null;
+  fecha_revision: string | null; estado_revision_id: string | null; observaciones: string | null
+}
+export type BiozonaReportadaDto = {
+  biozona_reportada_id: string; nombre_reportado: string | null; autor_biozona_reportada: string | null;
+  codigo_biozona: string | null; estado_revision_id: string | null; catalogador_id: string | null;
+  fecha_ingreso: string | null; revisor_id: string | null; fecha_revision: string | null; observaciones: string | null
+}
+export type BiozonaNormalizadaDto = {
+  biozona_normalizada_id: string; nombre_normalizado: string | null; codigo_biozona: string | null;
+  autor_biozona_normalizada: string | null; estado_revision_id: string | null; revisor_id: string | null;
+  fecha_revision: string | null; observaciones: string | null
+}
+export type BiozonaActualizadaDto = {
+  biozona_actualizada_id: string; nombre_actualizado: string | null; codigo_biozona_actual: string | null;
+  fuente_actualizacion: string | null; fecha_actualizacion: string | null; revisor_id: string | null;
+  fecha_revision: string | null; estado_revision_id: string | null; observaciones: string | null
+}
+export type EdadReportadaDto = {
+  edad_reportada_id: string; nombre_reportado: string | null; estado_revision_id: string | null;
+  catalogador_id: string | null; fecha_ingreso: string | null; revisor_id: string | null;
+  fecha_revision: string | null; observaciones: string | null
+}
+export type EdadNormalizadaDto = {
+  edad_normalizada_id: string; nombre_normalizado: string | null; rango_cronoestratigrafico_id: string | null;
+  estado_revision_id: string | null; revisor_id: string | null; fecha_revision: string | null; observaciones: string | null
+}
+export type EdadActualizadaDto = {
+  edad_actualizada_id: string; nombre_actualizado: string | null; escala_tiempo: string | null;
+  fuente_actualizacion: string | null; revisor_id: string | null; fecha_revision: string | null;
+  estado_revision_id: string | null; observaciones: string | null
+}
+
+export type CatalogFamily<TReportada, TNormalizada, TActualizada> = {
+  reportada: TReportada[]
+  normalizada: TNormalizada[]
+  actualizada: TActualizada[]
+}
+
 export type CatalogReferencesDto = {
   cuencas: BasinDto[]
   clasesPlaca: PlateClassDto[]
@@ -110,6 +161,9 @@ export type CatalogReferencesDto = {
   etapasUsoPlaca: PlateUseStageDto[]
   tiposProteccion: ProtectionTypeDto[]
   sistemasEnsamble: AssemblySystemDto[]
+  unidadesLitoestratigraficas: CatalogFamily<LitoReportadaDto, LitoNormalizadaDto, LitoActualizadaDto>
+  biozonas: CatalogFamily<BiozonaReportadaDto, BiozonaNormalizadaDto, BiozonaActualizadaDto>
+  edades: CatalogFamily<EdadReportadaDto, EdadNormalizadaDto, EdadActualizadaDto>
 }
 
 export type CatalogRepository = {

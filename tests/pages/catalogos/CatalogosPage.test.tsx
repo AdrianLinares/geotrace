@@ -18,7 +18,10 @@ describe('CatalogosPage', () => {
         cuencas: [{ cuenca_id: '1', nombre_cuenca: 'Llanos' }],
         clasesPlaca: [], disenosPlaca: [], estadosCatalogacion: [], estadosRevision: [],
         materialesPlaca: [], coloresPlaca: [], configuracionesCavidades: [], configuracionesRejilla: [],
-        etapasUsoPlaca: [], tiposProteccion: [], sistemasEnsamble: [],
+         etapasUsoPlaca: [], tiposProteccion: [], sistemasEnsamble: [],
+         unidadesLitoestratigraficas: { reportada: [{ uni_lito_reportada_id: '1', codigo_uni_lito_reportada: 'L-1', nombre_reportado: 'Lito reportada' }], normalizada: [], actualizada: [] },
+         biozonas: { reportada: [], normalizada: [{ biozona_normalizada_id: '2', nombre_normalizado: 'Biozona normalizada' }], actualizada: [] },
+         edades: { reportada: [], normalizada: [], actualizada: [{ edad_actualizada_id: '3', nombre_actualizado: 'Edad actualizada' }] },
       },
     })
 
@@ -26,8 +29,11 @@ describe('CatalogosPage', () => {
 
     expect(screen.getByText('Catálogos normalizados')).toBeInTheDocument()
     expect(screen.getByText('Llanos')).toBeInTheDocument()
-    expect(screen.queryByText('Unidades Litoestratigráficas')).not.toBeInTheDocument()
-    expect(screen.getByText(/dic_unidad_lito, dic_biozona, dic_edad, empresa/)).toBeInTheDocument()
-    expect(screen.getByText(/solo lectura/)).toBeInTheDocument()
+    expect(screen.getByText('Unidades litoestratigráficas')).toBeInTheDocument()
+    expect(screen.getByText('Lito reportada')).toBeInTheDocument()
+    expect(screen.getByText('Biozonas')).toBeInTheDocument()
+    expect(screen.getByText('Edades')).toBeInTheDocument()
+    expect(screen.getByText(/Empresa, dic_campo y dic_contrato permanecen no disponibles/)).toBeInTheDocument()
+    expect(screen.getByText(/Esta pantalla es de solo lectura/)).toBeInTheDocument()
   })
 })

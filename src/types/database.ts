@@ -173,6 +173,9 @@ export type CatalogReferences = {
   etapasUsoPlaca: Array<{ etapa_uso_placa_id: string; codigo_etapa_uso_placa: string | null; nombre: string | null; observaciones: string | null }>
   tiposProteccion: Array<{ tipo_proteccion_id: string; nombre: string | null }>
   sistemasEnsamble: Array<{ sistema_ensamble_id: string; nombre: string | null }>
+  unidadesLitoestratigraficas: { reportada: Array<Record<string, unknown>>; normalizada: Array<Record<string, unknown>>; actualizada: Array<Record<string, unknown>> }
+  biozonas: { reportada: Array<Record<string, unknown>>; normalizada: Array<Record<string, unknown>>; actualizada: Array<Record<string, unknown>> }
+  edades: { reportada: Array<Record<string, unknown>>; normalizada: Array<Record<string, unknown>>; actualizada: Array<Record<string, unknown>> }
 }
 
 export type DicCampo = {

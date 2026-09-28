@@ -6,11 +6,12 @@ describe('createReadRepository', () => {
     const query = vi.fn().mockResolvedValue({ rows: [] })
     await createCatalogRepository({ query } as never).listReferences()
 
-    expect(query).toHaveBeenCalledTimes(12)
+    expect(query).toHaveBeenCalledTimes(21)
     const statements = query.mock.calls.map(([sql]) => String(sql))
-    expect(statements.join(' ')).not.toMatch(/dic_unidad_lito|dic_biozona|dic_edad|empresa|dic_campo|dic_contrato/)
-    expect(statements.every(sql => sql.includes('public.cat_'))).toBe(true)
-    expect(statements.every(sql => !sql.includes('$'))).toBe(true)
+    expect(statements.join(' ')).toMatch(/dic_uni_lito_reportada|dic_biozona_normalizada|dic_edad_actualizada/)
+    expect(statements.filter(sql => sql.includes('public.cat_'))).toHaveLength(12)
+    expect(statements.every(sql => sql.includes('LIMIT $1'))).toBe(true)
+    expect(query.mock.calls.every(([, params]) => params?.[0] === 1000)).toBe(true)
     expect(statements.every(sql => !sql.match(/public\."[A-Z_]+"/))).toBe(true)
   })
   it('lists conservation catalogs with lowercase schema names and stable ordering', async () => {

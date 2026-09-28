@@ -89,6 +89,7 @@ Repository-local source, tests, SQL migration files, deployment configuration, a
 - ODD-005 progress: active catalog reference reads now use a Curador/Administrador-authorized local API with only schema-confirmed normalized catalog tables; legacy dictionary tabs are explicitly unavailable.
 - ODD-005 progress: base sample CRUD now uses local PostgreSQL/API with role ownership rules; subtype tables, sample-to-plate relationships, compound conservation/disposition data, and audit remain explicitly pending.
 - Temporary AD-outage support: added a production-rejected local superadmin fallback, scrypt-hashed credentials, transactional provisioning, and explicit disable/remove instructions. It is disabled by default and must be removed after AD is operational.
+- Catalog progress: the Curator/Admin catalog UI now reads reportada/normalizada/actualizada variants for litoestratigraphy, biozones, and ages from the normalized schema; empresa, dic_campo, and dic_contrato remain unavailable because no direct tables exist.
 - Engram mirror: pending because Engram tools were unavailable in this session.
 
 ## Next step

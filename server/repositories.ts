@@ -1,5 +1,5 @@
 import type { Pool } from 'pg'
-import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, SampleMutationInput, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto, AdminRepository, ManagedPerson, ApplicationRole, PersonUpdateInput, ConservationRepository, ConservationReferenceDto, PlateMutationInput, PlateRepository, ImportRepository, ImportBatch, ImportTable, ImportRow, CatalogRepository, CatalogReferencesDto, PlateClassDto, PlateDesignDto, CatalogationStateDto, ReviewStateDto, PlateMaterialDto, PlateColorDto, CavityConfigurationDto, GridConfigurationDto, PlateUseStageDto, ProtectionTypeDto, AssemblySystemDto } from './types'
+import type { RoleRepository, SessionRepository, AuthenticatedUser, CollectionRepository, CollectionDto, WellDto, BasinDto, CollectionInput, CollectionUpdateInput, PlateDto, SampleDto, SampleMutationInput, PhysicalLocationDto, DashboardDto, DashboardKpisDto, DashboardEstadoDto, DashboardOcupacionDto, DashboardProblemaDto, AdminRepository, ManagedPerson, ApplicationRole, PersonUpdateInput, ConservationRepository, ConservationReferenceDto, PlateMutationInput, PlateRepository, ImportRepository, ImportBatch, ImportTable, ImportRow, CatalogRepository, CatalogReferencesDto, PlateClassDto, PlateDesignDto, CatalogationStateDto, ReviewStateDto, PlateMaterialDto, PlateColorDto, CavityConfigurationDto, GridConfigurationDto, PlateUseStageDto, ProtectionTypeDto, AssemblySystemDto, LitoReportadaDto, LitoNormalizadaDto, LitoActualizadaDto, BiozonaReportadaDto, BiozonaNormalizadaDto, BiozonaActualizadaDto, EdadReportadaDto, EdadNormalizadaDto, EdadActualizadaDto } from './types'
 import { importColumns, validateImportRows } from './importValidation'
 
 export class LastAdministratorError extends Error {}
@@ -180,21 +180,31 @@ export function createConservationRepository(pool: Pool): ConservationRepository
 }
 
 export function createCatalogRepository(pool: Pool): CatalogRepository {
+  const limit = 1000
   return {
     async listReferences(): Promise<CatalogReferencesDto> {
-      const [cuencas, clasesPlaca, disenosPlaca, estadosCatalogacion, estadosRevision, materialesPlaca, coloresPlaca, configuracionesCavidades, configuracionesRejilla, etapasUsoPlaca, tiposProteccion, sistemasEnsamble] = await Promise.all([
-        pool.query<BasinDto>('SELECT cuenca_id::text AS cuenca_id, nombre_cuenca FROM public.cat_cuenca ORDER BY nombre_cuenca NULLS LAST, cuenca_id'),
-        pool.query<PlateClassDto>('SELECT clase_placa_id::text AS clase_placa_id, codigo_clase, nombre, definicion FROM public.cat_clase_placa ORDER BY nombre NULLS LAST, clase_placa_id'),
-        pool.query<PlateDesignDto>('SELECT diseno_placa_id::text AS diseno_placa_id, nombre FROM public.cat_diseno_placa ORDER BY nombre NULLS LAST, diseno_placa_id'),
-        pool.query<CatalogationStateDto>('SELECT estado_catalogacion_id::text AS estado_catalogacion_id, estado, significado, quien FROM public.cat_estado_catalogacion ORDER BY estado_catalogacion_id'),
-        pool.query<ReviewStateDto>('SELECT estado_revision_id::text AS estado_revision_id, nombre, significado FROM public.cat_estado_revision ORDER BY estado_revision_id'),
-        pool.query<PlateMaterialDto>('SELECT material_placa_id::text AS material_placa_id, nombre FROM public.cat_material_placa ORDER BY nombre NULLS LAST, material_placa_id'),
-        pool.query<PlateColorDto>('SELECT color_placa_id::text AS color_placa_id, nombre FROM public.cat_color_placa ORDER BY nombre NULLS LAST, color_placa_id'),
-        pool.query<CavityConfigurationDto>('SELECT configuracion_cavidades_id::text AS configuracion_cavidades_id, diseno_placa_id::text AS diseno_placa_id, total_cavidades FROM public.cat_configuracion_cavidades ORDER BY configuracion_cavidades_id'),
-        pool.query<GridConfigurationDto>('SELECT configuracion_rejilla_id::text AS configuracion_rejilla_id, nombre, numero_subdivisiones, observaciones FROM public.cat_configuracion_rejilla ORDER BY nombre NULLS LAST, configuracion_rejilla_id'),
-        pool.query<PlateUseStageDto>('SELECT etapa_uso_placa_id::text AS etapa_uso_placa_id, codigo_etapa_uso_placa, nombre, observaciones FROM public.cat_etapa_uso_placa ORDER BY nombre NULLS LAST, etapa_uso_placa_id'),
-        pool.query<ProtectionTypeDto>('SELECT tipo_proteccion_id::text AS tipo_proteccion_id, nombre FROM public.cat_tipo_proteccion ORDER BY nombre NULLS LAST, tipo_proteccion_id'),
-        pool.query<AssemblySystemDto>('SELECT sistema_ensamble_id::text AS sistema_ensamble_id, nombre FROM public.cat_sistema_ensamble ORDER BY nombre NULLS LAST, sistema_ensamble_id'),
+      const [cuencas, clasesPlaca, disenosPlaca, estadosCatalogacion, estadosRevision, materialesPlaca, coloresPlaca, configuracionesCavidades, configuracionesRejilla, etapasUsoPlaca, tiposProteccion, sistemasEnsamble, litoReportada, litoNormalizada, litoActualizada, biozonaReportada, biozonaNormalizada, biozonaActualizada, edadReportada, edadNormalizada, edadActualizada] = await Promise.all([
+        pool.query<BasinDto>('SELECT cuenca_id::text AS cuenca_id, nombre_cuenca FROM public.cat_cuenca ORDER BY nombre_cuenca NULLS LAST, cuenca_id LIMIT $1', [limit]),
+        pool.query<PlateClassDto>('SELECT clase_placa_id::text AS clase_placa_id, codigo_clase, nombre, definicion FROM public.cat_clase_placa ORDER BY nombre NULLS LAST, clase_placa_id LIMIT $1', [limit]),
+        pool.query<PlateDesignDto>('SELECT diseno_placa_id::text AS diseno_placa_id, nombre FROM public.cat_diseno_placa ORDER BY nombre NULLS LAST, diseno_placa_id LIMIT $1', [limit]),
+        pool.query<CatalogationStateDto>('SELECT estado_catalogacion_id::text AS estado_catalogacion_id, estado, significado, quien FROM public.cat_estado_catalogacion ORDER BY estado_catalogacion_id LIMIT $1', [limit]),
+        pool.query<ReviewStateDto>('SELECT estado_revision_id::text AS estado_revision_id, nombre, significado FROM public.cat_estado_revision ORDER BY estado_revision_id LIMIT $1', [limit]),
+        pool.query<PlateMaterialDto>('SELECT material_placa_id::text AS material_placa_id, nombre FROM public.cat_material_placa ORDER BY nombre NULLS LAST, material_placa_id LIMIT $1', [limit]),
+        pool.query<PlateColorDto>('SELECT color_placa_id::text AS color_placa_id, nombre FROM public.cat_color_placa ORDER BY nombre NULLS LAST, color_placa_id LIMIT $1', [limit]),
+        pool.query<CavityConfigurationDto>('SELECT configuracion_cavidades_id::text AS configuracion_cavidades_id, diseno_placa_id::text AS diseno_placa_id, total_cavidades FROM public.cat_configuracion_cavidades ORDER BY configuracion_cavidades_id LIMIT $1', [limit]),
+        pool.query<GridConfigurationDto>('SELECT configuracion_rejilla_id::text AS configuracion_rejilla_id, nombre, numero_subdivisiones, observaciones FROM public.cat_configuracion_rejilla ORDER BY nombre NULLS LAST, configuracion_rejilla_id LIMIT $1', [limit]),
+        pool.query<PlateUseStageDto>('SELECT etapa_uso_placa_id::text AS etapa_uso_placa_id, codigo_etapa_uso_placa, nombre, observaciones FROM public.cat_etapa_uso_placa ORDER BY nombre NULLS LAST, etapa_uso_placa_id LIMIT $1', [limit]),
+        pool.query<ProtectionTypeDto>('SELECT tipo_proteccion_id::text AS tipo_proteccion_id, nombre FROM public.cat_tipo_proteccion ORDER BY nombre NULLS LAST, tipo_proteccion_id LIMIT $1', [limit]),
+        pool.query<AssemblySystemDto>('SELECT sistema_ensamble_id::text AS sistema_ensamble_id, nombre FROM public.cat_sistema_ensamble ORDER BY nombre NULLS LAST, sistema_ensamble_id LIMIT $1', [limit]),
+        pool.query<LitoReportadaDto>('SELECT uni_lito_reportada_id::text AS uni_lito_reportada_id, codigo_uni_lito_reportada, nombre_reportado, catalogador_id::text AS catalogador_id, fecha_ingreso, revisor_id::text AS revisor_id, fecha_revision, estado_revision_id::text AS estado_revision_id, observaciones FROM public.dic_uni_lito_reportada ORDER BY nombre_reportado NULLS LAST, uni_lito_reportada_id LIMIT $1', [limit]),
+        pool.query<LitoNormalizadaDto>('SELECT uni_lito_normalizada_id::text AS uni_lito_normalizada_id, cod_uni_lito_normalizada, nombre_normalizado, rango_lito_id::text AS rango_lito_id, referencia_bibliografica_id::text AS referencia_bibliografica_id, observaciones, revisor_id::text AS revisor_id, estado_revision_id::text AS estado_revision_id, fecha_revision FROM public.dic_uni_lito_normalizada ORDER BY nombre_normalizado NULLS LAST, uni_lito_normalizada_id LIMIT $1', [limit]),
+        pool.query<LitoActualizadaDto>('SELECT uni_lito_actualizada_id::text AS uni_lito_actualizada_id, cod_uni_lito_actualizada, nombre_oficial, rango_lito_id::text AS rango_lito_id, estado_nomenclatura_id::text AS estado_nomenclatura_id, revisor_id::text AS revisor_id, fecha_revision, estado_revision_id::text AS estado_revision_id, observaciones FROM public.dic_uni_lito_actualizada ORDER BY nombre_oficial NULLS LAST, uni_lito_actualizada_id LIMIT $1', [limit]),
+        pool.query<BiozonaReportadaDto>('SELECT biozona_reportada_id::text AS biozona_reportada_id, nombre_reportado, autor_biozona_reportada, codigo_biozona, estado_revision_id::text AS estado_revision_id, catalogador_id::text AS catalogador_id, fecha_ingreso, revisor_id::text AS revisor_id, fecha_revision, observaciones FROM public.dic_biozona_reportada ORDER BY nombre_reportado NULLS LAST, biozona_reportada_id LIMIT $1', [limit]),
+        pool.query<BiozonaNormalizadaDto>('SELECT biozona_normalizada_id::text AS biozona_normalizada_id, nombre_normalizado, codigo_biozona, autor_biozona_normalizada, estado_revision_id::text AS estado_revision_id, revisor_id::text AS revisor_id, fecha_revision, observaciones FROM public.dic_biozona_normalizada ORDER BY nombre_normalizado NULLS LAST, biozona_normalizada_id LIMIT $1', [limit]),
+        pool.query<BiozonaActualizadaDto>('SELECT biozona_actualizada_id::text AS biozona_actualizada_id, nombre_actualizado, codigo_biozona_actual, fuente_actualizacion, fecha_actualizacion, revisor_id::text AS revisor_id, fecha_revision, estado_revision_id::text AS estado_revision_id, observaciones FROM public.dic_biozona_actualizada ORDER BY nombre_actualizado NULLS LAST, biozona_actualizada_id LIMIT $1', [limit]),
+        pool.query<EdadReportadaDto>('SELECT edad_reportada_id::text AS edad_reportada_id, nombre_reportado, estado_revision_id::text AS estado_revision_id, catalogador_id::text AS catalogador_id, fecha_ingreso, revisor_id::text AS revisor_id, fecha_revision, observaciones FROM public.dic_edad_reportada ORDER BY nombre_reportado NULLS LAST, edad_reportada_id LIMIT $1', [limit]),
+        pool.query<EdadNormalizadaDto>('SELECT edad_normalizada_id::text AS edad_normalizada_id, nombre_normalizado, rango_cronoestratigrafico_id::text AS rango_cronoestratigrafico_id, estado_revision_id::text AS estado_revision_id, revisor_id::text AS revisor_id, fecha_revision, observaciones FROM public.dic_edad_normalizada ORDER BY nombre_normalizado NULLS LAST, edad_normalizada_id LIMIT $1', [limit]),
+        pool.query<EdadActualizadaDto>('SELECT edad_actualizada_id::text AS edad_actualizada_id, nombre_actualizado, escala_tiempo, fuente_actualizacion, revisor_id::text AS revisor_id, fecha_revision, estado_revision_id::text AS estado_revision_id, observaciones FROM public.dic_edad_actualizada ORDER BY nombre_actualizado NULLS LAST, edad_actualizada_id LIMIT $1', [limit]),
       ])
       return {
         cuencas: cuencas.rows,
@@ -209,6 +219,9 @@ export function createCatalogRepository(pool: Pool): CatalogRepository {
         etapasUsoPlaca: etapasUsoPlaca.rows,
         tiposProteccion: tiposProteccion.rows,
         sistemasEnsamble: sistemasEnsamble.rows,
+        unidadesLitoestratigraficas: { reportada: litoReportada.rows, normalizada: litoNormalizada.rows, actualizada: litoActualizada.rows },
+        biozonas: { reportada: biozonaReportada.rows, normalizada: biozonaNormalizada.rows, actualizada: biozonaActualizada.rows },
+        edades: { reportada: edadReportada.rows, normalizada: edadNormalizada.rows, actualizada: edadActualizada.rows },
       }
     },
   }
