@@ -14,13 +14,16 @@
     "start:server:production": "pnpm exec tsx server/index.ts",
     "db:migrate:local-sessions": "./scripts/apply-local-session-migration.sh",
     "db:migrate:local-admin": "./scripts/apply-local-admin-migration.sh",
+    "db:seed:access": "./scripts/apply-access-catalogacion-seed.sh",
     "local-admin": "tsx scripts/manage-local-admin.ts",
     "check:local-schema": "node scripts/check-local-schema.mjs",
     "smoke:local": "./scripts/smoke-check-local.sh",
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed:generate": "node scripts/generate-seed-access-catalogacion.mjs",
+    "seed:verify": "node scripts/verify-access-catalogacion-seed.mjs"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",

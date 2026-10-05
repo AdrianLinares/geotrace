@@ -40,3 +40,6 @@ dist/
 
 # pnpm
 .pnpm-store/
+
+# Generated database seeds (rebuild with pnpm run seed:generate)
+sql/seed/
