@@ -1127,6 +1127,24 @@ COMMENT ON TABLE public.CAT_MARCO_PLACA_ESTADO IS 'Tabla generada desde el inven
 CREATE INDEX idx_cat_marco_placa_estado_marco_placa_estado_id ON public.CAT_MARCO_PLACA_ESTADO(marco_placa_estado_id);
 
 -- ============================================================
+-- CAT_CUERPO_PLACA_ESTADO
+-- ============================================================
+DROP TABLE IF EXISTS public.CAT_CUERPO_PLACA_ESTADO CASCADE;
+
+CREATE TABLE public.CAT_CUERPO_PLACA_ESTADO (
+    cuerpo_placa_estado_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    cuerpo_placa_estado varchar(255),
+    observaciones text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT pk_cat_cuerpo_placa_estado PRIMARY KEY (cuerpo_placa_estado_id)
+);
+
+COMMENT ON TABLE public.CAT_CUERPO_PLACA_ESTADO IS 'Tabla generada desde el inventario de campos.';
+
+CREATE INDEX idx_cat_cuerpo_placa_estado_cuerpo_placa_estado_id ON public.CAT_CUERPO_PLACA_ESTADO(cuerpo_placa_estado_id);
+
+-- ============================================================
 -- CAT_PRIORIDAD_INTERVENCION
 -- ============================================================
 DROP TABLE IF EXISTS public.CAT_PRIORIDAD_INTERVENCION CASCADE;
@@ -1289,6 +1307,7 @@ CREATE TABLE public.ESTADO_CONSERVACION_INICIAL (
     vidrio_estado_id bigint,
     acetato_estado_id bigint,
     marco_placa_estado_id bigint,
+    cuerpo_placa_estado_id bigint,
     presencia_hongos boolean,
     crecimiento_cristales boolean,
     oxidacion boolean,
@@ -1306,6 +1325,7 @@ CREATE TABLE public.ESTADO_CONSERVACION_INICIAL (
     CONSTRAINT fk_estado_conservacion_inicial_vidrio_estado_id FOREIGN KEY (vidrio_estado_id) REFERENCES public.CAT_VIDRIO_ESTADO(vidrio_estado_id) ON DELETE SET NULL,
     CONSTRAINT fk_estado_conservacion_inicial_acetato_estado_id FOREIGN KEY (acetato_estado_id) REFERENCES public.CAT_ACETATO_ESTADO(acetato_estado_id) ON DELETE SET NULL,
     CONSTRAINT fk_estado_conservacion_inicial_marco_placa_estado_id FOREIGN KEY (marco_placa_estado_id) REFERENCES public.CAT_MARCO_PLACA_ESTADO(marco_placa_estado_id) ON DELETE SET NULL,
+    CONSTRAINT fk_estado_conservacion_inicial_cuerpo_placa_estado_id FOREIGN KEY (cuerpo_placa_estado_id) REFERENCES public.CAT_CUERPO_PLACA_ESTADO(cuerpo_placa_estado_id) ON DELETE SET NULL,
     CONSTRAINT fk_estado_conservacion_inicial_prioridad_intervencion_id FOREIGN KEY (prioridad_intervencion_id) REFERENCES public.CAT_PRIORIDAD_INTERVENCION(prioridad_intervencion_id) ON DELETE SET NULL,
     CONSTRAINT fk_estado_conservacion_inicial_estado_catalogacion_id FOREIGN KEY (estado_catalogacion_id) REFERENCES public.CAT_ESTADO_CATALOGACION(estado_catalogacion_id) ON DELETE SET NULL,
     CONSTRAINT fk_estado_conservacion_inicial_revisor_id FOREIGN KEY (revisor_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
@@ -1318,6 +1338,7 @@ CREATE INDEX idx_estado_conservacion_inicial_placa_id ON public.ESTADO_CONSERVAC
 CREATE INDEX idx_estado_conservacion_inicial_vidrio_estado_id ON public.ESTADO_CONSERVACION_INICIAL(vidrio_estado_id);
 CREATE INDEX idx_estado_conservacion_inicial_acetato_estado_id ON public.ESTADO_CONSERVACION_INICIAL(acetato_estado_id);
 CREATE INDEX idx_estado_conservacion_inicial_marco_placa_estado_id ON public.ESTADO_CONSERVACION_INICIAL(marco_placa_estado_id);
+CREATE INDEX idx_estado_conservacion_inicial_cuerpo_placa_estado_id ON public.ESTADO_CONSERVACION_INICIAL(cuerpo_placa_estado_id);
 CREATE INDEX idx_estado_conservacion_inicial_prioridad_intervencion_id ON public.ESTADO_CONSERVACION_INICIAL(prioridad_intervencion_id);
 CREATE INDEX idx_estado_conservacion_inicial_estado_catalogacion_id ON public.ESTADO_CONSERVACION_INICIAL(estado_catalogacion_id);
 CREATE INDEX idx_estado_conservacion_inicial_revisor_id ON public.ESTADO_CONSERVACION_INICIAL(revisor_id);

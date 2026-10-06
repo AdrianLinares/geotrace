@@ -49,6 +49,16 @@ try {
   check('marcado_placa rows', loadSheet('MARCADO_PLACA.xlsx', 'MARCADO_PLACA').length, Number((await one('SELECT count(*)::int AS n FROM public.marcado_placa')).n))
   check('estado_conservacion_inicial rows', loadSheet('ESTADO_CONSERVACION_INICIAL.xlsx', 'ESTADO_CONSERVACION_INICIAL').length, Number((await one('SELECT count(*)::int AS n FROM public.estado_conservacion_inicial')).n))
 
+  const conservation = loadSheet('ESTADO_CONSERVACION_INICIAL.xlsx', 'ESTADO_CONSERVACION_INICIAL')
+  const cuerpoReferences = conservation.filter(
+    (row) => row.CuerpoPlacaEstadoID !== null && row.CuerpoPlacaEstadoID !== undefined && Number(row.CuerpoPlacaEstadoID) !== 0,
+  )
+  const referencedCuerpoIds = new Set(cuerpoReferences.map((row) => Number(row.CuerpoPlacaEstadoID)))
+
+  check('cat_cuerpo_placa_estado rows', loadSheet('CAT_CUERPO_PLACA_ESTADO.xlsx', 'CAT_CUERPO_PLACA_ESTADO').length, Number((await one('SELECT count(*)::int AS n FROM public.cat_cuerpo_placa_estado')).n))
+  check('estado_conservacion_inicial rows with cuerpo_placa_estado_id', cuerpoReferences.length, Number((await one('SELECT count(*)::int AS n FROM public.estado_conservacion_inicial WHERE cuerpo_placa_estado_id IS NOT NULL')).n))
+  check('distinct referenced cuerpo_placa_estado_id values', referencedCuerpoIds.size, Number((await one('SELECT count(DISTINCT cuerpo_placa_estado_id)::int AS n FROM public.estado_conservacion_inicial WHERE cuerpo_placa_estado_id IS NOT NULL')).n))
+
   const expectedAnnotations = annotations.reduce((total, row) => {
     return total + ['AnotacionIzquierda', 'AnotacionDerecha', 'AnotacionArriba', 'AnotacionAbajo']
       .filter((column) => row[column] !== null && row[column] !== undefined && String(row[column]).trim() !== '').length
@@ -75,6 +85,7 @@ try {
     ['muestra_subsuelo without muestra', 'SELECT count(*)::int AS n FROM public.muestra_subsuelo m LEFT JOIN public.muestra s USING (muestra_id) WHERE s.muestra_id IS NULL'],
     ['muestra_subsuelo without pozo', 'SELECT count(*)::int AS n FROM public.muestra_subsuelo m WHERE m.pozo_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.pozo WHERE pozo_id = m.pozo_id)'],
     ['catalogador_id not resolvable', 'SELECT count(*)::int AS n FROM public.placa p WHERE p.catalogador_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.persona WHERE persona_id = p.catalogador_id)'],
+    ['estado_conservacion_inicial with orphaned cuerpo_placa_estado_id', 'SELECT count(*)::int AS n FROM public.estado_conservacion_inicial e LEFT JOIN public.cat_cuerpo_placa_estado c USING (cuerpo_placa_estado_id) WHERE e.cuerpo_placa_estado_id IS NOT NULL AND c.cuerpo_placa_estado_id IS NULL'],
   ]) {
     check(label, 0, Number((await one(sql)).n))
   }

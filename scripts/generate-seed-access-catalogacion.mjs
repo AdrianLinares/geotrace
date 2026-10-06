@@ -300,6 +300,8 @@ const simpleCatalogues = [
     [['VidrioEstado', 'vidrio_estado', 'text'], ['Observaciones', 'observaciones', 'text']]],
   ['CAT_MARCO_PLACA_ESTADO.xlsx', 'CAT_MARCO_PLACA_ESTADO', 'cat_marco_placa_estado', 'MarcoPlacaEstadoID', 'marco_placa_estado_id',
     [['MarcoPlacaEstado', 'marco_placa_estado', 'text'], ['Observaciones', 'observaciones', 'text']]],
+  ['CAT_CUERPO_PLACA_ESTADO.xlsx', 'CAT_CUERPO_PLACA_ESTADO', 'cat_cuerpo_placa_estado', 'CuerpoPlacaEstadoID', 'cuerpo_placa_estado_id',
+    [['CuerpoPlacaEstado', 'cuerpo_placa_estado', 'text'], ['Observaciones', 'observaciones', 'text']]],
   ['CAT_PRIORIDAD_INTERVENCION.xlsx', 'CAT_PRIORIDAD_INTERVENCION', 'cat_prioridad_intervencion', 'PrioridadIntervencionID', 'prioridad_intervencion_id',
     [['Nombre', 'nombre', 'text'], ['Observaciones', 'observaciones', 'text']]],
   ['CAT_TIPO_INTERVALO_MUESTRA.xlsx', 'CAT_TIPO_INTERVALO_MUESTRA', 'cat_tipo_intervalo_muestra', 'TipoIntervaloMuestraID', 'tipo_intervalo_muestra_id',
@@ -315,7 +317,7 @@ for (const [file, sheet, table, accessIdColumn, pk, fields] of simpleCatalogues)
   const hasTimestamps = ['cat_clase_placa', 'cat_material_placa', 'cat_color_placa', 'cat_material_mueble', 'cat_color_mueble',
     'cat_material_bandeja', 'cat_columna_bandeja', 'cat_zona', 'cat_configuracion_rejilla', 'cat_tipo_proteccion',
     'cat_sistema_ensamble', 'cat_etapa_uso_placa', 'cat_estado_material', 'cat_recobro_cualitativo', 'cat_codigo_cavidad',
-    'cat_acetato_estado', 'cat_vidrio_estado', 'cat_marco_placa_estado', 'cat_prioridad_intervencion',
+    'cat_acetato_estado', 'cat_vidrio_estado', 'cat_marco_placa_estado', 'cat_cuerpo_placa_estado', 'cat_prioridad_intervencion',
     'cat_tipo_intervalo_muestra', 'cat_tipo_muestra_subsuelo', 'cat_rol_autor'].includes(table)
   const columns = [pk, ...fields.map(([, column]) => column)]
   if (hasTimestamps) columns.push('created_at', 'updated_at')
@@ -804,9 +806,6 @@ const relPlacaAutor = loadSheet('REL_PLACA_AUTOR.xlsx', 'REL_PLACA_AUTOR')
 skipped(
   `rel_placa_autor: all ${relPlacaAutor.length} rows have AutorID and RolAutorID empty, so nothing meaningful could be seeded.`,
 )
-skipped('CAT_CUERPO_PLACA_ESTADO.xlsx: 5 rows, but the target schema has no cat_cuerpo_placa_estado table. ' +
-  `${loadSheet('ESTADO_CONSERVACION_INICIAL.xlsx', 'ESTADO_CONSERVACION_INICIAL').filter((row) => !isEmpty(row.CuerpoPlacaEstadoID)).length} ` +
-  'estado_conservacion_inicial rows therefore lose CuerpoPlacaEstadoID.')
 skipped('NUCLEO.xlsx and SECCION_NUCLEO.xlsx: single placeholder rows whose foreign keys are 0 or unresolved.')
 skipped('BANDEJAS_POR_MUEBLE.xlsx and BANDEJAS_POR_ZONA.xlsx: reconciliation reports, not entities. Their published totals are reconciled against the loaded rows by scripts/verify-access-catalogacion-seed.mjs instead.')
 skipped('CAT_ROL.xlsx: the 10 Access roles (Catalogador cientifico, Revisor cientifico, ...) are a different vocabulary from the ' +
@@ -962,15 +961,16 @@ insert(
   'estado_conservacion_inicial',
   'estado_conservacion_inicial_id',
   ['estado_conservacion_inicial_id', 'placa_id', 'vidrio_estado_id', 'acetato_estado_id', 'marco_placa_estado_id',
-    'presencia_hongos', 'crecimiento_cristales', 'oxidacion', 'material_fuera_cavidad', 'riesgo_contaminacion',
-    'observaciones', 'prioridad_intervencion_id', 'estado_catalogacion_id', 'revisor_id', 'fecha_revision',
-    'catalogador_id', 'fecha_ingreso'],
+    'cuerpo_placa_estado_id', 'presencia_hongos', 'crecimiento_cristales', 'oxidacion', 'material_fuera_cavidad',
+    'riesgo_contaminacion', 'observaciones', 'prioridad_intervencion_id', 'estado_catalogacion_id', 'revisor_id',
+    'fecha_revision', 'catalogador_id', 'fecha_ingreso'],
   conservationRows.map((row) => ({
     estado_conservacion_inicial_id: toInteger(row.EstadoConservacionInicialID),
     placa_id: toInteger(row.PlacaID),
     vidrio_estado_id: toInteger(row.VidrioEstadoID),
     acetato_estado_id: toInteger(row.AcetatoEstadoID),
     marco_placa_estado_id: toInteger(row.MarcoPlacaEstadoID),
+    cuerpo_placa_estado_id: optionalId(row.CuerpoPlacaEstadoID),
     presencia_hongos: toBoolean(row.PresenciaHongos),
     crecimiento_cristales: toBoolean(row.CrecimientoCristales),
     oxidacion: toBoolean(row.Oxidacion),
