@@ -556,16 +556,20 @@ DROP TABLE IF EXISTS public.ZONA_MUEBLE CASCADE;
 CREATE TABLE public.ZONA_MUEBLE (
     zona_mueble_id   bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     seccion_mueble_id bigint,
+    zona_id          bigint,
     nombre_zona      varchar(255),
     orden_zona       bigint,
     observaciones    text,
     CONSTRAINT fk_zona_mueble_seccion_mueble_id
-        FOREIGN KEY (seccion_mueble_id) REFERENCES public.CAT_SECCION(seccion_id) ON DELETE SET NULL
+        FOREIGN KEY (seccion_mueble_id) REFERENCES public.CAT_SECCION(seccion_id) ON DELETE SET NULL,
+    CONSTRAINT fk_zona_mueble_zona_id
+        FOREIGN KEY (zona_id) REFERENCES public.CAT_ZONA(zona_id) ON DELETE SET NULL
 );
 
-COMMENT ON TABLE public.ZONA_MUEBLE IS 'Access ZONA_MUEBLE: cabinet zones; SeccionMuebleID maps to CAT_SECCION.';
+COMMENT ON TABLE public.ZONA_MUEBLE IS 'Access ZONA_MUEBLE: cabinet zones; SeccionMuebleID maps to CAT_SECCION when it matches the generic catalogue (1-3), zona_id normalizes NombreZona to CAT_ZONA.';
 
 CREATE INDEX idx_zona_mueble_seccion_mueble_id ON public.ZONA_MUEBLE(seccion_mueble_id);
+CREATE INDEX idx_zona_mueble_zona_id ON public.ZONA_MUEBLE(zona_id);
 
 -- ============================================================
 -- BANDEJA: trays within a cabinet zone

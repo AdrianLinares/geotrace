@@ -109,6 +109,37 @@ function normalizeName(value) {
     .replace(/[^a-z0-9]/g, '')
 }
 
+// Authoritative cabinet-zone catalogue. Access CAT_ZONA.xlsx only contains the first four rows,
+// but the local vocabulary also uses "Central izquierda" and "Central derecha", so the seed
+// materialises the full six-row catalogue explicitly and ignores the workbook for this table.
+const CABINET_ZONES = [
+  { zona_id: 1, codigo_zona: 'Izq', nombre: 'Izquierda' },
+  { zona_id: 2, codigo_zona: 'Cent', nombre: 'Central' },
+  { zona_id: 3, codigo_zona: 'Der', nombre: 'Derecha' },
+  { zona_id: 4, codigo_zona: 'Uni', nombre: 'Única' },
+  { zona_id: 5, codigo_zona: 'CentIzq', nombre: 'Central Izquierda' },
+  { zona_id: 6, codigo_zona: 'CentDer', nombre: 'Central Derecha' },
+]
+
+function normalizeZoneName(value) {
+  if (isEmpty(value)) return ''
+  return String(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+const ZONE_NAME_TO_ID = new Map(
+  CABINET_ZONES.map((zone) => [normalizeZoneName(zone.nombre), zone.zona_id]),
+)
+
+function resolveZonaId(nombreZona) {
+  const key = normalizeZoneName(nombreZona)
+  return ZONE_NAME_TO_ID.get(key) ?? null
+}
+
 const NOW = sql('CURRENT_TIMESTAMP')
 const counts = []
 const statements = []
@@ -190,6 +221,23 @@ insert(
     created_at: NOW,
     updated_at: NOW,
   })),
+)
+
+insert(
+  'cat_zona',
+  'zona_id',
+  ['zona_id', 'codigo_zona', 'nombre', 'created_at', 'updated_at'],
+  CABINET_ZONES.map((zone) => ({
+    zona_id: zone.zona_id,
+    codigo_zona: zone.codigo_zona,
+    nombre: zone.nombre,
+    created_at: NOW,
+    updated_at: NOW,
+  })),
+)
+note(
+  'cat_zona: seeded from the authoritative six-zone constant (Izquierda, Central, Derecha, ' +
+    'Única, Central Izquierda, Central Derecha). The Access CAT_ZONA.xlsx only contains the first four rows.',
 )
 
 const ANNOTATION_POSITIONS = [
@@ -278,8 +326,6 @@ const simpleCatalogues = [
     [['CodigoMaterialBandeja', 'codigo_material_bandeja', 'text'], ['Nombre', 'nombre', 'text']]],
   ['CAT_COLUMNA_BANDEJA.xlsx', 'CAT_COLUMNA_BANDEJA', 'cat_columna_bandeja', 'ColumnaBandejaID', 'columna_bandeja_id',
     [['CodigoColumna', 'codigo_columna', 'text'], ['Nombre', 'nombre', 'text']]],
-  ['CAT_ZONA.xlsx', 'CAT_ZONA', 'cat_zona', 'ZonaID', 'zona_id',
-    [['CodigoZona', 'codigo_zona', 'text'], ['Nombre', 'nombre', 'text']]],
   ['CAT_CONFIGURACION_REJILLA.xlsx', 'CAT_CONFIGURACION_REJILLA', 'cat_configuracion_rejilla', 'ConfiguracionRejillaID', 'configuracion_rejilla_id',
     [['Nombre', 'nombre', 'text'], ['NumeroSubdivisiones', 'numero_subdivisiones', 'integer'], ['Observaciones', 'observaciones', 'text']]],
   ['CAT_TIPO_PROTECCION.xlsx', 'CAT_TIPO_PROTECCION', 'cat_tipo_proteccion', 'TipoProteccionID', 'tipo_proteccion_id',
@@ -315,7 +361,7 @@ const simpleCatalogues = [
 
 for (const [file, sheet, table, accessIdColumn, pk, fields] of simpleCatalogues) {
   const hasTimestamps = ['cat_clase_placa', 'cat_material_placa', 'cat_color_placa', 'cat_material_mueble', 'cat_color_mueble',
-    'cat_material_bandeja', 'cat_columna_bandeja', 'cat_zona', 'cat_configuracion_rejilla', 'cat_tipo_proteccion',
+    'cat_material_bandeja', 'cat_columna_bandeja', 'cat_configuracion_rejilla', 'cat_tipo_proteccion',
     'cat_sistema_ensamble', 'cat_etapa_uso_placa', 'cat_estado_material', 'cat_recobro_cualitativo', 'cat_codigo_cavidad',
     'cat_acetato_estado', 'cat_vidrio_estado', 'cat_marco_placa_estado', 'cat_cuerpo_placa_estado', 'cat_prioridad_intervencion',
     'cat_tipo_intervalo_muestra', 'cat_tipo_muestra_subsuelo', 'cat_rol_autor'].includes(table)
@@ -816,15 +862,17 @@ skipped('CAT_ROL.xlsx: the 10 Access roles (Catalogador cientifico, Revisor cien
 const seccionIds = new Set(loadSheet('CAT_SECCION.xlsx', 'CAT_SECCION').map((row) => toInteger(row.SeccionID)))
 const zoneMuebleRows = loadSheet('ZONA_MUEBLE.xlsx', 'ZONA_MUEBLE')
 const danglingSections = [...new Set(zoneMuebleRows.map((row) => toInteger(row.SeccionMuebleID)).filter((id) => !seccionIds.has(id)))]
+const unresolvedZones = zoneMuebleRows.filter((row) => resolveZonaId(row.NombreZona) === null)
 insert(
   'zona_mueble',
   'zona_mueble_id',
-  ['zona_mueble_id', 'seccion_mueble_id', 'nombre_zona', 'orden_zona', 'observaciones'],
+  ['zona_mueble_id', 'seccion_mueble_id', 'zona_id', 'nombre_zona', 'orden_zona', 'observaciones'],
   zoneMuebleRows.map((row) => {
     const sectionId = toInteger(row.SeccionMuebleID)
     return {
       zona_mueble_id: toInteger(row.ZonaMuebleID),
       seccion_mueble_id: seccionIds.has(sectionId) ? sectionId : null,
+      zona_id: resolveZonaId(row.NombreZona),
       nombre_zona: toText(row.NombreZona),
       orden_zona: toInteger(row.OrdenZona),
       observaciones: toText(row.Observaciones),
@@ -837,6 +885,11 @@ if (danglingSections.length) {
     `rows reference SeccionMuebleID values that CAT_SECCION.xlsx does not define (${danglingSections.join(', ')}). The Access ` +
     'SeccionMuebleID is a per-furniture section, not the generic Superior/Inferior catalogue, so seccion_mueble_id is NULL for those rows.',
   )
+}
+if (unresolvedZones.length) {
+  unresolved(`${unresolvedZones.length} ZONA_MUEBLE rows could not be mapped to a CAT_ZONA zone id by NombreZona.`)
+} else {
+  note(`zona_mueble: all ${zoneMuebleRows.length} rows resolved NombreZona to a CAT_ZONA zona_id.`)
 }
 
 insert(

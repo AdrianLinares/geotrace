@@ -45,6 +45,42 @@ try {
   check('ubicacion_fisica rows', locations.length, Number((await one('SELECT count(*)::int AS n FROM public.ubicacion_fisica')).n))
   check('mueble rows', loadSheet('MUEBLE.xlsx', 'MUEBLE').length, Number((await one('SELECT count(*)::int AS n FROM public.mueble')).n))
   check('zona_mueble rows', loadSheet('ZONA_MUEBLE.xlsx', 'ZONA_MUEBLE').length, Number((await one('SELECT count(*)::int AS n FROM public.zona_mueble')).n))
+
+  // CAT_ZONA must contain exactly the authoritative six-zone catalogue, not the incomplete workbook.
+  const expectedZones = [
+    { zona_id: 1, codigo_zona: 'Izq', nombre: 'Izquierda' },
+    { zona_id: 2, codigo_zona: 'Cent', nombre: 'Central' },
+    { zona_id: 3, codigo_zona: 'Der', nombre: 'Derecha' },
+    { zona_id: 4, codigo_zona: 'Uni', nombre: 'Única' },
+    { zona_id: 5, codigo_zona: 'CentIzq', nombre: 'Central Izquierda' },
+    { zona_id: 6, codigo_zona: 'CentDer', nombre: 'Central Derecha' },
+  ]
+  check('cat_zona rows', expectedZones.length, Number((await one('SELECT count(*)::int AS n FROM public.cat_zona')).n))
+  const loadedZones = (await pool.query('SELECT zona_id, codigo_zona, nombre FROM public.cat_zona ORDER BY zona_id')).rows
+    .map((row) => ({ zona_id: Number(row.zona_id), codigo_zona: row.codigo_zona, nombre: row.nombre }))
+  check('cat_zona exact rows/codes/names', JSON.stringify(expectedZones), JSON.stringify(loadedZones))
+
+  // Every zona_mueble row must resolve NombreZona to a CAT_ZONA row.
+  check('zona_mueble rows with zona_id', loadSheet('ZONA_MUEBLE.xlsx', 'ZONA_MUEBLE').length, Number((await one('SELECT count(*)::int AS n FROM public.zona_mueble WHERE zona_id IS NOT NULL')).n))
+  check('zona_mueble without cat_zona', 0, Number((await one('SELECT count(*)::int AS n FROM public.zona_mueble z LEFT JOIN public.cat_zona c USING (zona_id) WHERE z.zona_id IS NOT NULL AND c.zona_id IS NULL')).n))
+
+  // Expected normalized mapping for all six zone names.
+  const expectedMappings = new Map([
+    ['Izquierda', 1],
+    ['Central', 2],
+    ['Derecha', 3],
+    ['Única', 4],
+    ['Central izquierda', 5],
+    ['Central derecha', 6],
+  ])
+  const loadedMappings = new Map(
+    (await pool.query('SELECT DISTINCT nombre_zona, zona_id FROM public.zona_mueble WHERE zona_id IS NOT NULL ORDER BY nombre_zona')).rows
+      .map((row) => [row.nombre_zona, row.zona_id == null ? null : Number(row.zona_id)]),
+  )
+  for (const [name, zonaId] of expectedMappings) {
+    check(`zona_mueble mapping "${name}" -> ${zonaId}`, zonaId, loadedMappings.get(name) ?? null)
+  }
+
   check('bandeja rows', trays.length, Number((await one('SELECT count(*)::int AS n FROM public.bandeja')).n))
   check('marcado_placa rows', loadSheet('MARCADO_PLACA.xlsx', 'MARCADO_PLACA').length, Number((await one('SELECT count(*)::int AS n FROM public.marcado_placa')).n))
   check('estado_conservacion_inicial rows', loadSheet('ESTADO_CONSERVACION_INICIAL.xlsx', 'ESTADO_CONSERVACION_INICIAL').length, Number((await one('SELECT count(*)::int AS n FROM public.estado_conservacion_inicial')).n))
