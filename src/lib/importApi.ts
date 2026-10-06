@@ -1,6 +1,10 @@
 import { apiRequest, ApiError } from './api'
 
-export type ImportTable = 'coleccion' | 'pozo' | 'placa' | 'muestra'
+export type ImportTable =
+  | 'coleccion' | 'pozo' | 'placa' | 'muestra'
+  | 'dic_uni_lito_reportada' | 'dic_uni_lito_normalizada' | 'dic_uni_lito_actualizada'
+  | 'dic_biozona_reportada' | 'dic_biozona_normalizada' | 'dic_biozona_actualizada'
+  | 'dic_edad_reportada' | 'dic_edad_normalizada' | 'dic_edad_actualizada'
 export type ImportRow = Record<string, unknown>
 export type ImportBatch = { table: ImportTable; rows: ImportRow[] }
 

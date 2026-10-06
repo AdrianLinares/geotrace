@@ -18,7 +18,9 @@ Pequeña guía para contribuir al proyecto de forma consistente y amigable para 
     - Componentes UI pequeños en `/src/components/ui`.
 
 4. Tests y verificación
-    - No hay suite de tests obligatoria en el repo actualmente; cuando agregues tests, integra un comando en `package.json`.
+    - El repo usa Vitest + React Testing Library. Ejecuta `pnpm test` (o `pnpm run test`) antes de abrir un PR.
+    - La suite incluye tests unitarios e de integración (ver `tests/integration/README.md` para la plantilla).
+    - Se ejecuta automáticamente en CI (`pnpm run test` en GitHub Actions).
 
 5. Preguntas
     - Antes de grandes cambios, deja un issue describiendo la motivación.

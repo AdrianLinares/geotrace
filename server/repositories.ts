@@ -108,6 +108,15 @@ const importTableSql: Record<ImportTable, { table: string; columns: readonly str
   pozo: { table: 'public.pozo', columns: importColumns.pozo },
   placa: { table: 'public.placa', columns: importColumns.placa },
   muestra: { table: 'public.muestra', columns: importColumns.muestra },
+  dic_uni_lito_reportada: { table: 'public.dic_uni_lito_reportada', columns: importColumns.dic_uni_lito_reportada },
+  dic_uni_lito_normalizada: { table: 'public.dic_uni_lito_normalizada', columns: importColumns.dic_uni_lito_normalizada },
+  dic_uni_lito_actualizada: { table: 'public.dic_uni_lito_actualizada', columns: importColumns.dic_uni_lito_actualizada },
+  dic_biozona_reportada: { table: 'public.dic_biozona_reportada', columns: importColumns.dic_biozona_reportada },
+  dic_biozona_normalizada: { table: 'public.dic_biozona_normalizada', columns: importColumns.dic_biozona_normalizada },
+  dic_biozona_actualizada: { table: 'public.dic_biozona_actualizada', columns: importColumns.dic_biozona_actualizada },
+  dic_edad_reportada: { table: 'public.dic_edad_reportada', columns: importColumns.dic_edad_reportada },
+  dic_edad_normalizada: { table: 'public.dic_edad_normalizada', columns: importColumns.dic_edad_normalizada },
+  dic_edad_actualizada: { table: 'public.dic_edad_actualizada', columns: importColumns.dic_edad_actualizada },
 }
 
 export function createImportRepository(pool: Pool): ImportRepository {

@@ -5,7 +5,7 @@ Consejos para operar el sistema y evitar problemas comunes.
 ## Gotchas Comunes
 
 - `AuthDebug` solo visible en desarrollo (`import.meta.env.DEV`).
-- `dist/` está committed, no en .gitignore.
+- `dist/` está en `.gitignore`; no se commitea.
 - Alias de path: `@/` → `src/`.
 - Build target: ES2020.
 

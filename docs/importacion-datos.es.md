@@ -15,10 +15,11 @@ Cómo importar datos al sistema.
 ## Validaciones
 
 - Solo un usuario con rol `Administrador` puede importar.
-- Las tablas destino están limitadas a `coleccion`, `pozo`, `placa` y `muestra`.
+- Las tablas destino están limitadas a `coleccion`, `pozo`, `placa`, `muestra` y las nueve variantes de `dic_uni_lito_*`, `dic_biozona_*` y `dic_edad_*` (reportada, normalizada y actualizada).
 - El límite global es de 1000 filas y 1 MB por solicitud; si una tabla falla, se revierte toda la solicitud.
 - Las filas vacías (sin ningún campo con valor) se rechazan antes de insertar.
-- Esta primera importación solo incluye las columnas ofrecidas por la plantilla. `fecha_revision` y cualquier campo no incluido quedan fuera y deben gestionarse por el flujo correspondiente.
+- Las plantillas usan los nombres oficiales de columna, excluyen IDs identity y timestamps automáticos, e incluyen `fecha_revision` en pozo, placa, muestra y catálogos geológicos cuando existe en el esquema.
+- Se excluyen deliberadamente `empresa`, `dic_campo`, `dic_contrato`, `mueble`, `ubicacion_fisica`, personas/roles, catálogos de referencia y tablas legacy. Personas y roles se administran desde `/usuarios`.
 
 ## Notas para Colombia
 

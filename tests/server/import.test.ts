@@ -3,6 +3,7 @@ import { createApp } from '../../server/app'
 import { createImportRepository } from '../../server/repositories'
 import type { AppConfig } from '../../server/config'
 import type { ImportRepository } from '../../server/types'
+import { importColumns } from '../../server/importValidation'
 
 const config: AppConfig = {
   NODE_ENV: 'test', SERVER_HOST: '127.0.0.1', SERVER_PORT: 3000, DATABASE_URL: 'postgres://test',
@@ -14,6 +15,20 @@ const row = { codigo_coleccion: 'COL-1' }
 const repository: ImportRepository = { importBatches: vi.fn().mockResolvedValue(1) }
 
 describe('local administrator imports', () => {
+  it.each([
+    'dic_uni_lito_reportada', 'dic_uni_lito_normalizada', 'dic_uni_lito_actualizada',
+    'dic_biozona_reportada', 'dic_biozona_normalizada', 'dic_biozona_actualizada',
+    'dic_edad_reportada', 'dic_edad_normalizada', 'dic_edad_actualizada',
+  ] as const)('imports one %s batch through its fixed repository mapping', async (table) => {
+    const client = { query: vi.fn().mockResolvedValue({}), release: vi.fn() }
+    const pool = { connect: vi.fn().mockResolvedValue(client) } as never
+    const imports = createImportRepository(pool)
+    await expect(imports.importBatches([{ table, rows: [{ [importColumns[table][0]]: 'example' }] }])).resolves.toBe(1)
+    const statement = client.query.mock.calls.find(([sql]) => String(sql).startsWith('INSERT'))?.[0] as string
+    expect(statement).toContain(`public.${table}`)
+    expect(statement).toContain(importColumns[table][0])
+  })
+
   it('requires authentication and the Administrador role', async () => {
     const unauthenticated = await createApp({ auth: { restore: vi.fn().mockResolvedValue(null) } as never, config, imports: repository })
     expect((await unauthenticated.inject({ method: 'POST', url: '/api/admin/import', payload: { batches: [{ table: 'coleccion', rows: [row] }] } })).statusCode).toBe(401)
