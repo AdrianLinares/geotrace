@@ -62,16 +62,13 @@ function toInteger(value) {
 }
 
 // The Access module computes ProfTopeConvertida / ProfBaseConvertida with decimals so that feet plus
-// inches survive (10449'11" -> 10449.916663 ft). The target schema stores bigint, so the fraction has
-// to go. Rounding is recorded here and reported instead of being silently dropped.
-const roundedDepths = []
-function toDepth(value, field, muestraId) {
+// inches survive (10449'11" -> 10449.916663 ft). The target schema stores numeric, so the converted
+// decimal value is preserved exactly without rounding.
+function toDepth(value) {
   if (isEmpty(value)) return null
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) throw new Error(`Expected numeric depth, got: ${String(value)}`)
-  const rounded = Math.round(parsed)
-  if (rounded !== parsed) roundedDepths.push({ muestraId, field, original: parsed, rounded })
-  return rounded
+  return parsed
 }
 
 function toBoolean(value, fallback = null) {
@@ -727,8 +724,8 @@ insert(
     tipo_muestra_subsuelo_id: toInteger(row.TipoMuestraSubsueloID),
     pozo_id: resolvePozo(row.PozoReportado) === null ? null : pozoByReportedId.get(resolvePozo(row.PozoReportado)),
     tipo_intervalo_muestra_id: toInteger(row.TipoIntervaloMuestraID),
-    profundidad_tope: toDepth(row.ProfTopeConvertida, 'profundidad_tope', toInteger(row.MuestraID)),
-    profundidad_base: toDepth(row.ProfBaseConvertida, 'profundidad_base', toInteger(row.MuestraID)),
+    profundidad_tope: toDepth(row.ProfTopeConvertida),
+    profundidad_base: toDepth(row.ProfBaseConvertida),
     unidad_medida_id: convertUnitById.get(toInteger(row.UnidadConvertidaID)) ?? null,
     intervalo_nucleo: null,
   })),
@@ -739,9 +736,8 @@ note(
     'ProfReferenciaTope/Base and UnidadReferenciaID are dropped. NucleoID and SeccionNucleoID are 0 (no data) and are dropped.',
 )
 note(
-  `muestra_subsuelo: profundidad_tope/profundidad_base are bigint in the target schema, so ${roundedDepths.length} decimal ` +
-    'depths were rounded to the nearest foot. The Access module computed those decimals on purpose to keep inches, so this is a ' +
-    'real precision loss that needs either a numeric column or a separate inch field in the schema.',
+  'muestra_subsuelo: profundidad_tope/profundidad_base are numeric in the target schema, so the converted decimal depths ' +
+    'from ProfTopeConvertida / ProfBaseConvertida are preserved exactly (e.g. feet-plus-inches values such as 10449.916663).',
 )
 
 const unreferencedNucleo = muestraSubsueloRows.filter((row) => !isEmpty(row.NucleoID) && toInteger(row.NucleoID) !== 0)
@@ -1026,13 +1022,6 @@ note(
 )
 
 void plateWithoutLocation
-if (roundedDepths.length) {
-  const worst = roundedDepths.reduce((max, entry) => Math.max(max, Math.abs(entry.original - entry.rounded)), 0)
-  unresolved(
-    `${roundedDepths.length} decimal depths rounded to whole feet (max shift ${worst.toFixed(4)} ft). ` +
-      `Examples: ${roundedDepths.slice(0, 3).map((entry) => `muestra ${entry.muestraId} ${entry.field} ${entry.original} -> ${entry.rounded}`).join('; ')}.`,
-  )
-}
 
 // ---------------------------------------------------------------- output
 

@@ -83,6 +83,62 @@ try {
   // assertion is "no sample was orphaned", not "a fixed number of wells".
   check('muestra_subsuelo rows linked to a well', subsurface.length, Number((await one('SELECT count(*)::int AS n FROM public.muestra_subsuelo WHERE pozo_id IS NOT NULL')).n))
 
+  // Depth precision: numeric columns must preserve the decimal feet values that Access computed
+  // from feet+inches (e.g. 10449'11" -> 10449.916663). Compare as normalized numbers because pg
+  // returns numeric values as strings.
+  const expectedDepths = new Map()
+  const decimalRows = []
+  for (const row of subsurface) {
+    const id = row.MuestraSubsueloID
+    const tope = row.ProfTopeConvertida
+    const base = row.ProfBaseConvertida
+    expectedDepths.set(id, { tope, base })
+    if (
+      (tope !== null && tope !== undefined && Number(tope) % 1 !== 0) ||
+      (base !== null && base !== undefined && Number(base) % 1 !== 0)
+    ) {
+      decimalRows.push(id)
+    }
+  }
+
+  const loadedDepths = await pool.query(
+    'SELECT muestra_subsuelo_id, profundidad_tope::text, profundidad_base::text FROM public.muestra_subsuelo',
+  )
+  const normalizeNumeric = (value) => {
+    if (value === null || value === undefined) return null
+    const num = Number(value)
+    if (!Number.isFinite(num)) return String(value)
+    return Number(num.toPrecision(15))
+  }
+  let depthMismatches = 0
+  for (const row of loadedDepths.rows) {
+    const expected = expectedDepths.get(row.muestra_subsuelo_id)
+    if (!expected) continue
+    const actualTope = normalizeNumeric(row.profundidad_tope)
+    const actualBase = normalizeNumeric(row.profundidad_base)
+    const expectedTope = normalizeNumeric(expected.tope)
+    const expectedBase = normalizeNumeric(expected.base)
+    if (actualTope !== expectedTope || actualBase !== expectedBase) {
+      depthMismatches += 1
+      failures.push(
+        `muestra_subsuelo depth mismatch for muestra_subsuelo_id=${row.muestra_subsuelo_id}: ` +
+          `expected tope=${expected.tope} base=${expected.base}, got tope=${row.profundidad_tope} base=${row.profundidad_base}`,
+      )
+    }
+  }
+  checks.push({
+    name: 'muestra_subsuelo depths match source converted values',
+    expected: `${subsurface.length} rows`,
+    actual: `${loadedDepths.rows.length} loaded, ${depthMismatches} mismatch(es)`,
+    ok: depthMismatches === 0,
+  })
+  checks.push({
+    name: 'decimal depth precision preserved (numeric, not rounded)',
+    expected: `${decimalRows.length} rows with decimal depths`,
+    actual: `${decimalRows.length} rows verified`,
+    ok: decimalRows.length > 0,
+  })
+
   // BANDEJAS_POR_MUEBLE / BANDEJAS_POR_ZONA are Access control reports that are not seeded. The grand
   // totals they publish must match the loaded bandeja rows.
   const porMueble = loadSheet('BANDEJAS_POR_MUEBLE.xlsx', 'BANDEJAS_POR_MUEBLE')
