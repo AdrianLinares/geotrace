@@ -262,15 +262,17 @@ const collectionColumns = `c.coleccion_id::text AS coleccion_id, c.codigo_colecc
   c.nombre_coleccion, c.institucion, c.responsable_coleccion,
   c.descripcion, c.estado_coleccion`
 const wellColumns = `p.pozo_id::text AS pozo_id, p.codigo_pozo, p.nombre_pozo,
-  p.cuenca_id::text AS cuenca_id, p.localizacion_geografica_id::text AS localizacion_geografica_id,
+  p.cuenca_id::text AS cuenca_id, cu.nombre_cuenca AS cuenca_nombre,
+  p.localizacion_geografica_id::text AS localizacion_geografica_id,
   p.localizacion_espacial_id::text AS localizacion_espacial_id,
-  p.estado_catalogacion_id::text AS estado_catalogacion_id,
-  p.estado_revision_id::text AS estado_revision_id, p.observaciones`
-const plateColumns = `p.placa_id::text AS placa_id, p.codigo_ubicacion, p.coleccion_id::text AS coleccion_id,
+  p.estado_catalogacion_id::text AS estado_catalogacion_id, ec.estado AS estado_catalogacion,
+  p.estado_revision_id::text AS estado_revision_id, er.nombre AS estado_revision, p.observaciones`
+ const plateColumns = `p.placa_id::text AS placa_id, p.codigo_ubicacion, p.coleccion_id::text AS coleccion_id,
+  c.nombre_coleccion AS coleccion_nombre,
   p.codigo_placa, p.clase_placa_id::text AS clase_placa_id, cp.nombre AS clase_placa,
   p.etapa_uso_placa_id::text AS etapa_uso_placa_id,
   p.diseno_placa_id::text AS diseno_placa_id, dp.nombre AS diseno_placa,
-  p.configuracion_cavidades_id::text AS configuracion_cavidades_id,
+  p.configuracion_cavidades_id::text AS configuracion_cavidades_id, cc.total_cavidades,
   p.material_placa_id::text AS material_placa_id, p.color_placa_id::text AS color_placa_id,
   p.configuracion_rejilla_id::text AS configuracion_rejilla_id, p.tipo_proteccion_id::text AS tipo_proteccion_id,
   p.sistema_ensamble_id::text AS sistema_ensamble_id, p.catalogador_id::text AS catalogador_id,
@@ -362,6 +364,9 @@ export function createReadRepository(pool: Pool): PlateRepository {
         pool.query<WellDto>(
           `SELECT ${wellColumns}
            FROM public.pozo p
+           LEFT JOIN public.cat_cuenca cu ON cu.cuenca_id = p.cuenca_id
+           LEFT JOIN public.cat_estado_catalogacion ec ON ec.estado_catalogacion_id = p.estado_catalogacion_id
+           LEFT JOIN public.cat_estado_revision er ON er.estado_revision_id = p.estado_revision_id
            ${filters}
            ORDER BY p.nombre_pozo NULLS LAST, p.pozo_id LIMIT $2 OFFSET $3`,
           [search || null, pageSize, offset],
@@ -371,7 +376,11 @@ export function createReadRepository(pool: Pool): PlateRepository {
       return { data: result.rows, total: Number(count.rows[0]?.total ?? 0) }
     },
     async getWell(id) {
-      const result = await pool.query<WellDto>(`SELECT ${wellColumns} FROM public.pozo p WHERE p.pozo_id = $1`, [id])
+      const result = await pool.query<WellDto>(`SELECT ${wellColumns} FROM public.pozo p
+        LEFT JOIN public.cat_cuenca cu ON cu.cuenca_id = p.cuenca_id
+        LEFT JOIN public.cat_estado_catalogacion ec ON ec.estado_catalogacion_id = p.estado_catalogacion_id
+        LEFT JOIN public.cat_estado_revision er ON er.estado_revision_id = p.estado_revision_id
+        WHERE p.pozo_id = $1`, [id])
       return result.rows[0] ?? null
     },
     async listBasins() {
@@ -387,8 +396,10 @@ export function createReadRepository(pool: Pool): PlateRepository {
       ].join(' AND ')
       const params = [filters.search || null, filters.collectionId || null, filters.states?.length ? filters.states : null]
        const from = `FROM public.placa p
+         LEFT JOIN public.coleccion c ON c.coleccion_id = p.coleccion_id
          LEFT JOIN public.cat_clase_placa cp ON cp.clase_placa_id = p.clase_placa_id
          LEFT JOIN public.cat_diseno_placa dp ON dp.diseno_placa_id = p.diseno_placa_id
+         LEFT JOIN public.cat_configuracion_cavidades cc ON cc.configuracion_cavidades_id = p.configuracion_cavidades_id
          LEFT JOIN public.cat_estado_catalogacion ec ON ec.estado_catalogacion_id = p.estado_catalogacion_id`
       const [result, count] = await Promise.all([
         pool.query<PlateDto>(`SELECT ${plateColumns} ${from} WHERE ${where} ORDER BY p.placa_id LIMIT $4 OFFSET $5`, [...params, pageSize, offset]),
@@ -398,8 +409,10 @@ export function createReadRepository(pool: Pool): PlateRepository {
     },
     async getPlate(id) {
       const result = await pool.query<PlateDto>(`SELECT ${plateColumns} FROM public.placa p
+         LEFT JOIN public.coleccion c ON c.coleccion_id = p.coleccion_id
          LEFT JOIN public.cat_clase_placa cp ON cp.clase_placa_id = p.clase_placa_id
          LEFT JOIN public.cat_diseno_placa dp ON dp.diseno_placa_id = p.diseno_placa_id
+         LEFT JOIN public.cat_configuracion_cavidades cc ON cc.configuracion_cavidades_id = p.configuracion_cavidades_id
          LEFT JOIN public.cat_estado_catalogacion ec ON ec.estado_catalogacion_id = p.estado_catalogacion_id
         WHERE p.placa_id = $1`, [id])
       return result.rows[0] ?? null

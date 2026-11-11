@@ -63,11 +63,13 @@ export type Placa = {
   placa_id: string
   codigo_ubicacion: string | null
   coleccion_id: string | null
+  coleccion_nombre?: string | null
   codigo_placa: string | null
   clase_placa_id: string | null
   etapa_uso_placa_id: string | null
   diseno_placa_id: string | null
   configuracion_cavidades_id: string | null
+  total_cavidades?: number | null
   material_placa_id: string | null
   color_placa_id: string | null
   configuracion_rejilla_id: string | null
@@ -139,10 +141,13 @@ export type Pozo = {
   codigo_pozo?: string | null
   nombre_pozo?: string | null
   cuenca_id?: string | null
+  cuenca_nombre?: string | null
   localizacion_geografica_id?: string | null
   localizacion_espacial_id?: string | null
   estado_catalogacion_id?: string | null
+  estado_catalogacion?: string | null
   estado_revision_id?: string | null
+  estado_revision?: string | null
   observaciones?: string | null
 }
 

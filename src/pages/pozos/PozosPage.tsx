@@ -44,11 +44,11 @@ export default function PozosPage() {
                   <TableRow key={p.pozo_id}>
                     <TableCell className="font-medium">{p.codigo_pozo ?? '-'}</TableCell>
                     <TableCell>{p.nombre_pozo ?? '-'}</TableCell>
-                    <TableCell>{cuencaMap.get(p.cuenca_id ?? '') ?? '-'}</TableCell>
+                  <TableCell>{p.cuenca_nombre ?? cuencaMap.get(p.cuenca_id ?? '') ?? '-'}</TableCell>
                     <TableCell>{p.localizacion_geografica_id ?? '-'}</TableCell>
                     <TableCell>{p.localizacion_espacial_id ?? '-'}</TableCell>
-                    <TableCell>{p.estado_catalogacion_id ?? '-'}</TableCell>
-                    <TableCell>{p.estado_revision_id ?? '-'}</TableCell>
+                  <TableCell>{p.estado_catalogacion ?? p.estado_catalogacion_id ?? '-'}</TableCell>
+                  <TableCell>{p.estado_revision ?? p.estado_revision_id ?? '-'}</TableCell>
                     <TableCell>{p.observaciones ?? '-'}</TableCell>
                   </TableRow>
                 ))}

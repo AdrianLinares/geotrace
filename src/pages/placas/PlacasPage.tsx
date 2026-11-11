@@ -27,7 +27,7 @@ export default function PlacasPage() {
     search,
   })
   const { data: colecciones } = useColecciones(0)
-  const estados = ['En proceso', 'Incompleto', 'En revisión', 'Validado', 'Cerrado']
+  const estados = ['En proceso', 'Incompleto', 'Completo', 'Pendiente información']
 
   return (
     <AppLayout>
@@ -97,21 +97,21 @@ export default function PlacasPage() {
               {data?.data.map(p => (
                 <TableRow key={p.placa_id}>
                   <TableCell>{p.placa_id}</TableCell>
-                  <TableCell>{p.coleccion_id}</TableCell>
-                  <TableCell>{p.codigo_ubicacion}</TableCell>
+                  <TableCell>{p.coleccion_nombre ?? p.coleccion_id ?? '—'}</TableCell>
+                  <TableCell>{p.codigo_ubicacion ?? 'No disponible'}</TableCell>
                   <TableCell>{p.clase_placa}</TableCell>
                   <TableCell>{p.diseno_placa}</TableCell>
-                  <TableCell>{p.configuracion_cavidades_id ?? '—'}</TableCell>
+                  <TableCell>{p.total_cavidades ?? p.configuracion_cavidades_id ?? '—'}</TableCell>
                   <TableCell>
                     <Badge variant={
-                      p.estado_catalogacion === 'Validado' ? 'default' :
-                      p.estado_catalogacion === 'En revisión' ? 'secondary' :
+                      p.estado_catalogacion === 'Completo' ? 'default' :
+                      p.estado_catalogacion === 'Pendiente información' ? 'secondary' :
                       p.estado_catalogacion === 'Incompleto' ? 'destructive' : 'outline'
                     }>
-                      {p.estado_catalogacion}
+                      {p.estado_catalogacion ?? 'No disponible'}
                     </Badge>
                   </TableCell>
-                  <TableCell>?</TableCell>
+                  <TableCell title="MUESTRA no tiene una relación normalizada con PLACA">No disponible</TableCell>
                   <TableCell className="space-x-2">
                     <Button variant="outline" size="sm" onClick={() => { setPlacaToEdit(p as any); setModalOpen(true) }}>Editar</Button>
                     <Button variant="secondary" size="sm" onClick={() => { setPlacaForEstado(p as any); setEstadoModalOpen(true) }}>Cambiar Estado</Button>
