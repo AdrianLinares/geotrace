@@ -77,11 +77,32 @@ export function createAdminRepository(pool: Pool): AdminRepository {
           await client.query(`UPDATE public.persona SET ${assignments.join(', ')}, updated_at = now() WHERE persona_id = $${values.length + 1}`, [...values, personaId])
         }
         if (input.role_ids) {
-          await client.query('UPDATE public.rel_persona_rol SET activo = false, fecha_fin = now(), updated_at = now() WHERE persona_id = $1 AND activo = true', [personaId])
+          // Close only the assignments that are no longer requested. Unchanged roles keep their
+          // original row so the assignment history stays auditable.
+          await client.query(
+            `UPDATE public.rel_persona_rol
+                SET activo = false, fecha_fin = now(), updated_at = now()
+              WHERE persona_id = $1
+                AND activo = true
+                AND (rol_id <> ALL($2::bigint[]) OR (fecha_fin IS NOT NULL AND fecha_fin <= now()))`,
+            [personaId, input.role_ids],
+          )
           if (input.role_ids.length) {
-            await client.query(`INSERT INTO public.rel_persona_rol (persona_id, codigo_persona, rol_id, fecha_inicio, activo)
-              SELECT p.persona_id, p.codigo_persona, role_id, now(), true FROM public.persona p
-              CROSS JOIN unnest($1::bigint[]) AS role_id WHERE p.persona_id = $2`, [input.role_ids, personaId])
+            await client.query(
+              `INSERT INTO public.rel_persona_rol (persona_id, codigo_persona, rol_id, fecha_inicio, activo)
+               SELECT p.persona_id, p.codigo_persona, role_id, now(), true
+                 FROM public.persona p
+                 CROSS JOIN unnest($1::bigint[]) AS role_id
+                WHERE p.persona_id = $2
+                  AND NOT EXISTS (
+                    SELECT 1 FROM public.rel_persona_rol current
+                     WHERE current.persona_id = p.persona_id
+                       AND current.rol_id = role_id
+                       AND current.activo = true
+                       AND (current.fecha_fin IS NULL OR current.fecha_fin > now())
+                  )`,
+              [input.role_ids, personaId],
+            )
           }
         }
         const admins = await client.query<{ count: string }>(`SELECT count(DISTINCT rpr.persona_id)::text AS count

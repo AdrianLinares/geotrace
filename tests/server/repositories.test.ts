@@ -192,7 +192,7 @@ describe('createAdminRepository', () => {
     expect(client.release).toHaveBeenCalledOnce()
   })
 
-  it('replaces active role assignments in one transaction with official lowercase tables', async () => {
+  it('preserves unchanged role assignments and only closes removed roles', async () => {
     const query = vi.fn()
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({})
@@ -207,9 +207,32 @@ describe('createAdminRepository', () => {
     const repository = createAdminRepository({ connect: vi.fn().mockResolvedValue(client) } as never)
 
     await repository.updatePerson('1', { role_ids: ['2'] })
-    expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE public.rel_persona_rol'), ['1'])
+    const updateSql = query.mock.calls.find(([sql]) => String(sql).includes('UPDATE public.rel_persona_rol'))?.[0]
+    expect(updateSql).toContain('rol_id <> ALL($2::bigint[])')
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE public.rel_persona_rol'), ['1', ['2']])
+    const insertSql = query.mock.calls.find(([sql]) => String(sql).includes('INSERT INTO public.rel_persona_rol'))?.[0]
+    expect(insertSql).toContain('NOT EXISTS')
     expect(query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO public.rel_persona_rol'), [['2'], '1'])
     expect(query.mock.calls.every(([sql]) => !String(sql).match(/public\."[A-Z_]+"/))).toBe(true)
+  })
+
+  it('removes all active assignments when no roles remain', async () => {
+    const query = vi.fn()
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ persona_id: '1' }] })
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+      .mockResolvedValueOnce({ rows: [{ persona_id: '1', roles: [] }] })
+      .mockResolvedValueOnce({})
+    const client = { query, release: vi.fn() }
+    const repository = createAdminRepository({ connect: vi.fn().mockResolvedValue(client) } as never)
+
+    await repository.updatePerson('1', { role_ids: [] })
+
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE public.rel_persona_rol'), ['1', []])
+    expect(query.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO public.rel_persona_rol'))).toBe(false)
   })
 })
 
