@@ -45,6 +45,9 @@ export default function Login() {
           <button type="submit" className="px-4 py-2 bg-primary text-white rounded" disabled={loading}>
             {loading ? 'Ingresando...' : 'Iniciar sesión'}
           </button>
+          <button type="button" className="w-full px-4 py-2 border border-border rounded" onClick={() => navigate('/', { replace: true })}>
+            Ir al inicio
+          </button>
           {message && <div role="alert" className="text-sm text-red-600">{message}</div>}
         </form>
       </div>
