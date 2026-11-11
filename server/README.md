@@ -41,7 +41,7 @@ the local credential from the database when appropriate.
 
 Endpoints are `GET /health`, `POST /auth/login` (`{ "username", "password" }`), `GET /auth/me`, `POST /auth/logout`, authenticated reads, and local `MUESTRA` CRUD: `POST /api/samples`, `PUT /api/samples/:id`, and restricted `DELETE /api/samples/:id`. Lists accept bounded pagination and return `{ data, total }`; plate lists additionally accept `collectionId`, `states`, and `search`.
 
-Authentication first binds the supplied AD user, then requires an active `PERSONA` row and at least one active, currently valid `REL_PERSONA_ROL` assignment. No default role is granted. Session cookies contain an opaque random token; PostgreSQL stores only its hash.
+Authentication first binds the supplied AD user, then resolves the active `PERSONA` row by its directory login (`ad_username`, canonicalized from `sAMAccountName`/`uid`) and requires at least one active, currently valid `REL_PERSONA_ROL` assignment. No default role is granted. Session cookies contain an opaque random token; PostgreSQL stores only its hash.
 
 Each login creates and unbinds its own LDAP client. `CAT_ROL` in the current schema has no active/inactive column, so validation can enforce `PERSONA.activo`, `REL_PERSONA_ROL.activo`, and assignment dates, but cannot independently disable a role catalog row.
 

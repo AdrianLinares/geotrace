@@ -50,6 +50,20 @@ describe('LDAP authenticator', () => {
     expect(first.unbind).toHaveBeenCalledOnce()
   })
 
+  it('returns the canonical directory login after a successful bind', async () => {
+    const ldapClient = client()
+    ldapClient.search.mockResolvedValue({ searchEntries: [{ dn: 'uid=ada,dc=example,dc=test', sAMAccountName: 'ADA' }] })
+    const authenticator = createLdapAuthenticator(config, () => ldapClient)
+
+    await expect(authenticator.authenticate('ada', 'password')).resolves.toEqual({ login: 'ADA' })
+  })
+
+  it('falls back to the typed username when the directory exposes no login attribute', async () => {
+    const authenticator = createLdapAuthenticator(config, client)
+
+    await expect(authenticator.authenticate('ada', 'password')).resolves.toEqual({ login: 'ada' })
+  })
+
   it('maps only LDAP invalid-credentials responses to 401-compatible errors', async () => {
     const ldapClient = client()
     ldapClient.bind

@@ -109,13 +109,23 @@ describe('createReadRepository', () => {
     expect(query.mock.calls[0][0]).not.toMatch(/mueble_cod|ocupada|no_bandeja/)
   })
 
+  it('resolves active users by ad_username, never by correo', async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [] })
+    const roles = createRoleRepository({ query } as never)
+
+    await roles.findActiveUserByLogin('adrian')
+
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('lower(p.ad_username) = lower($1)'), ['adrian'])
+    expect(query.mock.calls[0][0]).not.toMatch(/lower\(p\.correo\)/)
+  })
+
   it('never emits quoted identifiers for tables created unquoted in schema.sql', async () => {
     const query = vi.fn()
       .mockResolvedValue({ rows: [] })
     const repository = createReadRepository({ query } as never)
     const roles = createRoleRepository({ query } as never)
 
-    await roles.findActiveUserByUsername('user@example.test')
+    await roles.findActiveUserByLogin('user@example.test')
     await repository.listCollections(0, 20)
     await repository.listWells(0, 20)
     await repository.listBasins()

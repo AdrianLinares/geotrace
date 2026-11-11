@@ -65,6 +65,7 @@ CREATE TABLE public.PERSONA (
     nombre            varchar(255) NOT NULL,
     apellidos         varchar(255) NOT NULL,
     correo            varchar(255) NOT NULL,
+    ad_username       varchar(255),
     activo            boolean NOT NULL DEFAULT true,
     observaciones     text,
     created_at        timestamptz NOT NULL DEFAULT now(),
@@ -74,11 +75,14 @@ CREATE TABLE public.PERSONA (
     CONSTRAINT uq_persona_correo UNIQUE (correo)
 );
 
-COMMENT ON TABLE public.PERSONA IS 'Personas que interactúan con el catálogo; correo identifica la cuenta AD/aplicación.';
-COMMENT ON COLUMN public.PERSONA.correo IS 'Identificador único de AD/aplicación; no depende de un proveedor de autenticación externo.';
+COMMENT ON TABLE public.PERSONA IS 'Personas que interactúan con el catálogo; ad_username identifica la cuenta AD y correo es el email de contacto.';
+COMMENT ON COLUMN public.PERSONA.correo IS 'Email de contacto editable; no se usa para autenticar.';
+COMMENT ON COLUMN public.PERSONA.ad_username IS 'Identificador de login en AD (sAMAccountName o uid); NULL si la persona no inicia sesión.';
 
 CREATE INDEX idx_persona_correo ON public.PERSONA(correo);
 CREATE INDEX idx_persona_codigo_persona ON public.PERSONA(codigo_persona);
+CREATE UNIQUE INDEX uq_persona_ad_username_lower ON public.PERSONA(lower(ad_username)) WHERE ad_username IS NOT NULL;
+CREATE UNIQUE INDEX uq_persona_correo_lower ON public.PERSONA(lower(correo));
 
 -- ============================================================
 -- CAT_ROL: roles jerárquicos del sistema

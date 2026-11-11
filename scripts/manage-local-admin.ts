@@ -19,9 +19,10 @@ export async function provisionLocalAdmin(client: Pick<PoolClient, 'query'>, use
   }
 
   const person = await client.query<{ personaId: string }>(
-    `INSERT INTO public.persona (codigo_persona, nombre, apellidos, correo)
-     VALUES ($1, 'Local', 'Administrator', $1)
-     ON CONFLICT (correo) DO UPDATE SET updated_at = now(), activo = true
+    `INSERT INTO public.persona (codigo_persona, nombre, apellidos, correo, ad_username)
+     VALUES ($1, 'Local', 'Administrator', $1, $1)
+     ON CONFLICT (codigo_persona) DO UPDATE
+        SET ad_username = EXCLUDED.ad_username, updated_at = now(), activo = true
      RETURNING persona_id::text AS "personaId"`, [username],
   )
   const personaId = person.rows[0]?.personaId

@@ -10,9 +10,12 @@ export class AuthService {
   constructor(private readonly directory: DirectoryAuthenticator, private readonly roles: RoleRepository, private readonly sessions: SessionRepository, private readonly ttlSeconds: number, private readonly local?: { username: string; credentials: LocalCredentialRepository }) {}
 
   async login(username: string, password: string): Promise<{ token: string; user: AuthenticatedUser }> {
+    // The directory returns the canonical login identifier; the local fallback keeps the typed username.
+    let login = username
     let authenticatedByDirectory = true
     try {
-      await this.directory.authenticate(username, password)
+      const directoryUser = await this.directory.authenticate(username, password)
+      login = directoryUser.login
     } catch (error) {
       authenticatedByDirectory = false
       if (!this.local || username.toLowerCase() !== this.local.username.toLowerCase()) {
@@ -29,7 +32,7 @@ export class AuthService {
     }
     let user: AuthenticatedUser | null
     try {
-      user = await this.roles.findActiveUserByUsername(username)
+      user = await this.roles.findActiveUserByLogin(login)
     } catch {
       throw new AuthenticationInfrastructureError('Application role lookup unavailable')
     }
@@ -51,7 +54,7 @@ export class AuthService {
 
     let activeUser: AuthenticatedUser | null
     try {
-      activeUser = await this.roles.findActiveUserByUsername(sessionUser.username)
+      activeUser = await this.roles.findActiveUserByLogin(sessionUser.username)
     } catch {
       throw new AuthenticationInfrastructureError('Application role lookup unavailable')
     }

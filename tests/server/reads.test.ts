@@ -30,7 +30,7 @@ const reads: ReadRepository = {
   getDashboard: vi.fn().mockResolvedValue({ kpis: {}, estadoCatalogacion: [], ocupacion: [], actividadReciente: [], problemasConservacion: [] }),
 }
 const admin: AdminRepository = {
-  listPeople: vi.fn().mockResolvedValue([{ persona_id: '1', codigo_persona: 'A-1', nombre: 'Test', apellidos: 'User', correo: 'user@test', activo: true, roles: [] }]),
+  listPeople: vi.fn().mockResolvedValue([{ persona_id: '1', codigo_persona: 'A-1', nombre: 'Test', apellidos: 'User', correo: 'user@test', ad_username: 'test', activo: true, roles: [] }]),
   listRoles: vi.fn().mockResolvedValue([{ rol_id: '1', nombre: 'Administrador', jerarquia: 4 }]),
   updatePerson: vi.fn().mockResolvedValue({ persona_id: '1' }),
 }

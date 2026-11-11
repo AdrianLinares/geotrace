@@ -8,15 +8,15 @@ import { createApp } from '../../server/app'
 const user: AuthenticatedUser = { personaId: '1', username: 'ada@example.test', name: 'Ada Lovelace', roles: ['Catalogador'] }
 
 function setup(role: AuthenticatedUser | null = user) {
-  const directory: DirectoryAuthenticator = { authenticate: vi.fn(), close: vi.fn() }
-  const roles: RoleRepository = { findActiveUserByUsername: vi.fn().mockResolvedValue(role) }
+  const directory: DirectoryAuthenticator = { authenticate: vi.fn().mockResolvedValue({ login: user.username }), close: vi.fn() }
+  const roles: RoleRepository = { findActiveUserByLogin: vi.fn().mockResolvedValue(role) }
   const sessions: SessionRepository = { create: vi.fn(), find: vi.fn(), remove: vi.fn() }
   return { service: new AuthService(directory, roles, sessions, 60), directory, roles, sessions }
 }
 
 function setupLocal(role: AuthenticatedUser | null = { ...user, roles: ['Administrador'] }) {
-  const directory: DirectoryAuthenticator = { authenticate: vi.fn(), close: vi.fn() }
-  const roles: RoleRepository = { findActiveUserByUsername: vi.fn().mockResolvedValue(role) }
+  const directory: DirectoryAuthenticator = { authenticate: vi.fn().mockResolvedValue({ login: user.username }), close: vi.fn() }
+  const roles: RoleRepository = { findActiveUserByLogin: vi.fn().mockResolvedValue(role) }
   const sessions: SessionRepository = { create: vi.fn(), find: vi.fn(), remove: vi.fn() }
   const credentials = { findByUsername: vi.fn() }
   return { service: new AuthService(directory, roles, sessions, 60, { username: user.username, credentials }), directory, roles, sessions, credentials }
@@ -27,8 +27,15 @@ describe('AuthService', () => {
     const { service, sessions, roles } = setup()
     const result = await service.login(user.username, 'password')
     expect(result.user).toEqual(user)
-    expect(roles.findActiveUserByUsername).toHaveBeenCalledWith(user.username)
+    expect(roles.findActiveUserByLogin).toHaveBeenCalledWith(user.username)
     expect(sessions.create).toHaveBeenCalledOnce()
+  })
+
+  it('looks up application roles by the canonical directory login', async () => {
+    const { service, directory, roles } = setup()
+    vi.mocked(directory.authenticate).mockResolvedValue({ login: 'ADA' })
+    await service.login('ada@example.test', 'password')
+    expect(roles.findActiveUserByLogin).toHaveBeenCalledWith('ADA')
   })
 
   it('rejects invalid AD credentials', async () => {
@@ -62,7 +69,7 @@ describe('AuthService', () => {
       SESSION_COOKIE_SAME_SITE: 'lax', SESSION_COOKIE_SECURE: false, LOCAL_ADMIN_ENABLED: true,
     } as const
     const directory = createDirectoryAuthenticator(config)
-    const roles: RoleRepository = { findActiveUserByUsername: vi.fn().mockResolvedValue({ ...user, username: 'local-admin', roles: ['Administrador'] }) }
+    const roles: RoleRepository = { findActiveUserByLogin: vi.fn().mockResolvedValue({ ...user, username: 'local-admin', roles: ['Administrador'] }) }
     const sessions: SessionRepository = { create: vi.fn(), find: vi.fn(), remove: vi.fn() }
     const credentials = { findByUsername: vi.fn().mockResolvedValue({ passwordHash: await hashPassword('password') }) }
     const service = new AuthService(directory, roles, sessions, 60, { username: 'local-admin', credentials })
@@ -112,7 +119,7 @@ describe('AuthService', () => {
   it('revalidates the current application role when restoring a session', async () => {
     const { service, sessions, roles } = setup()
     vi.mocked(sessions.find).mockResolvedValue(user)
-    vi.mocked(roles.findActiveUserByUsername).mockResolvedValue(null)
+    vi.mocked(roles.findActiveUserByLogin).mockResolvedValue(null)
 
     await expect(service.restore('session-token')).resolves.toBeNull()
     expect(sessions.remove).toHaveBeenCalledOnce()

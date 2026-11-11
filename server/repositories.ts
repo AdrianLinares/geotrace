@@ -9,21 +9,21 @@ export class PlateAuthorizationError extends Error {}
 
 export function createRoleRepository(pool: Pool): RoleRepository {
   return {
-    async findActiveUserByUsername(username) {
+    async findActiveUserByLogin(login) {
       const result = await pool.query<AuthenticatedUser>(
-        `SELECT p.persona_id::text AS "personaId", p.correo AS username,
+        `SELECT p.persona_id::text AS "personaId", p.ad_username AS username,
                 concat_ws(' ', p.nombre, p.apellidos) AS name,
                 array_agg(cr.nombre ORDER BY cr.jerarquia DESC) AS roles
            FROM public.persona p
            JOIN public.rel_persona_rol rpr ON rpr.persona_id = p.persona_id
            JOIN public.cat_rol cr ON cr.rol_id = rpr.rol_id
-          WHERE lower(p.correo) = lower($1)
+          WHERE lower(p.ad_username) = lower($1)
             AND p.activo = true
             AND rpr.activo = true
             AND rpr.fecha_inicio <= now()
             AND (rpr.fecha_fin IS NULL OR rpr.fecha_fin > now())
-          GROUP BY p.persona_id, p.correo, p.nombre, p.apellidos`,
-        [username],
+          GROUP BY p.persona_id, p.ad_username, p.nombre, p.apellidos`,
+        [login],
       )
       return result.rows[0] ?? null
     },
@@ -31,7 +31,7 @@ export function createRoleRepository(pool: Pool): RoleRepository {
 }
 
 const managedPersonColumns = `p.persona_id::text AS persona_id, p.codigo_persona, p.nombre, p.apellidos,
-  p.correo, p.activo, coalesce(json_agg(json_build_object('rol_id', cr.rol_id::text, 'nombre', cr.nombre)
+  p.correo, p.ad_username, p.activo, coalesce(json_agg(json_build_object('rol_id', cr.rol_id::text, 'nombre', cr.nombre)
   ORDER BY cr.jerarquia DESC) FILTER (WHERE cr.rol_id IS NOT NULL), '[]') AS roles`
 
 export function createAdminRepository(pool: Pool): AdminRepository {

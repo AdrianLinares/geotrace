@@ -6,7 +6,7 @@ export type AuthenticatedUser = {
 }
 
 export type RoleRepository = {
-  findActiveUserByUsername(username: string): Promise<AuthenticatedUser | null>
+  findActiveUserByLogin(login: string): Promise<AuthenticatedUser | null>
 }
 
 export type LocalCredentialRepository = {
@@ -19,6 +19,7 @@ export type ManagedPerson = {
   nombre: string
   apellidos: string
   correo: string
+  ad_username: string | null
   activo: boolean
   roles: Array<{ rol_id: string; nombre: string }>
 }
@@ -56,7 +57,7 @@ export type SessionRepository = {
 }
 
 export type DirectoryAuthenticator = {
-  authenticate(username: string, password: string): Promise<void>
+  authenticate(username: string, password: string): Promise<{ login: string }>
   close(): Promise<void>
 }
 

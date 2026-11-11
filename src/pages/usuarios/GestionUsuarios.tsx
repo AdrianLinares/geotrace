@@ -31,9 +31,9 @@ export default function GestionUsuarios() {
     {(people.isError || roles.isError) && <div className="mb-4 rounded border border-red-200 bg-red-50 p-4 text-red-700">{errorMessage(people.error ?? roles.error)}</div>}
     {update.isError && <div className="mb-4 rounded border border-red-200 bg-red-50 p-4 text-red-700">{errorMessage(update.error)}</div>}
     {people.isLoading || roles.isLoading ? <p>Cargando usuarios...</p> : <div className="rounded border bg-white p-4">
-      <Table><TableHeader><TableRow><TableHead>Persona</TableHead><TableHead>Correo</TableHead><TableHead>Roles activos</TableHead><TableHead>Estado</TableHead><TableHead>Acciones</TableHead></TableRow></TableHeader>
+      <Table><TableHeader><TableRow><TableHead>Persona</TableHead><TableHead>Correo</TableHead><TableHead>Usuario AD</TableHead><TableHead>Roles activos</TableHead><TableHead>Estado</TableHead><TableHead>Acciones</TableHead></TableRow></TableHeader>
         <TableBody>{people.data?.data.map(person => <TableRow key={person.persona_id}>
-          <TableCell>{person.nombre} {person.apellidos}</TableCell><TableCell>{person.correo}</TableCell>
+          <TableCell>{person.nombre} {person.apellidos}</TableCell><TableCell>{person.correo}</TableCell><TableCell>{person.ad_username ?? 'Sin acceso'}</TableCell>
           <TableCell>{person.roles.length ? person.roles.map(role => role.nombre).join(', ') : 'Sin asignación'}</TableCell>
           <TableCell><span className={person.activo ? 'text-green-600' : 'text-red-600'}>{person.activo ? 'Activo' : 'Inactivo'}</span></TableCell>
           <TableCell><Button variant="outline" size="sm" onClick={() => setEditing(person)}>Editar</Button></TableCell>
@@ -53,6 +53,7 @@ function PersonEditor({ person, roles, saving, onCancel, onSave }: { person: Man
   const toggleRole = (id: string) => setSelectedRoles(current => current.includes(id) ? current.filter(roleId => roleId !== id) : [...current, id])
   return <div className="fixed inset-0 flex items-center justify-center bg-black/40 p-4"><form className="w-full max-w-lg space-y-4 rounded bg-white p-6" onSubmit={event => { event.preventDefault(); onSave({ nombre, apellidos, correo, activo, role_ids: selectedRoles }) }}>
     <h3 className="text-lg font-semibold">Editar persona</h3><Input value={nombre} onChange={event => setNombre(event.target.value)} placeholder="Nombre" required /><Input value={apellidos} onChange={event => setApellidos(event.target.value)} placeholder="Apellidos" required /><Input type="email" value={correo} onChange={event => setCorreo(event.target.value)} placeholder="Correo" required />
+    <p className="text-sm text-gray-600">Usuario AD: <span className="font-mono">{person.ad_username ?? 'sin asignar'}</span> (solo lectura)</p>
     <label className="flex gap-2"><input type="checkbox" checked={activo} onChange={event => setActivo(event.target.checked)} /> Activo</label>
     <fieldset><legend className="mb-2 font-medium">Roles activos</legend>{roles.map(role => <label className="mr-4 inline-flex gap-2" key={role.rol_id}><input type="checkbox" checked={selectedRoles.includes(role.rol_id)} onChange={() => toggleRole(role.rol_id)} />{role.nombre}</label>)}</fieldset>
     <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button><Button type="submit" disabled={saving}>Guardar</Button></div>
