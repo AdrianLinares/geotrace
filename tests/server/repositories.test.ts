@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createAdminRepository, createCatalogRepository, createConservationRepository, createReadRepository, createRoleRepository, LastAdministratorError } from '../../server/repositories'
+import { createAdminRepository, createCatalogRepository, createConservationRepository, createReadRepository, createRoleRepository, createSessionRepository, LastAdministratorError } from '../../server/repositories'
 
 describe('createReadRepository', () => {
   it('reads only the confirmed normalized catalog tables with fixed SQL', async () => {
@@ -210,5 +210,19 @@ describe('createAdminRepository', () => {
     expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE public.rel_persona_rol'), ['1'])
     expect(query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO public.rel_persona_rol'), [['2'], '1'])
     expect(query.mock.calls.every(([sql]) => !String(sql).match(/public\."[A-Z_]+"/))).toBe(true)
+  })
+})
+
+describe('createSessionRepository', () => {
+  it('purges expired sessions before storing a new one', async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [] })
+    const repository = createSessionRepository({ query } as never)
+
+    await repository.create('hash', { personaId: '1', username: 'adrian', name: 'Adrian', roles: ['Administrador'] }, new Date('2026-01-01T00:00:00Z'))
+
+    const statements = query.mock.calls.map(([sql]) => String(sql))
+    expect(statements[0]).toContain('DELETE FROM app_auth_sessions WHERE expires_at <= now()')
+    expect(statements[1]).toContain('INSERT INTO app_auth_sessions')
+    expect(query.mock.calls[1][1]).toEqual(['hash', '1', 'adrian', 'Adrian', ['Administrador'], new Date('2026-01-01T00:00:00Z')])
   })
 })

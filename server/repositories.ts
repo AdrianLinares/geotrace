@@ -149,6 +149,7 @@ export function createImportRepository(pool: Pool): ImportRepository {
 export function createSessionRepository(pool: Pool): SessionRepository {
   return {
     async create(tokenHash, user, expiresAt) {
+      await pool.query('DELETE FROM app_auth_sessions WHERE expires_at <= now()')
       await pool.query(
         `INSERT INTO app_auth_sessions (token_hash, persona_id, username, user_name, roles, expires_at)
          VALUES ($1, $2, $3, $4, $5, $6)`,
