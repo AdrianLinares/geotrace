@@ -125,7 +125,7 @@ describe('authenticated read routes', () => {
     await app.close()
   })
 
-  it('protects and returns the aggregated dashboard read', async () => {
+  it('returns the aggregated dashboard read publicly', async () => {
     const app = await createApp({ auth: { restore: vi.fn().mockResolvedValue(user) } as never, config, reads })
     const response = await app.inject({ method: 'GET', url: '/api/dashboard' })
     expect(response.statusCode).toBe(200)
@@ -133,11 +133,11 @@ describe('authenticated read routes', () => {
     await app.close()
   })
 
-  it('returns 401 for the dashboard without a session', async () => {
+  it('serves the dashboard without a session', async () => {
     const app = await createApp({ auth: { restore: vi.fn().mockResolvedValue(null) } as never, config, reads })
     const response = await app.inject({ method: 'GET', url: '/api/dashboard' })
-    expect(response.statusCode).toBe(401)
-    expect(reads.getDashboard).not.toHaveBeenCalled()
+    expect(response.statusCode).toBe(200)
+    expect(reads.getDashboard).toHaveBeenCalledOnce()
     await app.close()
   })
 

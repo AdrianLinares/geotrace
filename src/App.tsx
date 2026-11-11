@@ -25,10 +25,10 @@ export default function App() {
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/" element={<Dashboard />} />
 
         {/* Rutas autenticadas: cualquier sesión activa es al menos Catalogador */}
         <Route element={<WithCatalogador><Outlet /></WithCatalogador>}>
-          <Route path="/" element={<Dashboard />} />
           <Route path="/colecciones" element={<ColeccionesPage />} />
           <Route path="/pozos" element={<PozosPage />} />
           <Route path="/placas" element={<PlacasPage />} />

@@ -3,7 +3,7 @@ import AppLayout from '../components/layout/AppLayout'
 import { Badge } from '../components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
-import { useActividadReciente, useDashboardKPIs, useEstadoCatalogacionDist, useOcupacionMuebles, usePlacasProblemas } from '../hooks/useDashboard'
+import { useActividadReciente, useDashboardKPIs, useEstadoCatalogacionDist, useMuestrasPorColeccion, useOcupacionMuebles, usePlacasProblemas, type DashboardMuestrasPorColeccion } from '../hooks/useDashboard'
 
 const COLORES_ESTADO: Record<string, string> = {
   'Validado': '#28a745',
@@ -25,6 +25,7 @@ export default function Dashboard() {
   // Cada hook devuelve { data, isLoading } siguiendo el patrón de React Query.
   const { data: kpis, isLoading: kpiLoading } = useDashboardKPIs()
   const { data: estadoDist, isLoading: estadoLoading } = useEstadoCatalogacionDist()
+  const { data: muestrasPorColeccion, isLoading: muestrasPorColeccionLoading } = useMuestrasPorColeccion()
   const { data: ocupacion, isLoading: ocupLoading } = useOcupacionMuebles()
   const { data: actividad, isLoading: actLoading } = useActividadReciente()
   const { data: problemas, isLoading: probLoading } = usePlacasProblemas()
@@ -37,7 +38,7 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Cards: representan métricas agregadas. Si `isLoading` mostramos `...` */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         <Card>
           <CardHeader><CardTitle>Total Placas</CardTitle></CardHeader>
           <CardContent><div className="text-3xl font-bold">{kpiLoading ? '...' : kpis?.totalPlacas}</div></CardContent>
@@ -45,6 +46,10 @@ export default function Dashboard() {
         <Card>
           <CardHeader><CardTitle>Total Muestras</CardTitle></CardHeader>
           <CardContent><div className="text-3xl font-bold">{kpiLoading ? '...' : kpis?.totalMuestras}</div></CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Total Colecciones</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold">{kpiLoading ? '...' : kpis?.totalColecciones}</div></CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle>Validadas (%)</CardTitle></CardHeader>
@@ -58,6 +63,25 @@ export default function Dashboard() {
 
       {/* Charts: usan Recharts. Los datos deben venir en formato [{ name, value }] o similar según hook. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <Card>
+          <CardHeader><CardTitle>Muestras por colección</CardTitle></CardHeader>
+          <CardContent>
+            {muestrasPorColeccionLoading ? <p>Cargando...</p> : (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie data={muestrasPorColeccion || []} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
+                    {(muestrasPorColeccion || []).map((entry: DashboardMuestrasPorColeccion, index: number) => (
+                      <Cell key={index} fill={COLORES_ESTADO[entry.name] || ['#2D5016', '#6B8E23', '#A4C639', '#D9EAD3', '#8FBC8F'][index % 5]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader><CardTitle>Distribución por Estado</CardTitle></CardHeader>
           <CardContent>

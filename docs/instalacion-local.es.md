@@ -35,6 +35,7 @@ Esta guía explica cómo configurar y ejecutar el proyecto Catálogo de Placas l
    psql "$DATABASE_URL" -f sql/schema.sql
    pnpm run db:migrate:local-sessions
    pnpm run db:migrate:local-audit
+   pnpm run db:migrate:muestra-collection
    ```
    No ejecute archivos de `sql/legacy-supabase/`. Aplique las migraciones locales
    de sesiones, credenciales, eliminación de tablas obsoletas y auditoría según

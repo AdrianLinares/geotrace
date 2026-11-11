@@ -278,6 +278,7 @@ const plateColumns = `p.placa_id::text AS placa_id, p.codigo_ubicacion, p.colecc
   p.revisor_id::text AS revisor_id, p.fecha_revision, p.estado_revision_id::text AS estado_revision_id,
   p.comentarios, p.observaciones`
 const sampleColumns = `m.muestra_id::text AS muestra_id, m.nombre_muestra_original, m.codigo_muestra_sistema,
+  m.coleccion_id::text AS coleccion_id,
   m.origen_muestra_id::text AS origen_muestra_id, m.metodo_adquisicion_id::text AS metodo_adquisicion_id,
   m.catalogador_id::text AS catalogador_id, m.fecha_ingreso, m.revisor_id::text AS revisor_id,
   m.fecha_revision, m.estado_catalogacion_id::text AS estado_catalogacion_id, ec.estado AS estado_catalogacion,
@@ -302,6 +303,7 @@ const plateMutationColumns: Record<keyof PlateMutationInput, string> = {
   comentarios: 'comentarios', observaciones: 'observaciones',
 }
 const sampleMutationColumns: Record<keyof SampleMutationInput, string> = {
+  coleccion_id: 'coleccion_id',
   nombre_muestra_original: 'nombre_muestra_original', codigo_muestra_sistema: 'codigo_muestra_sistema',
   origen_muestra_id: 'origen_muestra_id', metodo_adquisicion_id: 'metodo_adquisicion_id', catalogador_id: 'catalogador_id',
   fecha_ingreso: 'fecha_ingreso', revisor_id: 'revisor_id', fecha_revision: 'fecha_revision',
@@ -509,10 +511,11 @@ export function createReadRepository(pool: Pool): PlateRepository {
       return result.rows[0] ?? null
     },
     async getDashboard() {
-      const [kpis, estados, ocupacion, problemas] = await Promise.all([
+      const [kpis, estados, muestrasPorColeccion, ocupacion, problemas] = await Promise.all([
         pool.query<DashboardKpisDto>(`SELECT
           count(*) FILTER (WHERE true)::int AS "totalPlacas",
           (SELECT count(*)::int FROM public.muestra) AS "totalMuestras",
+          (SELECT count(*)::int FROM public.coleccion) AS "totalColecciones",
           count(*) FILTER (WHERE ec.estado = 'Validado')::int AS "placasValidadas",
           (SELECT count(*)::int FROM public.ubicacion_fisica WHERE placa_id IS NULL) AS "ubicacionesDisponibles"
         FROM public.placa p
@@ -521,6 +524,11 @@ export function createReadRepository(pool: Pool): PlateRepository {
           FROM public.placa p
           LEFT JOIN public.cat_estado_catalogacion ec ON ec.estado_catalogacion_id = p.estado_catalogacion_id
           GROUP BY ec.estado
+          ORDER BY value DESC, name`),
+        pool.query(`SELECT coalesce(c.nombre_coleccion, 'Sin colección') AS name, count(*)::int AS value
+          FROM public.muestra m
+          LEFT JOIN public.coleccion c ON c.coleccion_id = m.coleccion_id
+          GROUP BY coalesce(c.nombre_coleccion, 'Sin colección')
           ORDER BY value DESC, name`),
         pool.query<DashboardOcupacionDto>(`SELECT coalesce(cs.nombre, cs.codigo_seccion, 'Sin sección') AS name,
           count(*)::int AS total,
@@ -546,10 +554,11 @@ export function createReadRepository(pool: Pool): PlateRepository {
           ORDER BY CASE WHEN eci.presencia_hongos OR eci.riesgo_contaminacion OR eci.vidrio_estado_id IN (2, 3) THEN 0 ELSE 1 END,
             eci.placa_id`),
       ])
-      const totals = kpis.rows[0] ?? { totalPlacas: 0, totalMuestras: 0, placasValidadas: 0, ubicacionesDisponibles: 0 }
+       const totals = kpis.rows[0] ?? { totalPlacas: 0, totalMuestras: 0, totalColecciones: 0, placasValidadas: 0, ubicacionesDisponibles: 0 }
       return {
         kpis: { ...totals, placasValidadas: totals.totalPlacas ? Math.round((totals.placasValidadas / totals.totalPlacas) * 100) : 0 },
         estadoCatalogacion: estados.rows,
+        muestrasPorColeccion: muestrasPorColeccion.rows,
         ocupacion: ocupacion.rows,
         // Local schema does not create public.auditoria yet; administrative audit is pending.
         actividadReciente: [],

@@ -53,6 +53,7 @@ const optionalSampleId = z.preprocess(value => value === '' ? null : value, norm
 const optionalSampleText = z.string().max(255).nullable().optional()
 const optionalSampleLongText = z.string().max(10000).nullable().optional()
 export const sampleMutationSchema = z.object({
+  coleccion_id: optionalSampleId,
   nombre_muestra_original: optionalSampleText,
   codigo_muestra_sistema: optionalSampleText,
   origen_muestra_id: optionalSampleId,

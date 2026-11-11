@@ -247,6 +247,7 @@ export type PlateMutationInput = {
 
 export type SampleDto = {
   muestra_id: string
+  coleccion_id: string | null
   nombre_muestra_original: string | null
   codigo_muestra_sistema: string | null
   origen_muestra_id: string | null
@@ -267,6 +268,7 @@ export type SampleDto = {
 }
 
 export type SampleMutationInput = {
+  coleccion_id?: string | null
   nombre_muestra_original?: string | null
   codigo_muestra_sistema?: string | null
   origen_muestra_id?: string | null
@@ -302,11 +304,13 @@ export type PhysicalLocationDto = {
 export type DashboardKpisDto = {
   totalPlacas: number
   totalMuestras: number
+  totalColecciones: number
   placasValidadas: number
   ubicacionesDisponibles: number
 }
 
 export type DashboardEstadoDto = { name: string; value: number }
+export type DashboardMuestrasPorColeccionDto = { name: string; value: number }
 export type DashboardOcupacionDto = { name: string; ocupacion: number; total: number; ocupadas: number }
 export type DashboardActividadDto = {
   auditoria_id: string
@@ -325,6 +329,7 @@ export type DashboardProblemaDto = {
 export type DashboardDto = {
   kpis: DashboardKpisDto
   estadoCatalogacion: DashboardEstadoDto[]
+  muestrasPorColeccion: DashboardMuestrasPorColeccionDto[]
   ocupacion: DashboardOcupacionDto[]
   actividadReciente: DashboardActividadDto[]
   problemasConservacion: DashboardProblemaDto[]

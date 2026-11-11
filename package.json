@@ -14,6 +14,7 @@
     "start:server:production": "pnpm exec tsx server/index.ts",
     "db:migrate:local-sessions": "./scripts/apply-local-session-migration.sh",
     "db:migrate:local-audit": "./scripts/apply-local-audit-migration.sh",
+    "db:migrate:muestra-collection": "./scripts/apply-muestra-collection-migration.sh",
     "db:migrate:local-admin": "./scripts/apply-local-admin-migration.sh",
     "db:seed:access": "./scripts/apply-access-catalogacion-seed.sh",
     "local-admin": "tsx scripts/manage-local-admin.ts",

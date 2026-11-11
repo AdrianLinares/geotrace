@@ -19,8 +19,8 @@ export const TABLE_CONFIG = {
   },
   muestra: {
     label: 'Muestras',
-    columns: ['nombre_muestra_original', 'codigo_muestra_sistema', 'origen_muestra_id', 'metodo_adquisicion_id', 'catalogador_id', 'fecha_ingreso', 'revisor_id', 'fecha_revision', 'estado_catalogacion_id', 'observaciones'],
-    sample: { nombre_muestra_original: 'Muestra de ejemplo', codigo_muestra_sistema: 'M-001', origen_muestra_id: null, metodo_adquisicion_id: null, catalogador_id: null, fecha_ingreso: '', revisor_id: null, fecha_revision: '', estado_catalogacion_id: null, observaciones: '' },
+    columns: ['coleccion_id', 'nombre_muestra_original', 'codigo_muestra_sistema', 'origen_muestra_id', 'metodo_adquisicion_id', 'catalogador_id', 'fecha_ingreso', 'revisor_id', 'fecha_revision', 'estado_catalogacion_id', 'observaciones'],
+    sample: { coleccion_id: null, nombre_muestra_original: 'Muestra de ejemplo', codigo_muestra_sistema: 'M-001', origen_muestra_id: null, metodo_adquisicion_id: null, catalogador_id: null, fecha_ingreso: '', revisor_id: null, fecha_revision: '', estado_catalogacion_id: null, observaciones: '' },
   },
   dic_uni_lito_reportada: { label: 'Unidades lito reportadas', columns: ['codigo_uni_lito_reportada', 'nombre_reportado', 'catalogador_id', 'fecha_ingreso', 'revisor_id', 'fecha_revision', 'estado_revision_id', 'observaciones'], sample: { codigo_uni_lito_reportada: 'ULR-001', nombre_reportado: 'Unidad de ejemplo', catalogador_id: null, fecha_ingreso: '', revisor_id: null, fecha_revision: '', estado_revision_id: null, observaciones: '' } },
   dic_uni_lito_normalizada: { label: 'Unidades lito normalizadas', columns: ['cod_uni_lito_normalizada', 'nombre_normalizado', 'rango_lito_id', 'referencia_bibliografica_id', 'observaciones', 'revisor_id', 'estado_revision_id', 'fecha_revision'], sample: { cod_uni_lito_normalizada: 'ULN-001', nombre_normalizado: 'Unidad normalizada', rango_lito_id: null, referencia_bibliografica_id: null, observaciones: '', revisor_id: null, estado_revision_id: null, fecha_revision: '' } },

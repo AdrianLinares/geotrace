@@ -88,6 +88,7 @@ export type Placa = {
 
 export type Muestra = {
   muestra_id: string
+  coleccion_id?: string | null
   nombre_muestra_original?: string | null
   codigo_muestra_sistema?: string | null
   origen_muestra_id?: string | null

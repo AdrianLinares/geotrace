@@ -4,10 +4,12 @@ import { apiRequest } from '../lib/api'
 export type DashboardKpis = {
   totalPlacas: number
   totalMuestras: number
+  totalColecciones: number
   placasValidadas: number
   ubicacionesDisponibles: number
 }
 export type DashboardEstado = { name: string; value: number }
+export type DashboardMuestrasPorColeccion = { name: string; value: number }
 export type DashboardOcupacion = { name: string; ocupacion: number; total: number; ocupadas: number }
 export type DashboardActividad = {
   auditoria_id: string
@@ -26,6 +28,7 @@ export type PlacaProblema = {
 export type DashboardData = {
   kpis: DashboardKpis
   estadoCatalogacion: DashboardEstado[]
+  muestrasPorColeccion: DashboardMuestrasPorColeccion[]
   ocupacion: DashboardOcupacion[]
   actividadReciente: DashboardActividad[]
   problemasConservacion: PlacaProblema[]
@@ -42,6 +45,10 @@ export function useDashboardKPIs() {
 
 export function useEstadoCatalogacionDist() {
   return useQuery({ ...dashboardQuery, select: (dashboard: DashboardData) => dashboard.estadoCatalogacion })
+}
+
+export function useMuestrasPorColeccion() {
+  return useQuery({ ...dashboardQuery, select: (dashboard: DashboardData) => dashboard.muestrasPorColeccion })
 }
 
 export function useOcupacionMuebles() {

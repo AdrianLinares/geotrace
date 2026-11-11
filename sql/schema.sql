@@ -1553,6 +1553,7 @@ DROP TABLE IF EXISTS public.MUESTRA CASCADE;
 
 CREATE TABLE public.MUESTRA (
     muestra_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+    coleccion_id bigint,
     nombre_muestra_original varchar(255),
     codigo_muestra_sistema varchar(255),
     origen_muestra_id bigint,
@@ -1564,6 +1565,7 @@ CREATE TABLE public.MUESTRA (
     estado_catalogacion_id bigint,
     observaciones text,
     CONSTRAINT pk_muestra PRIMARY KEY (muestra_id),
+    CONSTRAINT fk_muestra_coleccion_id FOREIGN KEY (coleccion_id) REFERENCES public.COLECCION(coleccion_id) ON DELETE SET NULL,
     CONSTRAINT fk_muestra_origen_muestra_id FOREIGN KEY (origen_muestra_id) REFERENCES public.CAT_ORIGEN_MUESTRA(origen_muestra_id) ON DELETE SET NULL,
     CONSTRAINT fk_muestra_metodo_adquisicion_id FOREIGN KEY (metodo_adquisicion_id) REFERENCES public.CAT_METODO_ADQUISICION(metodo_adquisicion_id) ON DELETE SET NULL,
     CONSTRAINT fk_muestra_catalogador_id FOREIGN KEY (catalogador_id) REFERENCES public.PERSONA(persona_id) ON DELETE SET NULL,
@@ -1574,6 +1576,7 @@ CREATE TABLE public.MUESTRA (
 COMMENT ON TABLE public.MUESTRA IS 'Tabla generada desde el inventario de campos.';
 
 CREATE INDEX idx_muestra_origen_muestra_id ON public.MUESTRA(origen_muestra_id);
+CREATE INDEX idx_muestra_coleccion_id ON public.MUESTRA(coleccion_id);
 CREATE INDEX idx_muestra_metodo_adquisicion_id ON public.MUESTRA(metodo_adquisicion_id);
 CREATE INDEX idx_muestra_catalogador_id ON public.MUESTRA(catalogador_id);
 CREATE INDEX idx_muestra_revisor_id ON public.MUESTRA(revisor_id);

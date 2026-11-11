@@ -155,15 +155,17 @@ describe('createReadRepository', () => {
 
   it('aggregates dashboard reads from normalized tables with parameters', async () => {
     const query = vi.fn()
-      .mockResolvedValueOnce({ rows: [{ totalPlacas: 2, totalMuestras: 3, placasValidadas: 1, ubicacionesDisponibles: 4 }] })
+      .mockResolvedValueOnce({ rows: [{ totalPlacas: 2, totalMuestras: 3, totalColecciones: 5, placasValidadas: 1, ubicacionesDisponibles: 4 }] })
       .mockResolvedValueOnce({ rows: [{ name: 'Validado', value: 2 }] })
+      .mockResolvedValueOnce({ rows: [{ name: 'Colección A', value: 3 }] })
       .mockResolvedValueOnce({ rows: [{ name: 'Sección A', total: 2, ocupadas: 1, ocupacion: 50 }] })
       .mockResolvedValueOnce({ rows: [{ placa_id: '8', nivel: 'CRÍTICA' }] })
     const repository = createReadRepository({ query } as never)
 
     await expect(repository.getDashboard()).resolves.toEqual({
-      kpis: { totalPlacas: 2, totalMuestras: 3, placasValidadas: 50, ubicacionesDisponibles: 4 },
+      kpis: { totalPlacas: 2, totalMuestras: 3, totalColecciones: 5, placasValidadas: 50, ubicacionesDisponibles: 4 },
       estadoCatalogacion: [{ name: 'Validado', value: 2 }],
+      muestrasPorColeccion: [{ name: 'Colección A', value: 3 }],
       ocupacion: [{ name: 'Sección A', total: 2, ocupadas: 1, ocupacion: 50 }],
       actividadReciente: [],
       problemasConservacion: [{ placa_id: '8', nivel: 'CRÍTICA' }],
