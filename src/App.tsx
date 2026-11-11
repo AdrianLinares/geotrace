@@ -1,5 +1,5 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { WithAdmin, WithCurador } from './components/shared/roleGuards'
+import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { WithAdmin, WithCatalogador, WithCurador } from './components/shared/roleGuards'
 import AuthCallback from './pages/AuthCallback'
 import CatalogosPage from './pages/catalogos/CatalogosPage'
 import ColeccionesPage from './pages/colecciones/ColeccionesPage'
@@ -23,30 +23,31 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<Dashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* Acceso total (todos autenticados) */}
-        <Route path="/colecciones" element={<ColeccionesPage />} />
-        <Route path="/pozos" element={<PozosPage />} />
-        <Route path="/placas" element={<PlacasPage />} />
-        <Route path="/ubicaciones" element={<UbicacionesPage />} />
-        <Route path="/reportes" element={<ReportesPage />} />
-        <Route path="/reportes/inventario" element={<InventarioColeccion />} />
-        <Route path="/reportes/problemas" element={<PlacasProblemas />} />
-        <Route path="/reportes/ocupacion-muebles" element={<OcupacionMuebles />} />
+        {/* Rutas autenticadas: cualquier sesión activa es al menos Catalogador */}
+        <Route element={<WithCatalogador><Outlet /></WithCatalogador>}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/colecciones" element={<ColeccionesPage />} />
+          <Route path="/pozos" element={<PozosPage />} />
+          <Route path="/placas" element={<PlacasPage />} />
+          <Route path="/ubicaciones" element={<UbicacionesPage />} />
+          <Route path="/reportes" element={<ReportesPage />} />
+          <Route path="/reportes/inventario" element={<InventarioColeccion />} />
+          <Route path="/reportes/problemas" element={<PlacasProblemas />} />
+          <Route path="/reportes/ocupacion-muebles" element={<OcupacionMuebles />} />
 
-        {/* Curador+ (acceso a catálogos) */}
-        {/* Wrap con WithCurador para permitir sólo a curadores y admins */}
-        <Route path="/catalogos" element={<WithCurador><CatalogosPage /></WithCurador>} />
+          {/* Curador+ (acceso a catálogos) */}
+          <Route path="/catalogos" element={<WithCurador><CatalogosPage /></WithCurador>} />
 
-        {/* Admin-only routes (gestión de usuarios, importación) */}
-        <Route path="/usuarios" element={<WithAdmin><GestionUsuarios /></WithAdmin>} />
-        <Route path="/importar" element={<WithAdmin><ImportarDatos /></WithAdmin>} />
+          {/* Admin-only routes (gestión de usuarios, importación) */}
+          <Route path="/usuarios" element={<WithAdmin><GestionUsuarios /></WithAdmin>} />
+          <Route path="/importar" element={<WithAdmin><ImportarDatos /></WithAdmin>} />
 
-        {/* Fallback: redirige a dashboard si ruta no existe */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Fallback: redirige a dashboard si ruta no existe */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
       </Routes>
 
       {/* Agentation: visual feedback tool for AI coding agents */}
