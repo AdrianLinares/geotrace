@@ -12,5 +12,8 @@ security boundary, so Row Level Security is intentionally not enabled. See
 
 - `helpers.sql`: `current_user_has_role(text)` resolves the user from the JWT email.
 - `rls_policies_rbac.sql`: RBAC policy templates for the Supabase `authenticated` role.
+  It still lists `CAT_PERMISO` and `REL_ROL_PERMISO`; those tables were dropped by
+  `sql/migrations/009_drop_rbac_permission_tables.sql` because the application
+  never used them.
 
 Kept for historical reference only. The authoritative schema is `sql/schema.sql`.

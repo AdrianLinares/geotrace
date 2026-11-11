@@ -133,49 +133,9 @@ COMMENT ON TABLE public.REL_PERSONA_ROL IS 'Vínculo temporal entre personas y r
 CREATE INDEX idx_rel_persona_rol_persona_id ON public.REL_PERSONA_ROL(persona_id);
 CREATE INDEX idx_rel_persona_rol_rol_id ON public.REL_PERSONA_ROL(rol_id);
 
--- ============================================================
--- CAT_PERMISO: permisos individuales del sistema
--- ============================================================
-DROP TABLE IF EXISTS public.CAT_PERMISO CASCADE;
-
-CREATE TABLE public.CAT_PERMISO (
-    permiso_id       bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    nombre           varchar(255) NOT NULL,
-    descripcion      text,
-    modulo           varchar(255) NOT NULL,
-    nivel_criticidad text,
-    created_at       timestamptz NOT NULL DEFAULT now(),
-    updated_at       timestamptz NOT NULL DEFAULT now(),
-
-    CONSTRAINT uq_cat_permiso_nombre UNIQUE (nombre)
-);
-
-COMMENT ON TABLE public.CAT_PERMISO IS 'Catálogo de permisos agrupados por módulo; se relacionan con roles vía REL_ROL_PERMISO.';
-
--- ============================================================
--- REL_ROL_PERMISO: asignación de permisos a roles
--- ============================================================
-DROP TABLE IF EXISTS public.REL_ROL_PERMISO CASCADE;
-
-CREATE TABLE public.REL_ROL_PERMISO (
-    rel_rol_permiso_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    rol_id             bigint NOT NULL,
-    permiso_id         bigint NOT NULL,
-    activo             boolean NOT NULL DEFAULT true,
-    created_at         timestamptz NOT NULL DEFAULT now(),
-    updated_at         timestamptz NOT NULL DEFAULT now(),
-
-    CONSTRAINT fk_rel_rol_permiso_rol
-        FOREIGN KEY (rol_id) REFERENCES public.CAT_ROL(rol_id) ON DELETE CASCADE,
-    CONSTRAINT fk_rel_rol_permiso_permiso
-        FOREIGN KEY (permiso_id) REFERENCES public.CAT_PERMISO(permiso_id) ON DELETE CASCADE,
-    CONSTRAINT uq_rel_rol_permiso_rol_permiso UNIQUE (rol_id, permiso_id)
-);
-
-COMMENT ON TABLE public.REL_ROL_PERMISO IS 'Matriz de permisos efectivos por rol.';
-
-CREATE INDEX idx_rel_rol_permiso_rol_id ON public.REL_ROL_PERMISO(rol_id);
-CREATE INDEX idx_rel_rol_permiso_permiso_id ON public.REL_ROL_PERMISO(permiso_id);
+-- CAT_PERMISO and REL_ROL_PERMISO were removed: authorization is role-based
+-- (CAT_ROL + REL_PERSONA_ROL) and the permission tables were never populated
+-- or read by the application. See sql/migrations/009_drop_rbac_permission_tables.sql.
 
 -- ============================================================
 -- COLECCION: Access collection records
