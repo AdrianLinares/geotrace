@@ -35,9 +35,10 @@ Esta guía explica cómo configurar y ejecutar el proyecto Catálogo de Placas l
    psql "$DATABASE_URL" -f sql/schema.sql
    pnpm run db:migrate:local-sessions
    ```
-   No ejecute `sql/helpers.sql`, `sql/rls_policies_rbac.sql`,
-   `sql/triggers.sql` ni `sql/audit.sql`: están marcados como
-   Supabase-specific y todavía no tienen equivalente local.
+   No ejecute `sql/triggers.sql` ni `sql/audit.sql`: están marcados como
+   Supabase-specific y todavía no tienen equivalente local. Los archivos
+   históricos de RLS quedaron en `sql/legacy-supabase/` y no forman parte de la
+   instalación.
 
 5. **Verificar el esquema sin PostgreSQL**:
    ```bash

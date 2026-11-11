@@ -24,9 +24,24 @@ Los roles no distinguen mayúsculas/minúsculas.
 ## Protección de Rutas
 
 Las rutas están protegidas en `src/App.tsx`:
-- `/colecciones`, `/placas`, `/ubicaciones`, `/reportes`: Todos autenticados
+- Públicas: `/login` y `/auth/callback`
+- Todas las demás: requieren sesión activa (guard `WithCatalogador`)
 - `/catalogos`: Curador+
-- `/usuarios`: Solo Admin
+- `/usuarios` e `/importar`: Solo Admin
+
+## Autorización y RLS
+
+La autorización efectiva vive en el backend: `requireRole` y las comprobaciones
+por operación de los repositorios. Active Directory valida la identidad,
+PostgreSQL concede los roles vía `rel_persona_rol`, y el servidor revalida los
+roles en cada request.
+
+RLS no está habilitado por decisión de arquitectura. El backend es el único
+cliente de PostgreSQL y conecta con el rol owner, que bypassea RLS salvo que se
+use `FORCE ROW LEVEL SECURITY`. Habilitarlo de verdad exigiría un rol de runtime
+separado, contexto de usuario por request (`set_config`) y políticas nuevas que
+no dependan de `auth.uid()`/`auth.jwt()`. Los archivos históricos de Supabase
+quedaron en `sql/legacy-supabase/` y no deben ejecutarse.
 
 ## Notas para Colombia
 
