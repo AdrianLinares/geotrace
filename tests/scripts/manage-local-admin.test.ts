@@ -22,6 +22,32 @@ describe('local admin provisioning', () => {
     expect(queries.some(query => /INSERT INTO/i.test(query))).toBe(false)
   })
 
+  it('revokes existing sessions after rotating the local credential', async () => {
+    const calls: Array<{ text: string; params?: unknown[] }> = []
+    const responses = [
+      { rows: [{ roleId: '4' }] },          // cat_rol lookup
+      { rows: [{ personaId: '1' }] },       // persona upsert
+      { rows: [] },                          // credential upsert
+      { rows: [] },                          // session revocation
+      { rows: [{ rol_id: '4' }] },          // role assignment insert
+      { rows: [] },                          // effective assignment check
+    ]
+    const client = {
+      async query(text: string, params?: unknown[]): Promise<QueryResult> {
+        calls.push({ text, params })
+        return responses.shift() ?? { rows: [] }
+      },
+    }
+
+    await provisionLocalAdmin(client, 'local-admin', 'scrypt$16384$8$1$' + 'a'.repeat(32) + '$' + 'b'.repeat(128))
+
+    const revocation = calls.find(call => /DELETE FROM public\.app_auth_sessions/.test(call.text))
+    expect(revocation?.params).toEqual(['1'])
+    const revocationIndex = calls.findIndex(call => /DELETE FROM public\.app_auth_sessions/.test(call.text))
+    const credentialIndex = calls.findIndex(call => /INSERT INTO public\.app_local_admin_credentials/.test(call.text))
+    expect(revocationIndex).toBeGreaterThan(credentialIndex)
+  })
+
   it('requires the exact generated scrypt hash format in the migration', async () => {
     const migration = await readFile(resolve(process.cwd(), 'sql/migrations/002_local_admin_credentials.sql'), 'utf8')
     expect(migration).toContain('app_local_admin_credentials_password_hash_format')

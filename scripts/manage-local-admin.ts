@@ -33,6 +33,8 @@ export async function provisionLocalAdmin(client: Pick<PoolClient, 'query'>, use
      ON CONFLICT (persona_id) DO UPDATE SET username = EXCLUDED.username, password_hash = EXCLUDED.password_hash, enabled = true, updated_at = now()`,
     [personaId, username, passwordHash],
   )
+  // Rotating the local credential must invalidate sessions issued with the previous one.
+  await client.query('DELETE FROM public.app_auth_sessions WHERE persona_id = $1', [personaId])
   const assignment = await client.query(
     `INSERT INTO public.rel_persona_rol (persona_id, codigo_persona, rol_id, fecha_inicio, activo)
      SELECT p.persona_id, p.codigo_persona, r.rol_id, now(), true
