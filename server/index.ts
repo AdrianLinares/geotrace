@@ -7,6 +7,7 @@ import { AuthService } from './auth'
 import { createLocalCredentialRepository } from './localAdmin'
 import { fileURLToPath } from 'node:url'
 import { resolve } from 'node:path'
+import { createAuditRepository } from './audit'
 
 export async function main(): Promise<void> {
   let app: Awaited<ReturnType<typeof createApp>> | undefined
@@ -35,7 +36,7 @@ export async function main(): Promise<void> {
     pool = new Pool({ connectionString: config.DATABASE_URL })
     directory = createDirectoryAuthenticator(config)
     const auth = new AuthService(directory, createRoleRepository(pool), createSessionRepository(pool), config.SESSION_TTL_SECONDS, config.LOCAL_ADMIN_ENABLED ? { username: config.LOCAL_ADMIN_USERNAME!, credentials: createLocalCredentialRepository(pool) } : undefined)
-    app = await createApp({ auth, config, reads: createReadRepository(pool), admin: createAdminRepository(pool), imports: createImportRepository(pool), conservation: createConservationRepository(pool), catalogs: createCatalogRepository(pool), databaseHealth: () => pool!.query('SELECT 1').then(() => undefined) })
+    app = await createApp({ auth, config, reads: createReadRepository(pool), admin: createAdminRepository(pool), imports: createImportRepository(pool), conservation: createConservationRepository(pool), catalogs: createCatalogRepository(pool), audit: createAuditRepository(pool), databaseHealth: () => pool!.query('SELECT 1').then(() => undefined) })
 
     const handleSignal = () => {
       void close().catch((error: unknown) => {

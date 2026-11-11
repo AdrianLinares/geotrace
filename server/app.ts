@@ -4,13 +4,13 @@ import { ZodError } from 'zod'
 import type { AppConfig } from './config'
 import { AuthService, AuthenticationInfrastructureError, InvalidCredentialsError, MissingApplicationRoleError, requireRole } from './auth'
 import { InvalidPlateTransitionError, LastAdministratorError, PlateAuthorizationError, UnknownRoleError } from './repositories'
-import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput, AdminRepository, ConservationRepository, PlateRepository, ImportRepository, CatalogRepository } from './types'
+import type { AuthenticatedUser, CollectionInput, CollectionRepository, CollectionUpdateInput, AdminRepository, ConservationRepository, PlateRepository, ImportRepository, CatalogRepository, AuditRepository } from './types'
 import { basinQuerySchema, catalogReferenceQuerySchema, collectionBodySchema, collectionCreateBodySchema, collectionIdSchema, collectionQuerySchema, completeCollectionInput, normalizedIdSchema, personIdSchema, personUpdateSchema, physicalLocationQuerySchema, plateCreateSchema, plateQuerySchema, plateTransitionSchema, plateUpdateSchema, sampleCreateSchema, sampleQuerySchema, sampleUpdateSchema, wellQuerySchema } from './validation'
 import { importBodySchema, IMPORT_MAX_BYTES } from './importValidation'
 
-type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: PlateRepository; admin?: AdminRepository; imports?: ImportRepository; conservation?: ConservationRepository; catalogs?: CatalogRepository }
+type Dependencies = { auth: AuthService; config: AppConfig; databaseHealth?: () => Promise<void>; reads?: PlateRepository; admin?: AdminRepository; imports?: ImportRepository; conservation?: ConservationRepository; catalogs?: CatalogRepository; audit?: AuditRepository }
 
-export async function createApp({ auth, config, databaseHealth, reads, admin, imports, conservation, catalogs }: Dependencies): Promise<FastifyInstance> {
+export async function createApp({ auth, config, databaseHealth, reads, admin, imports, conservation, catalogs, audit }: Dependencies): Promise<FastifyInstance> {
   const app = Fastify({ logger: config.NODE_ENV !== 'test' })
   await app.register(cookie)
   const cookieOptions = {
@@ -49,6 +49,7 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, im
     if (!username || !password) return reply.code(400).send({ error: 'username and password are required' })
     try {
       const result = await auth.login(username, password)
+      await audit?.record({ tabla: 'app_auth_sessions', operacion: 'LOGIN', registroId: result.user.personaId, user: result.user, cambios: { method: result.local ? 'local' : 'directory' } })
       reply.setCookie(config.SESSION_COOKIE_NAME, result.token, cookieOptions)
       return { user: result.user }
     } catch (error) {
@@ -66,7 +67,9 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, im
     return { user }
   })
   app.post('/auth/logout', async (request, reply) => {
+    const user = await readUser(request)
     await auth.logout(request.cookies[config.SESSION_COOKIE_NAME])
+    await audit?.record({ tabla: 'app_auth_sessions', operacion: 'LOGOUT', registroId: user?.personaId, user })
     reply.clearCookie(config.SESSION_COOKIE_NAME, cookieOptions)
     return { ok: true }
   })
@@ -111,7 +114,13 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, im
       const id = personIdSchema.parse(request.params.id)
       const input = personUpdateSchema.parse(request.body)
       const person = await admin.updatePerson(id, input)
-      return person ? person : reply.code(404).send({ error: 'Person not found' })
+      if (!person) return reply.code(404).send({ error: 'Person not found' })
+      await audit?.record({ tabla: 'persona', operacion: 'UPDATE', registroId: id, user: await readUser(request), cambios: input })
+      return person
+    })
+    app.get('/api/admin/audit', async (request, reply) => {
+      if (!(await requireAdministrator(request, reply))) return
+      return { data: await audit?.list(100) ?? [] }
     })
   }
   if (imports) {
@@ -119,6 +128,7 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, im
       if (!(await requireAdministrator(request, reply))) return
       const body = importBodySchema.parse(request.body)
       const imported = await imports.importBatches(body.batches)
+      await audit?.record({ tabla: 'import', operacion: 'IMPORT', user: await readUser(request), cambios: { batches: body.batches.map(batch => ({ table: batch.table, rows: batch.rows.length })), imported } })
       return { imported }
     })
   }
@@ -130,22 +140,28 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, im
       return result
     })
     app.post<{ Body: CollectionInput }>('/api/collections', async (request, reply) => {
-      if (!(await requireSession(request, reply))) return
+      const user = await requireSession(request, reply); if (!user) return
       const body = collectionCreateBodySchema.parse(request.body)
-      return reply.code(201).send(await reads.createCollection(completeCollectionInput(body)))
+      const result = await reads.createCollection(completeCollectionInput(body))
+      await audit?.record({ tabla: 'coleccion', operacion: 'INSERT', registroId: result.coleccion_id, user, cambios: result })
+      return reply.code(201).send(result)
     })
     app.put<{ Params: { id: string }; Body: CollectionUpdateInput }>('/api/collections/:id', async (request, reply) => {
-      if (!(await requireSession(request, reply))) return
+      const user = await requireSession(request, reply); if (!user) return
       const id = collectionIdSchema.parse(request.params.id)
       const body = collectionBodySchema.parse(request.body)
       const result = await reads.updateCollection(id, body)
-      return result ?? reply.code(404).send({ error: 'Collection not found' })
+       if (!result) return reply.code(404).send({ error: 'Collection not found' })
+       await audit?.record({ tabla: 'coleccion', operacion: 'UPDATE', registroId: id, user, cambios: body })
+       return result
     })
     app.delete<{ Params: { id: string } }>('/api/collections/:id', async (request, reply) => {
-      if (!(await requireSession(request, reply))) return
+      const user = await requireSession(request, reply); if (!user) return
       const id = collectionIdSchema.parse(request.params.id)
       const deleted = await reads.deleteCollection(id)
-      return deleted ? { ok: true } : reply.code(404).send({ error: 'Collection not found' })
+       if (!deleted) return reply.code(404).send({ error: 'Collection not found' })
+       await audit?.record({ tabla: 'coleccion', operacion: 'DELETE', registroId: id, user })
+       return { ok: true }
     })
     app.get<{ Params: { id: string } }>('/api/collections/:id', async (request, reply) => {
       if (!(await requireSession(request, reply))) return
@@ -187,7 +203,9 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, im
        if (!requireRole('Catalogador')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user)) return reply.code(403).send({ error: 'Plate creation role required' })
       const input = plateCreateSchema.parse(request.body)
        if ((input.revisor_id !== undefined || input.fecha_revision !== undefined || input.estado_revision_id !== undefined) && !requireRole('Revisor')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user)) return reply.code(403).send({ error: 'Review fields require a reviewer role' })
-       return reply.code(201).send(await reads.createPlate({ ...input, catalogador_id: user.personaId, fecha_ingreso: input.fecha_ingreso ?? new Date().toISOString() }))
+       const result = await reads.createPlate({ ...input, catalogador_id: user.personaId, fecha_ingreso: input.fecha_ingreso ?? new Date().toISOString() })
+       await audit?.record({ tabla: 'placa', operacion: 'INSERT', registroId: result.placa_id, user, cambios: result })
+       return reply.code(201).send(result)
     })
     app.put<{ Params: { id: string }; Body: unknown }>('/api/plates/:id', async (request, reply) => {
       const user = await requireSession(request, reply); if (!user) return
@@ -201,14 +219,16 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, im
        if (!current) return reply.code(404).send({ error: 'Plate not found' })
        if (requireRole('Catalogador')(user) && !requireRole('Revisor')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user) && current.catalogador_id !== user.personaId) return reply.code(403).send({ error: 'Catalogador can only edit owned plates' })
        const result = await reads.updatePlate(id, input, user)
-      return result ?? reply.code(404).send({ error: 'Plate not found' })
+       if (result) await audit?.record({ tabla: 'placa', operacion: 'UPDATE', registroId: id, user, cambios: input })
+       return result ?? reply.code(404).send({ error: 'Plate not found' })
     })
     app.post<{ Params: { id: string }; Body: unknown }>('/api/plates/:id/status', async (request, reply) => {
       const user = await requireSession(request, reply); if (!user) return
       const id = normalizedIdSchema.parse(request.params.id)
       const { estado_catalogacion_id } = plateTransitionSchema.parse(request.body)
-      const result = await reads.transitionPlate(id, estado_catalogacion_id, user)
-      return result ?? reply.code(404).send({ error: 'Plate not found' })
+       const result = await reads.transitionPlate(id, estado_catalogacion_id, user)
+       if (result) await audit?.record({ tabla: 'placa', operacion: 'UPDATE', registroId: id, user, cambios: { estado_catalogacion_id } })
+       return result ?? reply.code(404).send({ error: 'Plate not found' })
     })
     app.get<{ Querystring: { page?: string; pageSize?: string; placaId?: string } }>('/api/samples', async (request, reply) => {
       if (!(await requireSession(request, reply))) return
@@ -227,7 +247,9 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, im
       if (!requireRole('Catalogador')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user)) return reply.code(403).send({ error: 'Sample creation role required' })
       const input = sampleCreateSchema.parse(request.body)
       if ((input.revisor_id !== undefined || input.fecha_revision !== undefined || input.estado_catalogacion_id !== undefined) && !requireRole('Revisor')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user)) return reply.code(403).send({ error: 'Review fields require a reviewer role' })
-      return reply.code(201).send(await reads.createSample({ ...input, catalogador_id: user.personaId, fecha_ingreso: input.fecha_ingreso ?? new Date().toISOString() }))
+       const result = await reads.createSample({ ...input, catalogador_id: user.personaId, fecha_ingreso: input.fecha_ingreso ?? new Date().toISOString() })
+       await audit?.record({ tabla: 'muestra', operacion: 'INSERT', registroId: result.muestra_id, user, cambios: result })
+       return reply.code(201).send(result)
     })
     app.put<{ Params: { id: string }; Body: unknown }>('/api/samples/:id', async (request, reply) => {
       const user = await requireSession(request, reply); if (!user) return
@@ -239,14 +261,18 @@ export async function createApp({ auth, config, databaseHealth, reads, admin, im
       const current = await reads.getSample(id)
       if (!current) return reply.code(404).send({ error: 'Sample not found' })
       if (requireRole('Catalogador')(user) && !requireRole('Revisor')(user) && !requireRole('Curador')(user) && !requireRole('Administrador')(user) && current.catalogador_id !== user.personaId) return reply.code(403).send({ error: 'Catalogador can only edit owned samples' })
-      return (await reads.updateSample(id, input, user)) ?? reply.code(404).send({ error: 'Sample not found' })
+       const result = await reads.updateSample(id, input, user)
+       if (result) await audit?.record({ tabla: 'muestra', operacion: 'UPDATE', registroId: id, user, cambios: input })
+       return result ?? reply.code(404).send({ error: 'Sample not found' })
     })
     app.delete<{ Params: { id: string } }>('/api/samples/:id', async (request, reply) => {
       const user = await requireSession(request, reply); if (!user) return
       if (!requireRole('Curador')(user) && !requireRole('Administrador')(user)) return reply.code(403).send({ error: 'Only curators and administrators can delete samples' })
       const id = normalizedIdSchema.parse(request.params.id)
       const deleted = await reads.deleteSample(id)
-      return deleted ? { ok: true } : reply.code(404).send({ error: 'Sample not found' })
+       if (!deleted) return reply.code(404).send({ error: 'Sample not found' })
+       await audit?.record({ tabla: 'muestra', operacion: 'DELETE', registroId: id, user })
+       return { ok: true }
     })
     app.get<{ Querystring: { page?: string; pageSize?: string; search?: string; occupied?: string; sectionId?: string } }>('/api/physical-locations', async (request, reply) => {
       if (!(await requireSession(request, reply))) return

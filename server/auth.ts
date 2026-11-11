@@ -9,7 +9,7 @@ export class AuthenticationInfrastructureError extends Error {}
 export class AuthService {
   constructor(private readonly directory: DirectoryAuthenticator, private readonly roles: RoleRepository, private readonly sessions: SessionRepository, private readonly ttlSeconds: number, private readonly local?: { username: string; credentials: LocalCredentialRepository }) {}
 
-  async login(username: string, password: string): Promise<{ token: string; user: AuthenticatedUser }> {
+  async login(username: string, password: string): Promise<{ token: string; user: AuthenticatedUser; local?: boolean }> {
     // The directory returns the canonical login identifier; the local fallback keeps the typed username.
     let login = username
     let authenticatedByDirectory = true

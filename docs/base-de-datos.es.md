@@ -13,10 +13,9 @@ La secuencia standalone es:
 1. `sql/schema.sql` (esquema oficial, sin dependencias externas).
 2. `sql/migrations/001_app_auth_sessions.sql` (sesiones del servidor local).
 
-No ejecute `sql/triggers.sql` ni `sql/audit.sql` en PostgreSQL standalone:
-requieren Supabase Auth, JWT o roles de Supabase. Los artefactos de RLS y su
-helper viven ahora en `sql/legacy-supabase/` y tampoco forman parte de la
-instalación local.
+No ejecute los archivos de `sql/legacy-supabase/` en PostgreSQL standalone:
+requieren Supabase Auth, JWT o roles de Supabase. La auditoría local se aplica
+con `sql/migrations/010_local_audit.sql`.
 
 Los identificadores SQL no entrecomillados se resuelven en minúscula según las
 reglas de PostgreSQL; el uso histórico de mayúsculas en estos archivos no crea
@@ -32,10 +31,16 @@ de `auth.uid()`/`auth.jwt()`; ese costo no aporta una barrera real en esta
 arquitectura. Los archivos históricos de Supabase quedaron en
 `sql/legacy-supabase/` y no deben ejecutarse.
 
-## Triggers y Auditoría
+## Auditoría local
 
-- `sql/triggers.sql`: Triggers de auditoría para Supabase; no es parte de la instalación local.
-- `sql/audit.sql`: Sistema de auditoría Supabase-specific; no es parte de la instalación local.
+La tabla `public.auditoria` registra operaciones exitosas del backend local:
+inserciones, actualizaciones, eliminaciones, importaciones, login y logout. Cada
+entrada conserva la persona autenticada, tabla, operación, registro, cambios y
+fecha. Solo Administrador puede consultar `GET /api/admin/audit`.
+
+La escritura ocurre después de completar exitosamente cada operación en la capa
+HTTP del backend; un fallo de auditoría no debe hacer pasar una operación de
+negocio como exitosa, porque el request propaga el error.
 
 ## Tipos de Datos
 
@@ -44,4 +49,4 @@ Usa tipos estándar de PostgreSQL. Fechas en formato ISO con zona horaria.
 ## Notas para Colombia
 
 - Use formato de fecha dd/mm/yyyy en la UI, pero almacene en ISO.
-- La instalación VM no debe ejecutar `sql/triggers.sql` ni `sql/audit.sql`: son artefactos Supabase-specific pendientes de reemplazo local. RLS quedó cerrado por decisión de arquitectura (ver arriba). La auditoría y los controles de compliance deben implementarse como work units locales antes de activar esa operación.
+- La instalación VM no debe ejecutar los archivos de `sql/legacy-supabase/`. RLS quedó cerrado por decisión de arquitectura (ver arriba).

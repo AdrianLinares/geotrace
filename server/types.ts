@@ -56,6 +56,11 @@ export type SessionRepository = {
   remove(tokenHash: string): Promise<void>
 }
 
+export type AuditRepository = {
+  record(entry: { tabla: string; operacion: 'INSERT' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT' | 'IMPORT'; registroId?: string | null; user?: AuthenticatedUser | null; cambios?: unknown }): Promise<void>
+  list(limit?: number): Promise<unknown[]>
+}
+
 export type DirectoryAuthenticator = {
   authenticate(username: string, password: string): Promise<{ login: string }>
   close(): Promise<void>
