@@ -9,6 +9,7 @@ export type AppUser = {
   persona_id: string
   nombre: string
   rol: string
+  roles: string[]
 }
 
 export function toAppUser(user: AuthenticatedUser | null | undefined): AppUser | null {
@@ -18,6 +19,7 @@ export function toAppUser(user: AuthenticatedUser | null | undefined): AppUser |
     persona_id: user.personaId,
     nombre: user.name,
     rol: user.roles[0],
+    roles: [...user.roles],
   }
 }
 

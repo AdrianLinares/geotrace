@@ -45,6 +45,7 @@ describe('AuthProvider', () => {
       persona_id: 'p-1',
       nombre: 'Ana',
       rol: 'Curador',
+      roles: ['Curador'],
     }))
     expect(useAppStore.getState().authLoading).toBe(false)
   })

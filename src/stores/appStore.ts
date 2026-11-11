@@ -14,6 +14,7 @@ type User = {
   persona_id?: string
   nombre?: string
   rol?: 'Catalogador' | 'Revisor' | 'Curador' | 'Administrador' | string
+  roles?: string[]
 }
 
 type AppState = {

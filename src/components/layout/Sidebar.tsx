@@ -6,13 +6,15 @@ function normalizeRole(role?: string): string {
   return (role ?? '').trim().toLowerCase()
 }
 
+function hasRole(user: { rol?: string; roles?: string[] } | null, ...requiredRoles: string[]): boolean {
+  const assignedRoles = (user?.roles?.length ? user.roles : [user?.rol]).map(normalizeRole)
+  return requiredRoles.some(role => assignedRoles.includes(normalizeRole(role)))
+}
+
 export default function Sidebar() {
   const user = useAppStore((s) => s.user)
-  const role = normalizeRole(user?.rol)
-  const isAdmin = role === 'administrador'
-  const isCurador = role === 'curador' || isAdmin
-  const isRevisor = role === 'revisor' || isCurador
-  const isAuthed = !!user
+  const isAdmin = hasRole(user, 'Administrador')
+  const isCurador = hasRole(user, 'Curador', 'Administrador')
 
   return (
     <aside className="w-64 bg-white border-r border-border p-4 flex flex-col">

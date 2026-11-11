@@ -21,6 +21,11 @@ function normalizeRole(role?: string): string {
     return (role ?? '').trim().toLowerCase()
 }
 
+function hasRole(user: { rol?: string; roles?: string[] } | null, ...requiredRoles: string[]): boolean {
+    const assignedRoles = (user?.roles?.length ? user.roles : [user?.rol]).map(normalizeRole)
+    return requiredRoles.some(role => assignedRoles.includes(normalizeRole(role)))
+}
+
 /**
  * Guard para Administrador
  * - Control total del sistema
@@ -36,8 +41,7 @@ export function WithAdmin({ children }: GuardProps) {
         return <Navigate to="/login" replace />
     }
 
-    const role = normalizeRole(user?.rol)
-    const isAdmin = role === 'administrador'
+    const isAdmin = hasRole(user, 'Administrador')
 
     if (!isAdmin) {
         return <Navigate to="/" replace />
@@ -63,8 +67,7 @@ export function WithCurador({ children }: GuardProps) {
         return <Navigate to="/login" replace />
     }
 
-    const role = normalizeRole(user?.rol)
-    const isCurador = role === 'curador' || role === 'administrador'
+    const isCurador = hasRole(user, 'Curador', 'Administrador')
 
     if (!isCurador) {
         return <Navigate to="/" replace />
@@ -89,8 +92,7 @@ export function WithRevisor({ children }: GuardProps) {
         return <Navigate to="/login" replace />
     }
 
-    const role = normalizeRole(user?.rol)
-    const isRevisor = role === 'revisor' || role === 'curador' || role === 'administrador'
+    const isRevisor = hasRole(user, 'Revisor', 'Curador', 'Administrador')
 
     if (!isRevisor) {
         return <Navigate to="/" replace />

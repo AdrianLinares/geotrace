@@ -55,6 +55,17 @@ describe('roleGuards', () => {
     expect(getLastNavigateProps()).toMatchObject({ to: '/', replace: true })
   })
 
+  it('uses all assigned roles instead of only the primary role', () => {
+    useAppStore.setState({
+      user: { persona_id: 'p-3', nombre: 'Carla', rol: 'Catalogador', roles: ['Catalogador', 'Administrador'] },
+      authLoading: false,
+    })
+
+    render(<WithAdmin><div>contenido protegido</div></WithAdmin>)
+
+    expect(screen.getByText('contenido protegido')).toBeInTheDocument()
+  })
+
   it('redirects unauthenticated users to login', () => {
     useAppStore.setState({ user: null, authLoading: false })
 

@@ -50,6 +50,15 @@ describe('auth API client', () => {
     expect(toAppUser({ personaId: 'p-1', username: 'ada', name: 'Ada' } as never)).toBeNull()
   })
 
+  it('preserves every assigned role while keeping the primary role for compatibility', () => {
+    expect(toAppUser({ personaId: 'p-1', username: 'ada', name: 'Ada', roles: ['Administrador', 'Curador'] })).toEqual({
+      persona_id: 'p-1',
+      nombre: 'Ada',
+      rol: 'Administrador',
+      roles: ['Administrador', 'Curador'],
+    })
+  })
+
   it('restores the session and logs out through the backend', async () => {
     fetchMock
       .mockResolvedValueOnce(response(200, { user: { personaId: 'p-1', username: 'ada', name: 'Ada', roles: ['Catalogador'] } }))
