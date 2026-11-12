@@ -81,9 +81,10 @@ export default function PlacasPage() {
         {isLoading ? <p>Cargando...</p> : (
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Colección</TableHead>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Código de placa</TableHead>
+                  <TableHead>Colección</TableHead>
                 <TableHead>Código ubicación</TableHead>
                 <TableHead>Clase</TableHead>
                 <TableHead>Diseño</TableHead>
@@ -97,6 +98,7 @@ export default function PlacasPage() {
               {data?.data.map(p => (
                 <TableRow key={p.placa_id}>
                   <TableCell>{p.placa_id}</TableCell>
+                  <TableCell>{p.codigo_placa ?? '—'}</TableCell>
                   <TableCell>{p.coleccion_nombre ?? p.coleccion_id ?? '—'}</TableCell>
                   <TableCell>{p.codigo_ubicacion ?? 'No disponible'}</TableCell>
                   <TableCell>{p.clase_placa}</TableCell>
