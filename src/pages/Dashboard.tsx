@@ -1,7 +1,7 @@
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import AppLayout from '../components/layout/AppLayout'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
-import { useDashboardKPIs, useEstadoCatalogacionDist, useMuestrasPorColeccion, type DashboardMuestrasPorColeccion } from '../hooks/useDashboard'
+import { useDashboardKPIs, useEstadoCatalogacionDist, usePlacasPorColeccion, type DashboardPlacasPorColeccion } from '../hooks/useDashboard'
 
 const COLORES_ESTADO: Record<string, string> = {
   'Validado': '#28a745',
@@ -20,7 +20,7 @@ export default function Dashboard() {
   // Cada hook devuelve { data, isLoading } siguiendo el patrón de React Query.
   const { data: kpis, isLoading: kpiLoading } = useDashboardKPIs()
   const { data: estadoDist, isLoading: estadoLoading } = useEstadoCatalogacionDist()
-  const { data: muestrasPorColeccion, isLoading: muestrasPorColeccionLoading } = useMuestrasPorColeccion()
+  const { data: placasPorColeccion, isLoading: placasPorColeccionLoading } = usePlacasPorColeccion()
 
   return (
     <AppLayout>
@@ -56,13 +56,13 @@ export default function Dashboard() {
       {/* Charts: usan Recharts. Los datos deben venir en formato [{ name, value }] o similar según hook. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <Card>
-          <CardHeader><CardTitle>Muestras por colección</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Placas por colección</CardTitle></CardHeader>
           <CardContent>
-            {muestrasPorColeccionLoading ? <p>Cargando...</p> : (
+            {placasPorColeccionLoading ? <p>Cargando...</p> : (
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
-                  <Pie data={muestrasPorColeccion || []} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-                    {(muestrasPorColeccion || []).map((entry: DashboardMuestrasPorColeccion, index: number) => (
+                  <Pie data={placasPorColeccion || []} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
+                    {(placasPorColeccion || []).map((entry: DashboardPlacasPorColeccion, index: number) => (
                       <Cell key={index} fill={COLORES_ESTADO[entry.name] || ['#2D5016', '#6B8E23', '#A4C639', '#D9EAD3', '#8FBC8F'][index % 5]} />
                     ))}
                   </Pie>

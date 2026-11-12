@@ -524,7 +524,7 @@ export function createReadRepository(pool: Pool): PlateRepository {
       return result.rows[0] ?? null
     },
     async getDashboard() {
-      const [kpis, estados, muestrasPorColeccion, ocupacion, problemas] = await Promise.all([
+      const [kpis, estados, placasPorColeccion, ocupacion, problemas] = await Promise.all([
         pool.query<DashboardKpisDto>(`SELECT
           count(*) FILTER (WHERE true)::int AS "totalPlacas",
           (SELECT count(*)::int FROM public.muestra) AS "totalMuestras",
@@ -539,8 +539,8 @@ export function createReadRepository(pool: Pool): PlateRepository {
           GROUP BY ec.estado
           ORDER BY value DESC, name`),
         pool.query(`SELECT coalesce(c.nombre_coleccion, 'Sin colección') AS name, count(*)::int AS value
-          FROM public.muestra m
-          LEFT JOIN public.coleccion c ON c.coleccion_id = m.coleccion_id
+          FROM public.placa p
+          LEFT JOIN public.coleccion c ON c.coleccion_id = p.coleccion_id
           GROUP BY coalesce(c.nombre_coleccion, 'Sin colección')
           ORDER BY value DESC, name`),
         pool.query<DashboardOcupacionDto>(`SELECT coalesce(cs.nombre, cs.codigo_seccion, 'Sin sección') AS name,
@@ -571,7 +571,7 @@ export function createReadRepository(pool: Pool): PlateRepository {
       return {
         kpis: { ...totals, placasValidadas: totals.totalPlacas ? Math.round((totals.placasValidadas / totals.totalPlacas) * 100) : 0 },
         estadoCatalogacion: estados.rows,
-        muestrasPorColeccion: muestrasPorColeccion.rows,
+        placasPorColeccion: placasPorColeccion.rows,
         ocupacion: ocupacion.rows,
         // Local schema does not create public.auditoria yet; administrative audit is pending.
         actividadReciente: [],

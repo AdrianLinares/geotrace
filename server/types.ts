@@ -315,7 +315,7 @@ export type DashboardKpisDto = {
 }
 
 export type DashboardEstadoDto = { name: string; value: number }
-export type DashboardMuestrasPorColeccionDto = { name: string; value: number }
+export type DashboardPlacasPorColeccionDto = { name: string; value: number }
 export type DashboardOcupacionDto = { name: string; ocupacion: number; total: number; ocupadas: number }
 export type DashboardActividadDto = {
   auditoria_id: string
@@ -334,7 +334,7 @@ export type DashboardProblemaDto = {
 export type DashboardDto = {
   kpis: DashboardKpisDto
   estadoCatalogacion: DashboardEstadoDto[]
-  muestrasPorColeccion: DashboardMuestrasPorColeccionDto[]
+  placasPorColeccion: DashboardPlacasPorColeccionDto[]
   ocupacion: DashboardOcupacionDto[]
   actividadReciente: DashboardActividadDto[]
   problemasConservacion: DashboardProblemaDto[]

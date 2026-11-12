@@ -165,7 +165,7 @@ describe('createReadRepository', () => {
     await expect(repository.getDashboard()).resolves.toEqual({
       kpis: { totalPlacas: 2, totalMuestras: 3, totalColecciones: 5, placasValidadas: 50, ubicacionesDisponibles: 4 },
       estadoCatalogacion: [{ name: 'Validado', value: 2 }],
-      muestrasPorColeccion: [{ name: 'Colección A', value: 3 }],
+      placasPorColeccion: [{ name: 'Colección A', value: 3 }],
       ocupacion: [{ name: 'Sección A', total: 2, ocupadas: 1, ocupacion: 50 }],
       actividadReciente: [],
       problemasConservacion: [{ placa_id: '8', nivel: 'CRÍTICA' }],
