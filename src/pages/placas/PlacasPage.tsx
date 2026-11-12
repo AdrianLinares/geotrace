@@ -73,7 +73,7 @@ export default function PlacasPage() {
           ))}
         </div>
 
-        <p className="text-sm text-muted-foreground">El filtro de mueble no está disponible: el esquema normalizado no relaciona PLACA con MUEBLE.</p>
+        <p className="text-sm text-muted-foreground">El filtro de mueble no está disponible: UBICACION_FISICA se vincula con PLACA mediante el ID interno de la placa (<code>placa_id</code>), no mediante <code>codigo_placa</code>, y el esquema no expone una relación normalizada con MUEBLE.</p>
       </div>
 
       {/* Table */}
