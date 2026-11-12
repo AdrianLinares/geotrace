@@ -267,7 +267,7 @@ const wellColumns = `p.pozo_id::text AS pozo_id, p.codigo_pozo, p.nombre_pozo,
   p.localizacion_espacial_id::text AS localizacion_espacial_id,
   p.estado_catalogacion_id::text AS estado_catalogacion_id, ec.estado AS estado_catalogacion,
   p.estado_revision_id::text AS estado_revision_id, er.nombre AS estado_revision, p.observaciones`
- const plateColumns = `p.placa_id::text AS placa_id, p.codigo_ubicacion, p.coleccion_id::text AS coleccion_id,
+ const plateColumns = `p.placa_id::text AS placa_id, uf.codigo_ubicacion AS codigo_ubicacion, p.coleccion_id::text AS coleccion_id,
   c.nombre_coleccion AS coleccion_nombre,
   p.codigo_placa, p.clase_placa_id::text AS clase_placa_id, cp.nombre AS clase_placa,
   p.etapa_uso_placa_id::text AS etapa_uso_placa_id,
@@ -313,8 +313,11 @@ const sampleMutationColumns: Record<keyof SampleMutationInput, string> = {
 }
 
 const getPlate = (client: Pick<Pool, 'query'>, id: string) => client.query<PlateDto>(`SELECT ${plateColumns} FROM public.placa p
+  LEFT JOIN public.ubicacion_fisica uf ON uf.placa_id = p.placa_id
+  LEFT JOIN public.coleccion c ON c.coleccion_id = p.coleccion_id
   LEFT JOIN public.cat_clase_placa cp ON cp.clase_placa_id = p.clase_placa_id
   LEFT JOIN public.cat_diseno_placa dp ON dp.diseno_placa_id = p.diseno_placa_id
+  LEFT JOIN public.cat_configuracion_cavidades cc ON cc.configuracion_cavidades_id = p.configuracion_cavidades_id
   LEFT JOIN public.cat_estado_catalogacion ec ON ec.estado_catalogacion_id = p.estado_catalogacion_id
   WHERE p.placa_id = $1`, [id]).then(result => result.rows[0] ?? null)
 
@@ -389,14 +392,15 @@ export function createReadRepository(pool: Pool): PlateRepository {
     },
     async listPlates(page, pageSize, filters) {
       const offset = page * pageSize
-      const where = [
-        `($1::text IS NULL OR p.placa_id::text ILIKE '%' || $1 || '%' OR p.codigo_placa ILIKE '%' || $1 || '%' OR p.codigo_ubicacion ILIKE '%' || $1 || '%')`,
+       const where = [
+        `($1::text IS NULL OR p.placa_id::text ILIKE '%' || $1 || '%' OR p.codigo_placa ILIKE '%' || $1 || '%' OR uf.codigo_ubicacion ILIKE '%' || $1 || '%')`,
         `($2::bigint IS NULL OR p.coleccion_id = $2)`,
         `($3::text[] IS NULL OR ec.estado = ANY($3))`,
       ].join(' AND ')
       const params = [filters.search || null, filters.collectionId || null, filters.states?.length ? filters.states : null]
        const from = `FROM public.placa p
          LEFT JOIN public.coleccion c ON c.coleccion_id = p.coleccion_id
+         LEFT JOIN public.ubicacion_fisica uf ON uf.placa_id = p.placa_id
          LEFT JOIN public.cat_clase_placa cp ON cp.clase_placa_id = p.clase_placa_id
          LEFT JOIN public.cat_diseno_placa dp ON dp.diseno_placa_id = p.diseno_placa_id
          LEFT JOIN public.cat_configuracion_cavidades cc ON cc.configuracion_cavidades_id = p.configuracion_cavidades_id
@@ -410,6 +414,7 @@ export function createReadRepository(pool: Pool): PlateRepository {
     async getPlate(id) {
       const result = await pool.query<PlateDto>(`SELECT ${plateColumns} FROM public.placa p
          LEFT JOIN public.coleccion c ON c.coleccion_id = p.coleccion_id
+         LEFT JOIN public.ubicacion_fisica uf ON uf.placa_id = p.placa_id
          LEFT JOIN public.cat_clase_placa cp ON cp.clase_placa_id = p.clase_placa_id
          LEFT JOIN public.cat_diseno_placa dp ON dp.diseno_placa_id = p.diseno_placa_id
          LEFT JOIN public.cat_configuracion_cavidades cc ON cc.configuracion_cavidades_id = p.configuracion_cavidades_id
